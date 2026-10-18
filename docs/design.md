@@ -165,6 +165,24 @@ claims and writes the brief before starting the CLI interactively in the task's
 worktree. The coordinator is told to ask the human once per board, and the answer
 is recorded.
 
+## Crash safety of the merge
+
+A merge changes two things that cannot change in one step: the target branch in
+git, and the board. It does them in this order, and every crash window is safe:
+
+| Step | Crash here leaves | Recovery |
+|---|---|---|
+| 1. squash the branch into one commit | the target untouched | the next merge redoes it |
+| 2. write the intent (the commit about to land) | the target untouched | once the merger is gone the stale intent is dropped |
+| 3. move the target | git has the commit; the board does not know | any command finds the intent's commit in the target and records the task as done |
+| 4. record the merge as done | nothing | none needed |
+
+The recovery decision is git's, never the board's: the intent's commit must be an
+ancestor of the target. The final write is one compare-and-set shared by the live
+merge and recovery, so a merge that is recorded by both is recorded once. The
+crash tests kill a real merge at steps 2 and 3 (`SWARM_FAILPOINT`, a test hook
+that exits the process without cleanup).
+
 ## Limits, stated plainly
 
 - **One machine.** Pools across machines are not supported: there is no network

@@ -38,7 +38,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.4.2"
+__version__ = "0.4.3"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -514,7 +514,7 @@ CREATE TABLE IF NOT EXISTS tasks (
   overlap_ack TEXT, submit TEXT, merged_sha TEXT, commits TEXT, cleanup_pending INTEGER DEFAULT 0,
   started_at TEXT, budget_flagged INTEGER DEFAULT 0, created_at TEXT, updated_at TEXT,
   removed INTEGER DEFAULT 0, proposed_by TEXT, failure TEXT, goal TEXT, serves TEXT DEFAULT '[]',
-  done_when TEXT, size TEXT);
+  done_when TEXT, size TEXT, merge_intent TEXT);
 CREATE TABLE IF NOT EXISTS goals (
   id TEXT PRIMARY KEY, title TEXT, statement TEXT, state TEXT, answers TEXT DEFAULT '{}',
   outcomes TEXT DEFAULT '[]', created_by TEXT, created_at TEXT, updated_at TEXT, closed TEXT);
@@ -558,7 +558,13 @@ class Swarm:
         """Add columns that later releases introduced to a board an earlier release created."""
         added = {
             "agents": {"offline_reason": "TEXT", "env": "TEXT DEFAULT '{}'", "first_msg": "INTEGER DEFAULT 0"},
-            "tasks": {"goal": "TEXT", "serves": "TEXT DEFAULT '[]'", "done_when": "TEXT", "size": "TEXT"},
+            "tasks": {
+                "goal": "TEXT",
+                "serves": "TEXT DEFAULT '[]'",
+                "done_when": "TEXT",
+                "size": "TEXT",
+                "merge_intent": "TEXT",
+            },
             "questions": {"goal": "TEXT"},
         }
         for table, columns in added.items():
@@ -733,6 +739,7 @@ class Swarm:
                     offline_reason="exited" if exited else "silent",
                 )
                 self.event("agent_offline", a["name"], a["task"], why)
+        recover_merges(self)
         for t in self.db.execute(
             f"SELECT * FROM tasks WHERE state IN ({','.join('?' * len(ACTIVE))})", ACTIVE
         ).fetchall():
@@ -772,9 +779,16 @@ class Swarm:
         holder = self.meta("merge_lock")
         if holder:
             info = json.loads(holder)
-            if minutes_since(info["at"]) > s["merge_lock_timeout_min"]:
+            owner = self.agent(info["agent"])
+            dead = owner is None or owner["state"] in ("offline", "left")
+            if dead or minutes_since(info["at"]) > s["merge_lock_timeout_min"]:
                 self.set_meta("merge_lock", None)
-                self.event("merge_lock_broken", info["agent"], info["task"], "lease expired")
+                self.event(
+                    "merge_lock_broken",
+                    info["agent"],
+                    info["task"],
+                    "its holder is offline" if dead else "lease expired",
+                )
         if self.config["swarm"]["coordinator"] == "auto" and not self.coordinator():
             live = self.live_agents()
             if live:
@@ -1267,7 +1281,7 @@ def cmd_next(sw: Swarm, a) -> None:
             raise SwarmError(f"The swarm is paused by {sw.meta('paused')}. Wait for `swarm resume`.")
         if me["task"]:
             raise SwarmError(f"You still hold {me['task']}. Merge it (or release it) before taking another task.")
-        pending = sw.db.execute("SELECT id FROM tasks WHERE cleanup_pending=1 AND assignee=?", (me["name"],)).fetchone()
+        pending = sw.db.execute("SELECT id FROM tasks WHERE cleanup_pending=1").fetchall()
         options = eligible(sw, me)
         left_behind = [] if options else orphans_for(sw, me)
         if not options and not left_behind:
@@ -1276,8 +1290,8 @@ def cmd_next(sw: Swarm, a) -> None:
                 "`swarm status --all` shows why; tell the coordinator you are free."
             )
         pick = options[0] if options else left_behind[0]
-    if pending:
-        cleanup(sw, sw.task(pending["id"]))
+    for row in pending:  # a merged task's worktree is safe for any agent to remove, whoever held it
+        cleanup(sw, sw.task(row["id"]))
     if not options:
         print(
             f"No open task; {pick['id']} was left behind by {pick['assignee']} with work in it. Taking it over: "
@@ -1958,6 +1972,20 @@ def cmd_merge(sw: Swarm, a) -> None:
     who = a.as_
     with sw.tx():
         sw.sweep()
+        me = sw.require_agent(who)
+        merged_already = None
+        if not me["task"]:
+            merged_already = sw.db.execute(
+                "SELECT id, merged_sha FROM tasks WHERE assignee=? AND state='done' AND merged_sha IS NOT NULL "
+                "ORDER BY updated_at DESC, rowid DESC LIMIT 1",
+                (who,),
+            ).fetchone()
+        if merged_already:  # a retry after a lost acknowledgement: the merge is done, say so, change nothing
+            print(
+                f"Your last task {merged_already['id']} is already merged into {sw.target()} as "
+                f"{merged_already['merged_sha'][:10]}. Nothing to do. `swarm next --as {who}` for more work."
+            )
+            return
         t = sw.require_holder(who)
         if sw.paused():
             raise SwarmError(f"The swarm is paused by {sw.meta('paused')}.")
@@ -2049,6 +2077,14 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                 f"{t['id']} lost its place in the merge queue while its gates ran, so {target} was not touched. "
                 "Run `swarm merge` again."
             )
+        with sw.tx():  # write ahead: what is about to land, so a crash after the target moves is recognised
+            sw.update_task(
+                t["id"],
+                merge_intent=json.dumps(
+                    {"sha": new_sha, "target_sha": target_sha, "message": message, "commits": commits, "at": iso()}
+                ),
+            )
+        failpoint("after_intent")
         holder_tree = worktree_of_branch(sw, target)
         if holder_tree:
             ff = run(["git", "merge", "--ff-only", new_sha], cwd=holder_tree, check=False, timeout=120)
@@ -2067,33 +2103,133 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                 )
         else:
             git("update-ref", f"refs/heads/{target}", new_sha, target_sha, cwd=sw.main_root)
+        failpoint("after_target_moved")
         pushed = ""
         if sw.config["merge"]["push"]:
             p = run(["git", "push", sw.config["project"]["remote"], target], cwd=sw.main_root, check=False, timeout=120)
             pushed = "pushed" if p.returncode == 0 else f"PUSH FAILED: {p.stderr.strip()[-300:]}"
         with sw.tx():
-            sw.update_task(
+            first = complete_merge(
+                sw,
                 t["id"],
-                state="done",
-                merged_sha=new_sha,
-                commits=commits,
-                failure=None,
-                cleanup_pending=1 if sw.config["merge"]["cleanup"] else 0,
+                new_sha,
+                message,
+                commits,
+                ("merged", f"{new_sha[:10]} {message}" + (f" ({pushed})" if pushed else "")),
             )
-            sw.db.execute("DELETE FROM locks WHERE task=?", (t["id"],))
-            sw.update_agent(who, task=None, state="ready")
-            sw.event("merged", who, t["id"], f"{new_sha[:10]} {message}" + (f" ({pushed})" if pushed else ""))
-            if pushed.startswith("PUSH FAILED"):
-                sw.notify_coordinator(f"{t['id']} merged locally as {new_sha[:10]} but {pushed}", t["id"])
-            nudge_overlaps(sw, t, submit.get("files", []))
+            if first:
+                if pushed.startswith("PUSH FAILED"):
+                    sw.notify_coordinator(f"{t['id']} merged locally as {new_sha[:10]} but {pushed}", t["id"])
+                nudge_overlaps(sw, t, submit.get("files", []))
         cleaned = cleanup(sw, sw.task(t["id"])) if sw.config["merge"]["cleanup"] else "kept"
+        recorded = "" if first else " (the board had already recorded it)"
         return (
-            f"merged {t['id']} into {target} as {new_sha[:10]} ({message})." + (f" {pushed}" if pushed else "") + "\n"
+            f"merged {t['id']} into {target} as {new_sha[:10]} ({message})."
+            + (f" {pushed}" if pushed else "")
+            + recorded
+            + "\n"
             f"worktree: {cleaned}. You are free: `swarm next --as {who}`."
         )
     with sw.tx():
         sw.update_task(t["id"], state="ready_to_merge")
     return f"{target} kept moving during the merge; try again."
+
+
+# --------------------------------------------------------------------------- crash safety of the merge
+#
+# A merge touches two stores that cannot be changed in one step: git (the target branch) and the board. It does
+# them in this order, and every crash window is safe:
+#
+#   1. squash the branch into one commit            crash: the target is untouched; the next merge redoes it
+#   2. write the intent (the commit about to land)  crash: the target is untouched; the stale intent is dropped
+#   3. move the target                              crash: git has the commit, the board does not know yet
+#   4. record the merge as done                     crash: nothing left to do
+#
+# The window that needs recovery is between 3 and 4. The intent written in step 2 is the write-ahead record that
+# lets any later command recognise the commit in the target and finish step 4, exactly once.
+
+
+def failpoint(name: str) -> None:
+    """For tests only: with SWARM_FAILPOINT=<name>, die here as a killed process would (no cleanup, no finally
+    blocks), so crash tests exercise the real window and not a simulation of it. It does nothing otherwise."""
+    if os.environ.get("SWARM_FAILPOINT") == name:
+        os._exit(97)
+
+
+def landed_in_target(sw: Swarm, sha: str) -> bool:
+    """Only git's answer counts: the commit is an ancestor of the target branch. A missing, malformed or unknown
+    commit is never 'landed' (an unknown object makes git exit 128, not 0)."""
+    if not re.fullmatch(r"[0-9a-f]{7,64}", sha or ""):
+        return False
+    done = run(["git", "merge-base", "--is-ancestor", sha, f"refs/heads/{sw.target()}"], cwd=sw.main_root, check=False)
+    return done.returncode == 0
+
+
+def complete_merge(sw: Swarm, task_id: str, sha: str, message: str, commits: str, event: tuple[str, str]) -> bool:
+    """Record a merge as done. Compare-and-set: exactly one caller (the live merge, or recovery) moves the task from
+    not-done to done and emits the event; every other caller gets False and changes nothing. Call inside a
+    transaction."""
+    t = sw.task(task_id)
+    moved = sw.db.execute(
+        "UPDATE tasks SET state='done', merged_sha=?, commits=?, failure=NULL, cleanup_pending=?, "
+        "merge_intent=NULL, updated_at=? WHERE id=? AND state<>'done'",
+        (sha, commits, 1 if sw.config["merge"]["cleanup"] else 0, iso(), task_id),
+    ).rowcount
+    if moved != 1:
+        return False
+    sw.db.execute("DELETE FROM locks WHERE task=?", (task_id,))
+    if t["assignee"]:
+        sw.db.execute(
+            "UPDATE agents SET task=NULL, state=CASE WHEN state='busy' THEN 'ready' ELSE state END "
+            "WHERE name=? AND task=?",
+            (t["assignee"], task_id),
+        )
+    lock = sw.meta("merge_lock")
+    if lock and json.loads(lock).get("task") == task_id:
+        sw.set_meta("merge_lock", None)
+    sw.event(event[0], t["assignee"], task_id, event[1])
+    return True
+
+
+def recover_merges(sw: Swarm) -> None:
+    """Called by every sweep, inside its transaction. A merge writes its intent before it moves the target. If the
+    target holds that commit but the board never recorded the merge (the process died, or its write was lost),
+    finish the job once. If the commit never landed and nobody is merging it any more, drop the stale intent."""
+    for t in sw.db.execute("SELECT * FROM tasks WHERE merge_intent IS NOT NULL AND state<>'done'").fetchall():
+        try:
+            intent = json.loads(t["merge_intent"])
+        except ValueError:
+            intent = {}
+        sha = intent.get("sha", "")
+        if landed_in_target(sw, sha):
+            note = f"{sha[:10]} was already in {sw.target()} when the board was checked"
+            if not complete_merge(
+                sw, t["id"], sha, intent.get("message", ""), intent.get("commits", ""), ("merge_recovered", note)
+            ):
+                continue
+            nudge_overlaps(sw, t, json.loads(t["submit"] or "{}").get("files", []))
+            if t["assignee"]:
+                sw.message(
+                    "swarm",
+                    t["assignee"],
+                    f"{t['id']} was already merged as {sha[:10]} by your earlier merge, which ended before the "
+                    "board recorded it. It is recorded now: do not merge it again. `swarm next` for more work.",
+                    task=t["id"],
+                )
+            push = " merge.push is on: check that the target was pushed." if sw.config["merge"]["push"] else ""
+            sw.notify_coordinator(
+                f"{t['id']}: recovered a merge whose process ended after {sw.target()} moved "
+                f"({sha[:10]}); recorded once.{push}",
+                t["id"],
+            )
+            continue
+        lock = sw.meta("merge_lock")
+        info = json.loads(lock) if lock else {}
+        merging = bool(info) and info.get("task") == t["id"]
+        owner = sw.agent(info["agent"]) if merging else None
+        if not merging or owner is None or owner["state"] in ("offline", "left"):
+            sw.update_task(t["id"], merge_intent=None)
+            sw.event("merge_intent_cleared", t["assignee"], t["id"], "its merge ended before the target moved")
 
 
 def sw_event(sw: Swarm, *args) -> None:
@@ -2741,6 +2877,8 @@ EVENT_TEXT = {
     "submitted": ("", "{agent} submitted {task}: {detail}"),
     "merge_started": ("dim", "{agent} is merging {task}"),
     "merged": ("green", "{agent} merged {task}: {detail}"),
+    "merge_recovered": ("green", "{task} recorded as merged: {detail}"),
+    "merge_intent_cleared": ("yellow", "{task}: a merge ended before the target moved; nothing was merged"),
     "gates_failed": ("red", "{task}: the gate failed for {agent}: {detail}"),
     "gate_flaky": ("yellow", "{task}: a gate passed only on retry ({detail})"),
     "needs_rebase": ("yellow", "{task} conflicts with the target in {detail}; {agent} must rebase"),

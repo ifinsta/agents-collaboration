@@ -1,5 +1,30 @@
 # Changelog
 
+## v0.4.3 - 2026-10-19
+
+### Fixed: a merge that ends after the target moved
+
+Suggested by a reader of the docs: git advances the target, then the worker ends
+before the board records completion. Run against v0.4.2, the task could never
+finish. Its branch "changes nothing" (so `submit` refused), `next` handed it to
+another agent as unfinished work, and only a manual `swarm record` could close it.
+
+- **Recognised and completed once.** A merge now writes its intent (the commit
+  about to land) before the target moves. Any later command that finds that commit
+  already in the target records the task as merged, exactly once, frees the
+  agent, unblocks dependents and tells the coordinator (EC-189). The live merge
+  and recovery share one compare-and-set, so a merge recorded by both is recorded
+  once (EC-192).
+- **Only git decides.** A missing, malformed or unlanded commit never completes
+  a task (EC-191). A merge that ended before the target moved merges nothing, and
+  its stale intent is dropped (EC-190).
+- **Retrying is safe.** If the acknowledgement was lost and the agent runs
+  `swarm merge` again, it is told the task is already merged (EC-194).
+- **A dead merger no longer holds the queue.** A lease whose holder is offline is
+  broken at once, not after 45 minutes (EC-193).
+- Any free agent now cleans up a merged task's leftover worktree, not only the
+  agent that held it.
+
 ## v0.4.2 - 2026-10-18
 
 ### Fixed

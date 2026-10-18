@@ -1342,6 +1342,121 @@ class LongGates(SwarmCase):
         self.assertEqual(self.task("T1")["state"], "ready_to_merge")
 
 
+class CrashRecovery(SwarmCase):
+    """v0.4.3: the target moved, the worker ended, the board never heard."""
+
+    def merge_dies(self, who, point):
+        done = subprocess.run(
+            [sys.executable, str(SWARM), "merge", "--as", who],
+            cwd=self.root,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+            env={**os.environ, "SWARM_FAILPOINT": point},
+        )
+        self.assertEqual(done.returncode, 97, done.stdout + done.stderr)
+
+    def completions(self, tid):
+        con = self.db()
+        n = con.execute(
+            "SELECT COUNT(*) FROM events WHERE task=? AND kind IN ('merged','merge_recovered')", (tid,)
+        ).fetchone()[0]
+        con.close()
+        return n
+
+    def meta(self, key):
+        con = self.db()
+        row = con.execute("SELECT value FROM meta WHERE key=?", (key,)).fetchone()
+        con.close()
+        return row[0] if row else None
+
+    def test_ec189_ec192_ec194_the_target_moved_and_the_worker_ended(self):
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        self.merge_dies("ann", "after_target_moved")
+        self.assertEqual(self.git("show", "main:src/file.txt"), "x\n")  # git has the work
+        self.assertEqual(self.task("T1")["state"], "ready_to_merge")  # the board does not know
+        self.assertIsNotNone(self.task("T1")["merge_intent"])
+        self.assertIsNotNone(self.meta("merge_lock"))
+        self.sw("status")  # any command sweeps
+        t = self.task("T1")
+        self.assertEqual(t["state"], "done")
+        self.assertEqual(t["merged_sha"], self.git("rev-parse", "main").strip())
+        self.assertIsNone(t["merge_intent"])
+        self.assertIsNone(self.meta("merge_lock"))
+        self.assertEqual(self.completions("T1"), 1)
+        for _ in range(3):
+            self.sw("status")
+        self.assertEqual(self.completions("T1"), 1)  # exactly once, however often it is checked
+        self.assertIn("already merged", self.sw("--as", "ann", "merge"))  # a retry after the lost acknowledgement
+        self.assertEqual(self.completions("T1"), 1)
+        self.assertIn("claimed T3", self.sw("--as", "ann", "claim", "T3"))  # and its dependents are unblocked
+
+    def test_ec190_the_worker_ended_before_the_target_moved(self):
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        before = self.git("rev-parse", "main")
+        self.merge_dies("ann", "after_intent")
+        self.assertEqual(self.git("rev-parse", "main"), before)
+        con = self.db()
+        con.execute("UPDATE agents SET heartbeat_at='2020-01-01T00:00:00+00:00' WHERE name='ann'")
+        con.commit()
+        con.close()
+        self.sw("status")  # ann is silent: the merge cannot still be running
+        t = self.task("T1")
+        self.assertNotEqual(t["state"], "done")
+        self.assertIsNone(t["merge_intent"])
+        self.assertIsNone(self.meta("merge_lock"))
+        self.assertEqual(self.git("rev-parse", "main"), before)
+        self.sw("--as", "ann", "join", "--kind", "claude", "--resume")
+        self.assertIn("merged T1", self.sw("--as", "ann", "merge"))
+
+    def test_ec191_recovery_trusts_only_git(self):
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        tip = self.git("rev-parse", "swarm/T1").strip()
+        for bogus in ("0123456789abcdef0123456789abcdef01234567", "--all", "not-a-sha", "", tip):
+            con = self.db()
+            con.execute("UPDATE tasks SET merge_intent=? WHERE id='T1'", (json.dumps({"sha": bogus}),))
+            con.commit()
+            con.close()
+            self.sw("status")
+            self.assertEqual(self.task("T1")["state"], "ready_to_merge", repr(bogus))
+        self.assertNotIn("src/file.txt", self.git("ls-tree", "-r", "--name-only", "main"))
+
+    def test_ec192_completing_twice_changes_nothing_the_second_time(self):
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        sw = swarm_module.Swarm(self.root)
+        try:
+            with sw.tx():
+                first = swarm_module.complete_merge(sw, "T1", "a" * 40, "msg", "log", ("merged", "first"))
+            with sw.tx():
+                second = swarm_module.complete_merge(sw, "T1", "b" * 40, "msg", "log", ("merge_recovered", "second"))
+        finally:
+            sw.db.close()
+        self.assertTrue(first)
+        self.assertFalse(second)
+        self.assertEqual(self.task("T1")["merged_sha"], "a" * 40)
+        self.assertEqual(self.completions("T1"), 1)
+
+    def test_ec193_a_dead_holders_queue_lease_is_broken_at_once(self):
+        self.join("ann")
+        self.join("bob")
+        con = self.db()
+        con.execute(
+            "INSERT INTO meta(key,value) VALUES('merge_lock', ?)",
+            (json.dumps({"agent": "ann", "task": "T1", "at": swarm_module.iso()}),),
+        )
+        con.execute("UPDATE agents SET heartbeat_at='2020-01-01T00:00:00+00:00' WHERE name='ann'")
+        con.commit()
+        con.close()
+        self.sw("status")
+        self.assertIsNone(self.meta("merge_lock"))  # a fresh lease, but its holder is gone
+        self.assertIn("its holder is offline", self.sw("log"))
+
+
 class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")

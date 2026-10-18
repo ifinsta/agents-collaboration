@@ -248,6 +248,11 @@ for the next task.** If you are inside your worktree when it is removed (on
 Windows a folder in use cannot be deleted), the removal is deferred and
 `swarm doctor --fix` finishes it later.
 
+If your merge ends partway (a crash, a closed terminal, a lost database write) and
+the target branch already moved, you do not need to do anything special. Any
+`swarm` command notices that the commit is already in the target and records the
+task as merged, once. Running `swarm merge` again just says it is already merged.
+
 A check you cannot run on this machine is reported as **owed**, never as passed.
 
 ## 6. When you cannot continue

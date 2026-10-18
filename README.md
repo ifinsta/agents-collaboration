@@ -45,8 +45,8 @@ with real output from the real tool. CI replays it on every change.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[180 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 96 are proved by tests on Linux, Windows and macOS, and the few
+[194 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 109 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -146,7 +146,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.4.2, experimental.** The protocol and the service are tested. Headless
+**0.4.3, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

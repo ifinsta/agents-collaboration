@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 188 cases. 103 Tested, 61 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 194 cases. 109 Tested, 61 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -281,6 +281,12 @@ Found by using the v0.2.0 console for real.
 | EC-177 | Leaving the launcher silently drops the pane to a bare shell, and the person starts an agent by hand, in the main checkout, without a brief. | Leaving says what the pane now is, how to reopen the menu, and why the menu is the safer way. | Tested |
 | EC-178 | The person wants an agent present without handing it a task yet. | The launcher's "no task" choice and `launch --no-task` join it in the main checkout, told to ask for work. | Tested |
 | EC-179 | The person wants an agent on a particular task, not whatever is next. | The launcher lists the open tasks this machine can take and starts the agent on the chosen one. | Tested |
+| EC-189 | The target branch advanced, then the worker ended before the board recorded the merge (the crash window EC-087 does not cover; EC-087 only breaks an expired lease and aborts a half-done rebase). The task could never finish: its branch "changes nothing", and `next` handed it to another agent as unfinished work. | Every merge writes its intent (the commit about to land) before the target moves. Any later command finds a task whose intent commit is already in the target, and records the merge as done. `record` (EC-147) remains for work that landed outside the board. | Tested |
+| EC-190 | The worker ended after writing its intent but before the target moved. | Nothing is merged. Once the merger is gone, the stale intent is dropped and the merge can be run again. | Tested |
+| EC-191 | A bad, missing or unrelated commit in a recorded intent completes a task that was never merged. | Only git's answer counts: the commit must be an ancestor of the target. A malformed, unknown or unlanded commit never completes anything. | Tested |
+| EC-192 | The live merge and recovery both record the same merge (a slow acknowledgement racing a sweep), so it completes twice: two events, two nudges. | One compare-and-set (`state<>'done'`) in one place: exactly one caller wins and emits the event; the other changes nothing. | Tested |
+| EC-193 | The merger died holding the queue, and everyone waits out the lease (45 minutes). | A queue lease whose holder is offline is broken at once. | Tested |
+| EC-194 | The acknowledgement is lost and the agent retries `swarm merge`. | If the agent's last task is already merged, `merge` says so and changes nothing. | Tested |
 | EC-187 | A project's gate (its whole test suite) runs longer than the agent timeout, so the merging agent is marked offline in the middle of its own merge. Seen in a real project: a 26-minute gate. | While gates run, the merge renews the agent's heartbeat and the queue's lease every `keepalive_sec` (default 30 s). | Tested |
 | EC-188 | The merge queue's lease is broken while a merge is still running, so two merges could advance the target at once. | Before the target moves, the merge checks it still holds the queue. If not, it stops, touches nothing, and asks for `swarm merge` again. | Tested |
 | EC-182 | An agent CLI updates itself and drops options its adapter passes (Qoder went from 0.1.46 to 1.1.73 mid-session and dropped `-q` and `--max-turns`). | Before `spawn`, `launch` or `probe` uses a CLI, every option it is about to pass is checked against that CLI's own `--help`. A missing one stops the launch and names the options. | Tested |
