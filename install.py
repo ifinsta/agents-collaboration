@@ -46,7 +46,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.4.3"
+DEFAULT_REF = "v0.4.4"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"
@@ -178,6 +178,10 @@ def install(args: argparse.Namespace) -> None:
         actions.append(f"write {shown}/.agents/skills/{SKILL}/{name}")
         if not args.dry_run:
             (dest / name).write_bytes(data)
+    # Python writes the bytecode cache beside the module; keep it out of the project's `git status`.
+    actions.append(f"write {shown}/.agents/skills/{SKILL}/.gitignore")
+    if not args.dry_run:
+        (dest / ".gitignore").write_bytes(b"__pycache__/\n")
     record = {
         "source": source.label(),
         "ref": args.ref if not args.source else "local",

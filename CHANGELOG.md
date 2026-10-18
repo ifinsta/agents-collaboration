@@ -1,5 +1,69 @@
 # Changelog
 
+## v0.4.4 - 2026-10-19
+
+### Faster: every command is about 2.4 times quicker
+
+Agents run the tool for every step, so half a second per command was the most
+felt cost. It was measured piece by piece before anything was changed. Against
+v0.4.3, with alternating runs on the same machine in a project with a config
+(median of 15):
+
+| Command | v0.4.3 | v0.4.4 |
+|---|---|---|
+| `version` | 529 ms | 213 ms |
+| `status` | 817 ms | 330 ms |
+| `agents` | 603 ms | 238 ms |
+| `whoami` | 480 ms | 207 ms |
+| `environment` | 722 ms | 311 ms |
+
+What was slow, and what changed (EC-195):
+
+- **Compiling the script, 340-550 ms on every run.** Python caches the bytecode
+  of a module it imports, never of the script it is run as. The tool is now
+  `swarm_core.py`, behind a 31-line `swarm.py` launcher. The commands to run
+  are unchanged.
+- **`urllib.request`, about 250 ms,** imported for `swarm update` alone. Rarely
+  used imports (`urllib`, `textwrap`, `shlex`, `platform`, `locale`) are now
+  imported where they are used.
+- **Tool lookups, about 165 ms.** One scan of PATH replaces 17.
+- **Three git processes per command, about 60 ms each.** The git directory is
+  read from files; git is asked only in unusual layouts, and the environment
+  probe asks it once instead of twice (EC-198).
+- **`tomllib`, about 30 ms,** to read `config.toml`. The parsed config is cached
+  until the file changes (EC-199).
+
+SQLite (1.4 ms) and building the argument parser (16 ms) were measured and left
+alone. What remains is mostly the interpreter and the standard library.
+
+### Fixed
+
+- **Cleanup never removes a worktree that has been reused for other work**
+  (EC-200). A merged task's worktree is cleaned up by whichever agent next asks
+  for work. In a real project an agent had switched such a directory to another
+  branch and staged four new files in it. Git would have refused to remove it
+  while it was dirty, but the moment those files were committed, the next
+  `swarm next` would have deleted the directory. Cleanup now removes a worktree
+  only while it is still on the task's own branch; otherwise it keeps it, still
+  deletes the merged task branch, and says so.
+
+### Added
+
+- `scripts/bench.py` times the commands in a throwaway project, and compares two
+  checkouts with `--source`. The test suite pins the work a command does (git
+  processes started, modules loaded), never the time, so it cannot flake under
+  load.
+- The installer writes a `.gitignore` in the skill folder, so the bytecode cache
+  stays out of `git status` (EC-196).
+- A launcher that sees a `swarm_core.py` of another version refuses and prints
+  the reinstall command (EC-197).
+
+### Upgrading
+
+`swarm update` (or the installer) writes both files. The first command after
+installing writes the bytecode cache. If `PYTHONDONTWRITEBYTECODE` is set or the
+skill folder is read-only, commands cost what they did before, no more.
+
 ## v0.4.3 - 2026-10-19
 
 ### Fixed: a merge that ends after the target moved

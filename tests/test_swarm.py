@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import sqlite3
 import subprocess
 import sys
@@ -16,11 +17,12 @@ import tempfile
 import threading
 import time
 import unittest
+from unittest import mock
 from pathlib import Path
 
 SWARM = Path(__file__).resolve().parents[1] / "skills" / "agents-collaboration" / "swarm.py"
 sys.path.insert(0, str(SWARM.parent))
-import swarm as swarm_module  # noqa: E402
+import swarm_core as swarm_module  # noqa: E402
 
 CONFIG = """
 [project]
@@ -1455,6 +1457,120 @@ class CrashRecovery(SwarmCase):
         self.sw("status")
         self.assertIsNone(self.meta("merge_lock"))  # a fresh lease, but its holder is gone
         self.assertIn("its holder is offline", self.sw("log"))
+
+
+class Latency(SwarmCase):
+    """v0.4.4: a command must stay cheap. Pinned by counting work (git processes, modules loaded), never by timing it:
+    a timing assertion fails at random on a busy machine."""
+
+    def in_repo(self, code):
+        script = f"import sys; sys.path.insert(0, {str(SWARM.parent)!r}); import swarm_core\n" + code
+        done = subprocess.run(
+            [sys.executable, "-c", script], cwd=self.root, capture_output=True, text=True, encoding="utf-8", check=False
+        )
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        return done.stdout.strip().splitlines()
+
+    def measure(self, argv):
+        return self.in_repo(f"""
+import contextlib, io, subprocess
+calls = []
+real = subprocess.run
+def counting(*a, **k):
+    calls.append(a[0] if a else k.get("args"))
+    return real(*a, **k)
+subprocess.run = counting
+with contextlib.redirect_stdout(io.StringIO()):
+    swarm_core.main({argv!r})
+print(len(calls))
+print(" ".join(m for m in ("urllib.request", "http.client", "ssl", "textwrap", "tomllib") if m in sys.modules) or "-")
+""")
+
+    def test_ec195_a_command_starts_no_git_process_and_loads_no_network_code(self):
+        self.join("ann")
+        for argv in (["version"], ["status"], ["agents"], ["whoami", "--as", "ann"]):
+            git_calls, loaded = self.measure(argv)
+            self.assertEqual(git_calls, "0", f"{argv}: git was started {git_calls} time(s)")
+            self.assertEqual(loaded, "-", f"{argv} imported {loaded} at start-up")
+        git_calls, loaded = self.measure(["environment", "--json"])
+        self.assertEqual(git_calls, "1", "the environment probe asks git once (core.autocrlf and core.longpaths)")
+        self.assertEqual(loaded, "-")
+
+    def test_ec199_the_config_is_parsed_once_and_a_change_is_noticed(self):
+        self.join("ann")
+        cache = self.root / ".git" / "swarm" / "config.cache.json"
+        self.assertTrue(cache.exists())
+        self.assertEqual(self.measure(["status"])[1], "-")  # tomllib is not even imported
+        self.assertIn("1 of 5", self.sw("status"))
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        cfg.write_text(cfg.read_text(encoding="utf-8").replace("max_agents = 5", "max_agents = 3"), encoding="utf-8")
+        self.assertIn("1 of 3", self.sw("status"))  # the edit invalidated the cache
+        cache.write_text("{not json", encoding="utf-8")  # a damaged cache is rebuilt, never trusted
+        self.assertIn("1 of 3", self.sw("status"))
+
+    def test_which_many_agrees_with_shutil_which(self):
+        names = ["python", "git", "definitely-not-installed-anywhere-xyz"]
+        found = swarm_module.which_many(names)
+        for name in names:
+            want, got = shutil.which(name), found[name]
+            self.assertEqual(bool(got), bool(want), name)
+            if want and got:
+                self.assertTrue(os.path.samefile(want, got), (want, got))
+
+    def test_ec198_the_git_directory_is_found_without_git_and_agrees_with_git(self):
+        (self.root / "src" / "deep").mkdir(parents=True)
+        wt = Path(self.tmp.name) / "linked"
+        self.git("worktree", "add", "-q", "-b", "side", str(wt), "main")
+        (wt / "sub").mkdir()
+        for where in (self.root, self.root / "src" / "deep", wt, wt / "sub"):
+            fast = swarm_module.find_git_common(where)
+            real = Path(self.git("rev-parse", "--path-format=absolute", "--git-common-dir", cwd=where).strip())
+            self.assertIsNotNone(fast, where)
+            self.assertTrue(os.path.samefile(fast, real), (where, fast, real))
+        board = swarm_module.Swarm(wt / "sub")
+        try:
+            self.assertTrue(os.path.samefile(board.main_root, self.root))
+            self.assertTrue(os.path.samefile(board.common, self.root / ".git"))
+        finally:
+            board.db.close()
+        with mock.patch.dict(os.environ, {"GIT_DIR": str(self.root / ".git")}):
+            self.assertIsNone(swarm_module.find_git_common(self.root))  # unusual setups ask git
+        self.assertIsNone(swarm_module.find_git_common(Path(self.tmp.name)))  # not a repository
+
+    def test_the_os_name_needs_no_environment_probe(self):
+        self.assertEqual(swarm_module.current_os(), swarm_module.detect_environment()["os"])
+
+
+class ReusedWorktree(SwarmCase):
+    """v0.4.4: cleanup removes a merged task's worktree only while it is still that task's."""
+
+    def test_ec200_a_reused_worktree_is_never_removed_by_cleanup(self):
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        cfg.write_text(cfg.read_text(encoding="utf-8") + "\n[merge]\ncleanup = false\n", encoding="utf-8")
+        self.git("commit", "-qam", "keep worktrees after a merge")
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        self.sw("--as", "ann", "merge")
+        wt = Path(self.task("T1")["worktree"])
+        self.assertTrue(wt.exists())
+        self.git("checkout", "-q", "-b", "other-work", cwd=wt)  # an agent reuses the directory for something else
+        (wt / "mine.txt").write_text("work in progress\n", encoding="utf-8")
+        self.git("add", "mine.txt", cwd=wt)
+        self.git("commit", "-qm", "wip", cwd=wt)  # a clean tree: only the branch check protects it
+        con = self.db()
+        con.execute("UPDATE tasks SET cleanup_pending=1 WHERE id='T1'")
+        con.commit()
+        con.close()
+        out = self.sw("doctor", "--fix")
+        self.assertIn("in use for other work", out)
+        self.assertTrue(wt.exists())
+        self.assertEqual(self.git("rev-parse", "--abbrev-ref", "HEAD", cwd=wt).strip(), "other-work")
+        self.assertTrue((wt / "mine.txt").exists())
+        self.assertEqual(self.task("T1")["cleanup_pending"], 0)
+        self.assertIn("old worktree was kept", self.sw("monitor", "--observe", "--once", "--replay"))
+        self.assertEqual(
+            self.git("branch", "--list", "swarm/T1").strip(), ""
+        )  # the merged task branch is still cleaned
 
 
 class Messages(SwarmCase):

@@ -26,7 +26,8 @@ python .agents/skills/agents-collaboration/swarm.py <subcommand> --as <your-name
 Below, `swarm` stands for that command. `join`, `claim` and `whoami` print the
 exact absolute command to use. Use that one from inside worktrees, which may not
 contain `.agents/` yet. You can also set `SWARM_AS=<your-name>` instead of
-passing `--as` each time.
+passing `--as` each time. The tool is two files: run `swarm.py` (a small launcher); the code is
+`swarm_core.py`, where to look if you need to know exactly what a command does.
 
 State lives in the repository's git directory (`.git/swarm/`). Every worktree of
 the clone shares it, and nothing in it is ever committed.

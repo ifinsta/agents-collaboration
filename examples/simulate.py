@@ -154,7 +154,7 @@ class Sim:
     # ---- pictures of the console, drawn by the tool's own views
     def module(self):
         if self._module is None:
-            spec = importlib.util.spec_from_file_location("swarm_installed", self.tool)
+            spec = importlib.util.spec_from_file_location("swarm_installed", self.tool.with_name("swarm_core.py"))
             self._module = importlib.util.module_from_spec(spec)
             spec.loader.exec_module(self._module)
             self._module.use_color = lambda: True

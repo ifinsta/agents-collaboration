@@ -38,7 +38,7 @@ class Installer(unittest.TestCase):
     def test_installs_skill_config_and_agents_pointer(self):
         self.install("--agents-md", "--scaffold")
         skill = self.repo / ".agents" / "skills" / "agents-collaboration"
-        for name in ("SKILL.md", "swarm.py", "EDGE-CASES.md", "INSTALLED.json"):
+        for name in ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md", "INSTALLED.json"):
             self.assertTrue((skill / name).exists(), name)
         self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
         self.assertIn("agents-collaboration:start", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
@@ -177,6 +177,52 @@ class Installer(unittest.TestCase):
         out = subprocess.run(tool, cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False).stdout
         self.assertNotIn("not committed", out)
 
+    def run_tool(self, *args, folder=None):
+        tool = (folder or self.repo / ".agents" / "skills" / "agents-collaboration") / "swarm.py"
+        return subprocess.run(
+            [sys.executable, str(tool), *args],
+            cwd=self.repo,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+
+    def test_ec195_ec196_the_bytecode_is_cached_and_kept_out_of_git_status(self):
+        self.install()
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        self.assertIn("__pycache__/", (skill / ".gitignore").read_text(encoding="utf-8"))
+        self.assertEqual(self.run_tool("version").returncode, 0)
+        self.assertTrue(list((skill / "__pycache__").glob("swarm_core.*.pyc")), "the module's bytecode is cached")
+        ignored = subprocess.run(
+            ["git", "check-ignore", "-q", ".agents/skills/agents-collaboration/__pycache__/x.pyc"],
+            cwd=self.repo,
+            check=False,
+        )
+        self.assertEqual(ignored.returncode, 0)
+
+    def test_ec197_a_half_updated_install_is_refused(self):
+        self.install()
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        core = skill / "swarm_core.py"
+        core.write_text(
+            core.read_text(encoding="utf-8").replace('__version__ = "', '__version__ = "9.', 1), encoding="utf-8"
+        )
+        done = self.run_tool("version")
+        self.assertEqual(done.returncode, 2, done.stdout + done.stderr)
+        self.assertIn("half-updated", done.stderr)
+        self.assertIn("install.py | python - --all", done.stderr)
+
+    def test_the_launcher_stays_tiny_and_matches_the_release(self):
+        launcher = (ROOT / "skills" / "agents-collaboration" / "swarm.py").read_text(encoding="utf-8")
+        self.assertLess(len(launcher.splitlines()), 60)  # anything big would be recompiled on every command
+        version = next(
+            line.split("=", 1)[1].strip().strip('"')
+            for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
+            if line.startswith("version")
+        )
+        self.assertIn(f'EXPECTED = "{version}"', launcher)
+
     def test_installed_tool_runs(self):
         self.install()
         done = subprocess.run(
@@ -204,7 +250,7 @@ class Release(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stderr)
 
     def test_tool_version_matches_release(self):
-        text = (ROOT / "skills" / "agents-collaboration" / "swarm.py").read_text(encoding="utf-8")
+        text = (ROOT / "skills" / "agents-collaboration" / "swarm_core.py").read_text(encoding="utf-8")
         version = next(
             line.split("=", 1)[1].strip().strip('"')
             for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()

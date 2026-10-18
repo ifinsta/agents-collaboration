@@ -5,7 +5,7 @@ DeepSeek through opencode, or any CLI that can run a shell command) working on o
 repository without stepping on each other.
 
 It is a **skill** that tells each agent the protocol, and a **coordination
-service** (`swarm.py`, one standard-library Python file) that enforces it.
+service** (`swarm.py` and `swarm_core.py`: standard-library Python, no dependencies) that enforces it.
 
 [![ci](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml)
 
@@ -45,8 +45,8 @@ with real output from the real tool. CI replays it on every change.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[194 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 109 are proved by tests on Linux, Windows and macOS, and the few
+[200 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 115 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -146,7 +146,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.4.3, experimental.** The protocol and the service are tested. Headless
+**0.4.4, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

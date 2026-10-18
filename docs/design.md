@@ -8,7 +8,7 @@ How the coordination service works, what it guarantees, and where it stops.
 agent CLIs (Claude Code, opencode, Qoder, Codex, Gemini, ...)
       │  shell commands: python swarm.py <subcommand> --as <name>
       ▼
-swarm.py ── every command: BEGIN IMMEDIATE → sweep → act → COMMIT
+swarm.py → swarm_core.py ── every command: BEGIN IMMEDIATE → sweep → act → COMMIT
       │
       ├── .git/swarm/swarm.db     SQLite (WAL): agents, tasks, questions, locks, messages, events
       ├── .git/swarm/logs/        output of spawned agents
@@ -182,6 +182,43 @@ ancestor of the target. The final write is one compare-and-set shared by the liv
 merge and recovery, so a merge that is recorded by both is recorded once. The
 crash tests kill a real merge at steps 2 and 3 (`SWARM_FAILPOINT`, a test hook
 that exits the process without cleanup).
+
+## What a command costs
+
+Agents run the tool for every step, so start-up time matters. Before v0.4.4 every
+command took about half a second to a second. The cost was measured, piece by
+piece, before anything was changed:
+
+| Where the time went | Cost | What replaced it |
+|---|---|---|
+| Compiling the script. Python caches the bytecode of a module it *imports*, never of the script it is *run as*. | 340-550 ms | `swarm.py` is a 31-line launcher; the code is `swarm_core.py`, cached after the first run |
+| Importing `urllib.request`, used only by `swarm update` | ~250 ms | imported where it is used |
+| Looking up 17 tools: `shutil.which` rescans every PATH entry for every name | ~165 ms | one scan of PATH (~30 ms) |
+| Three git processes to find the repository | ~60 ms each | the git directory is read from files; git is asked only in unusual layouts |
+| Importing `tomllib` to read `config.toml` | ~30 ms | the parsed config is cached until the file changes |
+
+Measured with alternating runs of v0.4.3 and v0.4.4 on the same machine, in a
+project with a config (median of 15 runs):
+
+| Command | v0.4.3 | v0.4.4 | |
+|---|---|---|---|
+| `version` | 529 ms | 213 ms | 2.5x |
+| `status` | 817 ms | 330 ms | 2.5x |
+| `agents` | 603 ms | 238 ms | 2.5x |
+| `whoami` | 480 ms | 207 ms | 2.3x |
+| `environment` | 722 ms | 311 ms | 2.3x |
+
+What is left is mostly the interpreter and the standard library (`argparse`,
+`re`, `sqlite3`, `subprocess`): about 60 ms of bare Python start plus about 100 ms
+of imports. SQLite (1.4 ms to open the board) and building the argument parser
+(16 ms) were measured and left alone.
+
+The tests pin the *work* (no git process for `version`, `status`, `agents` or
+`whoami`; one for `environment`; no network or TOML modules loaded), not the time.
+`python scripts/bench.py` measures the time.
+
+If `PYTHONDONTWRITEBYTECODE` is set, or the skill folder is read-only, Python
+cannot write the cache, and a command costs what it did before v0.4.4, no more.
 
 ## Limits, stated plainly
 

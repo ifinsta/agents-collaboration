@@ -10,7 +10,7 @@ Paths, times and commit hashes are normalised.
 
 _The console at six moments of this session, drawn by the tool's own board and monitor. A still: [three agents working](console-three-agents.svg)._
 
-Generated with agents-collaboration v0.4.3 on Windows, Python 3.12.2.
+Generated with agents-collaboration v0.4.4 on Windows, Python 3.12.2.
 Regenerate it with `python examples/simulate.py --write docs/simulation.md`.
 
 `swarm` below stands for `python .agents/skills/agents-collaboration/swarm.py`, the command every
@@ -30,10 +30,12 @@ The installer adds the skill, a pointer in `AGENTS.md` for most agent CLIs, and 
 
 ```console
 $ curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
-agents-collaboration 0.4.3 from github.com/ifinsta/agents-collaboration@v0.4.3 into ~/demo/shop
+agents-collaboration 0.4.4 from github.com/ifinsta/agents-collaboration@v0.4.4 into ~/demo/shop
   write ./.agents/skills/agents-collaboration/SKILL.md
   write ./.agents/skills/agents-collaboration/swarm.py
+  write ./.agents/skills/agents-collaboration/swarm_core.py
   write ./.agents/skills/agents-collaboration/EDGE-CASES.md
+  write ./.agents/skills/agents-collaboration/.gitignore
   update AGENTS.md (marked section)
   write ./.claude/skills/agents-collaboration/SKILL.md (Claude Code pointer)
 ```
@@ -715,7 +717,7 @@ AssertionError: {'status': 'ok', 'version': '1.4.0'} != {'status': 'fine', 'vers
 
 
 ----------------------------------------------------------------------
-Ran 2 tests in 0.002s
+Ran 2 tests in 0.003s
 
 FAILED (failures=1)
 

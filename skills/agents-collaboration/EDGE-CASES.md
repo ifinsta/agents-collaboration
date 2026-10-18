@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 194 cases. 109 Tested, 61 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 200 cases. 115 Tested, 61 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -296,6 +296,20 @@ Found by using the v0.2.0 console for real.
 | EC-186 | The skill is installed but not committed, so task worktrees (made from the target branch) contain neither the skill nor the `AGENTS.md` pointer. | `doctor`, and the coordinator's `join`, say so and what to commit. The brief always carries the skill's full path. | Tested |
 | EC-181 | An agent CLI has its own parallel or worktree mode (Kilo Code's `--parallel`, Qoder's `--worktree`) that creates branches beside the swarm's worktree, so work lands where no task tracks it. | No adapter uses those modes, and a test fails if one does. The agent works in the worktree its claim made. | Tested |
 | EC-180 | The board gets a quarter of the screen, and agent TUIs are squeezed into small panes. | The board takes the left half at full height; agents open in their own tab (the launcher opens each new agent in a new tab of the same terminal). | Tested |
+
+## R. What a command costs (v0.4.4)
+
+Found by measuring, after a reader asked about a rewrite in Rust: the tool took
+half a second to a second per command, and agents call it for every step.
+
+| Id | Situation | Handling | Status |
+|---|---|---|---|
+| EC-195 | Every command took 0.5-0.8 s: a script run directly is recompiled from source on every start (never cached), rarely used modules were imported eagerly, 17 tool lookups each rescanned PATH, and git was started three times to find the repository. | The tool is an importable module (Python caches its bytecode) behind a 31-line launcher; rarely used imports are lazy; tools are found with one scan of PATH; the git directory is read from files. Commands are 2.3-2.5 times faster. Tests pin the work (git processes started, modules loaded), never the time. | Tested |
+| EC-196 | The bytecode cache appears in the project's `git status`. | The installer writes a `.gitignore` inside the skill folder. | Tested |
+| EC-197 | A half-updated install (a new launcher beside an old module, or the reverse) fails in confusing ways. | The launcher checks the module's version and refuses with the exact reinstall command. | Tested |
+| EC-198 | Finding the git directory without git gives a different answer from git in an unusual layout. | Only an ordinary repository, a linked worktree, or a subdirectory of either is read from files; `GIT_DIR`-style variables and anything unusual ask git. A test compares both answers on each layout. | Tested |
+| EC-199 | Parsing `config.toml` (importing `tomllib`, about 30 ms) on every command, for exactly the projects that have a config. | The parsed config is cached beside the board and reused until the file's modification time or size changes. A damaged cache is rebuilt, never trusted. | Tested |
+| EC-200 | A merged task's worktree directory is reused for other work (an agent switches branch inside it). The task's pending cleanup, which any free agent may now run, would remove that directory as soon as its tree was clean, taking the new work's checkout with it. Seen in a real project, with four new files staged in such a directory. | Cleanup removes a worktree only while it is still on the task's own branch. Otherwise it keeps the directory, clears the flag, still deletes the merged task branch, and says so (`cleanup_skipped`). | Tested |
 
 ## What would close the open ones
 
