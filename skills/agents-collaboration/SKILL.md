@@ -53,6 +53,27 @@ swarm whoami --as <name>              # your role, peers, task, next action
 - If `join` says the name is live, you either chose a taken name or you are
   resuming after a restart. Use `--resume` only for the second case.
 
+### If you are the coordinator: ask about the console, once
+
+When `join` or `whoami` prints **ASK THE HUMAN**, ask the human right away, with
+your question tool (in Claude Code, `AskUserQuestion`; elsewhere, in the chat):
+
+> Open a terminal console to watch all agents and start others? It opens a visible
+> terminal in this project, split into panes: an event monitor, the live board, an
+> agent launcher, and one pane per agent you name.
+
+- **Yes:** `swarm console`, adding `--agents opencode,qodercli` (any installed CLIs,
+  from `swarm probe`) for agents the human wants started now. Panes are interactive,
+  not headless. On Windows they are Windows Terminal split panes; on Linux and macOS,
+  tmux panes in a new terminal window. With neither, it uses separate windows, and
+  on a machine with no display it prints what to run.
+- **No:** `swarm console --decline`, so nobody asks again. The human can still run
+  `swarm console` at any time.
+
+Each agent pane runs `swarm launch <cli>`: it joins the pool, takes the next task,
+writes the brief, and opens the CLI inside that task's worktree. The launcher pane
+does the same from a menu, one agent after another.
+
 ## 2. Get exactly one task
 
 ```bash
@@ -242,7 +263,10 @@ one line per event.
 | `release <note>`, `leave [--release]` | agent | hand back |
 | `send <to> [--ping]`, `inbox`, `ack` | anyone | talk |
 | `assign`, `answer`, `waive`, `approve`, `pause`, `resume`, `spawn`, `probe`, `sync` | coordinator / human | run the pool |
-| `monitor`, `doctor [--fix]`, `env` | anyone | operate |
+| `monitor [--observe]`, `doctor [--fix]`, `env` | anyone | operate |
+| `console [--agents a,b] [--decline]`, `launch <cli>`, `launcher`, `dashboard` | coordinator / human | see and drive the pool |
+| `record <task> --commit <sha>` | coordinator / human | mark work that landed outside the board |
+| `version`, `update` | anyone | the installed release |
 
 The project's configuration is `.agents/swarm/config.toml` (backlog, target branch,
 gates per OS, hotspots, merge strategy, adapters). The edge cases this protocol

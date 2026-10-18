@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 147 cases. 64 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 158 cases. 75 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -232,6 +232,22 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-145 | A dry run of `spawn` joins an agent and claims a task. | `--dry-run` only prints the command line; nothing on the board changes. | Tested |
 | EC-146 | A tool edits a project file and, on Windows, silently converts every line ending (Python text mode writes CRLF), so a ten-line change becomes a whole-file diff. | The installer keeps each file's own line endings and byte-order mark. | Tested |
 | EC-147 | Work reached the target outside the board (an earlier board, a person), so its task and everything that needs it stay blocked. | `record <task> --commit <sha>` marks it done after checking the commit is in the target's history, frees its holder and cleans its worktree. | Tested |
+
+## O. Seeing and driving the pool (v0.2.0)
+
+| Id | Situation | Handling | Status |
+|---|---|---|---|
+| EC-148 | A worktree lacks the git-ignored local files the project needs (`.env`), so gates and servers fail there. | `[worktree] copy` lists files copied from the main checkout at claim; only git-ignored ones, so they can never be committed. | Tested |
+| EC-149 | The human cannot see what the agents are doing, or start more of them, without reading logs. | The coordinator is told to ask, once per board: open a console? Yes opens it; no is recorded and not asked again. | Tested |
+| EC-150 | The console's monitor pane competes with a monitor that already runs. | The pane observes the event stream instead of holding the monitor lease. | Tested |
+| EC-151 | A pane command contains the terminal's separator (`;` in Windows Terminal) and is split into two commands. | Pane commands are checked and refused before anything opens. | Tested |
+| EC-152 | The machine has no split-capable terminal, or no display at all (a server over SSH). | Windows Terminal, else tmux plus a new terminal window, else one window per pane, else tmux attach instructions or one printed command per pane. | Tested |
+| EC-153 | An interactive agent started in the main checkout edits it instead of a worktree. | `launch` joins and claims first, writes the brief, and starts the CLI inside the task's worktree. | Tested |
+| EC-154 | Two console panes start the same CLI and race for one agent name. | Names are assigned when the console is planned. | Tested |
+| EC-155 | A CLI cannot take a first message on its command line (Qoder's interactive mode). | The pane prints the exact first message to paste. | Tested |
+| EC-156 | Claude Code does not look in `.agents/skills/`. | `install.py --claude` adds a pointer skill in `.claude/skills/`; it never overwrites a file it did not write. | Tested |
+| EC-157 | Every repository needs its own install. | `install.py --user` installs once into the home folder; the tool works in any repository. | Tested |
+| EC-158 | An installed copy falls behind the releases. | `swarm version` and `swarm update`, which reinstalls and keeps the pointers already present. | Tested |
 
 ## What would close the open ones
 

@@ -34,29 +34,46 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[147 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 64 are proved by tests on Linux, Windows and macOS, and the few
+[158 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 75 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
-## Install into a repository
+## Install
+
+**Tell your agent:** "Install agents-collaboration by following
+https://github.com/ifinsta/agents-collaboration/blob/main/INSTALL.md". The guide is
+written for agents: it checks the OS, Python and shell before it runs anything.
+
+### Into a repository
 
 Requires Python 3.11+ and git. From the repository's root:
 
 ```bash
 # bash, zsh, Git Bash
-curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --agents-md
+curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
 ```
 
 ```powershell
 # PowerShell
-irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --agents-md
+irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
 ```
 
 This installs `.agents/skills/agents-collaboration/`, verified against the
 release manifest. It creates `.agents/swarm/config.toml` and
-`.agents/swarm/backlog.md` if they do not exist. `--agents-md` adds a short
-pointer to `AGENTS.md`, which most agent CLIs read on start. Re-run it to update;
-it refuses to overwrite files you edited unless you pass `--force`.
+`.agents/swarm/backlog.md` if they do not exist. `--all` adds the pointers agent
+CLIs look for: a short marked section in `AGENTS.md` (opencode, Codex, Qoder,
+DeepSeek-TUI) and a pointer skill in `.claude/skills/` (Claude Code). It refuses to
+overwrite files you edited unless you pass `--force`, and keeps the line endings
+of the files it edits. `swarm update` reinstalls the latest release.
+
+### Once, for every repository
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --user --claude
+```
+
+The tool is then `python ~/.agents/skills/agents-collaboration/swarm.py`, in any
+repository.
 
 ## Use
 
@@ -74,7 +91,17 @@ $S submit --as ann --evidence "..."
 $S merge --as ann                                # join the work, then ask for the next
 ```
 
-Running several agents:
+Watching and driving the pool from a terminal:
+
+```bash
+$S console                                       # monitor, live board, agent launcher: one terminal, split
+$S console --agents opencode,claude              # plus one interactive pane per agent, each on its own task
+```
+
+On Windows this opens Windows Terminal split panes; on Linux and macOS, tmux in a
+new terminal window. The coordinating agent asks you once whether you want it.
+
+Running agents headless:
 
 ```bash
 $S probe                                         # which agent CLIs are installed and signed in
@@ -90,7 +117,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.1.2, experimental.** The protocol and the service are tested. Headless
+**0.2.0, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

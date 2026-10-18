@@ -1,24 +1,32 @@
 #!/usr/bin/env python3
-"""Install the agents-collaboration skill into a git repository.
+"""Install the agents-collaboration skill.
 
-From GitHub (bash, zsh, Git Bash):
-    curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --agents-md
+Into the current repository, with every pointer agents look for (bash, zsh, Git Bash):
+    curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
 
-From GitHub (PowerShell):
-    irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --agents-md
+The same from PowerShell:
+    irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
+
+Once for every repository on this machine (your home folder):
+    curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --user --claude
 
 From a local checkout:
-    python install.py --source path/to/agents-collaboration --project path/to/repo
+    python install.py --source path/to/agents-collaboration --project path/to/repo --all
 
 What it does, and nothing else:
   1. downloads the skill files of one release (default: the tag below) and checks
      each against the SHA-256 in that release's MANIFEST.json;
-  2. writes them to <repo>/.agents/skills/agents-collaboration/, refusing to
-     overwrite files you edited since the last install (unless --force);
-  3. creates .agents/swarm/config.toml and .agents/swarm/backlog.md from the
+  2. writes them to <repo>/.agents/skills/agents-collaboration/ (or, with --user,
+     ~/.agents/skills/agents-collaboration/), refusing to overwrite files you
+     edited since the last install unless --force;
+  3. in a repository: creates .agents/swarm/config.toml and backlog.md from the
      examples, only if they do not exist;
-  4. with --agents-md, adds (or refreshes) a short marked section in AGENTS.md so
-     every agent CLI that reads AGENTS.md finds the skill.
+  4. --agents-md: adds a short marked section to AGENTS.md, read by opencode,
+     Codex, Qoder, DeepSeek-TUI and others;
+  5. --claude: adds .claude/skills/agents-collaboration/SKILL.md, a pointer that
+     makes Claude Code list the skill;
+  6. --all: both pointers.
+Files it edits keep their own line endings and byte-order mark.
 
 This file is ASCII on purpose: Windows PowerShell 5.1 pipes text to native
 programs as ASCII, and any other character would arrive as '?'.
@@ -29,6 +37,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import re
 import subprocess
 import sys
 import urllib.request
@@ -36,20 +45,31 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.1.2"
+DEFAULT_REF = "v0.2.0"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"
 MARK_END = "<!-- agents-collaboration:end -->"
+STUB_MARK = "<!-- agents-collaboration:pointer -->"
 AGENTS_SECTION = """{start}
 ## Working alongside other agents
 
 This repository may have several coding agents working at once. Before changing
-anything, read `.agents/skills/agents-collaboration/SKILL.md` and follow it. In short:
-run `python .agents/skills/agents-collaboration/swarm.py environment`, then `join`,
-take one task, answer the critical questions, plan in order, and merge your work
-through the queue before taking another.
+anything, read `{skill}` and follow it. In short: run `python {tool} environment`,
+then `join`, take one task, answer the critical questions, plan in order, and
+merge your work through the queue before taking another.
 {end}"""
+CLAUDE_STUB = """---
+name: agents-collaboration
+description: {description}
+---
+
+{mark}
+# agents-collaboration
+
+The full skill is installed at `{skill}`. Read that file now and follow it
+exactly. The coordination tool is `python {tool}`.
+"""
 
 
 def fail(message: str) -> None:
@@ -104,15 +124,25 @@ def project_root(path: Path) -> Path:
         ["git", "rev-parse", "--show-toplevel"], cwd=path, capture_output=True, text=True, check=False
     )
     if done.returncode != 0:
-        fail(f"{path} is not inside a git repository")
+        fail(f"{path} is not inside a git repository (use --user to install for every repository instead)")
     return Path(done.stdout.strip()).resolve()
+
+
+def description_of(skill_md: bytes) -> str:
+    match = re.search(r"^description:\s*(.+)$", skill_md.decode("utf-8"), re.M)
+    return match.group(1).strip() if match else "Coordinate several coding agents in one repository."
 
 
 def install(args: argparse.Namespace) -> None:
     if sys.version_info < (3, 11):  # noqa: UP036 - the installer may be piped into an older python
         fail("Python 3.11 or newer is required (the skill uses tomllib)")
+    if args.all:
+        args.agents_md = args.claude = True
     source = Source(args.ref, Path(args.source).resolve() if args.source else None)
-    root = project_root(Path(args.project).resolve())
+    root = None if args.user and args.project is None else project_root(Path(args.project or ".").resolve())
+    base = Path.home() if args.user else root
+    if args.agents_md and root is None:
+        fail("--agents-md needs a repository: add --project <path>")
     manifest = json.loads(source.read(f"{SKILL_DIR}/MANIFEST.json").decode("utf-8"))
     files = {}
     for name, digest in manifest["files"].items():
@@ -121,7 +151,7 @@ def install(args: argparse.Namespace) -> None:
             fail(f"{name} does not match the release manifest; refusing to install a damaged file")
         files[name] = data
 
-    dest = root / ".agents" / "skills" / SKILL
+    dest = base / ".agents" / "skills" / SKILL
     record_path = dest / "INSTALLED.json"
     if dest.exists() and not args.force:
         if not record_path.exists():
@@ -139,42 +169,51 @@ def install(args: argparse.Namespace) -> None:
                 + ". Move your changes upstream, or use --force to discard them"
             )
 
+    shown = "~" if args.user else "."
     actions = []
     if not args.dry_run:
         dest.mkdir(parents=True, exist_ok=True)
     for name, data in files.items():
-        actions.append(f"write .agents/skills/{SKILL}/{name}")
+        actions.append(f"write {shown}/.agents/skills/{SKILL}/{name}")
         if not args.dry_run:
             (dest / name).write_bytes(data)
     record = {
         "source": source.label(),
         "ref": args.ref if not args.source else "local",
         "version": manifest.get("version", ""),
+        "scope": "user" if args.user else "project",
         "installed_at": datetime.now(timezone.utc).isoformat(),  # noqa: UP017
         "files": {name: sha256(data) for name, data in files.items()},
     }
     if not args.dry_run:
         record_path.write_bytes((json.dumps(record, indent=2) + "\n").encode("utf-8"))
 
-    swarm_dir = root / ".agents" / "swarm"
-    for example, target in (("examples/config.toml", "config.toml"), ("examples/backlog.md", "backlog.md")):
-        path = swarm_dir / target
-        if path.exists():
-            actions.append(f"keep  .agents/swarm/{target} (exists)")
-            continue
-        actions.append(f"create .agents/swarm/{target} from {example}")
-        if not args.dry_run:
-            swarm_dir.mkdir(parents=True, exist_ok=True)
-            path.write_bytes(source.read(example))
+    if args.user:
+        skill_ref = (dest / "SKILL.md").as_posix()
+        tool_ref = (dest / "swarm.py").as_posix()
+    else:
+        skill_ref = f".agents/skills/{SKILL}/SKILL.md"
+        tool_ref = f".agents/skills/{SKILL}/swarm.py"
+
+    if root is not None:
+        swarm_dir = root / ".agents" / "swarm"
+        for example, target in (("examples/config.toml", "config.toml"), ("examples/backlog.md", "backlog.md")):
+            path = swarm_dir / target
+            if path.exists():
+                actions.append(f"keep  .agents/swarm/{target} (exists)")
+                continue
+            actions.append(f"create .agents/swarm/{target} from {example}")
+            if not args.dry_run:
+                swarm_dir.mkdir(parents=True, exist_ok=True)
+                path.write_bytes(source.read(example))
 
     if args.agents_md:
         agents = root / "AGENTS.md"
         text, newline, bom = read_keep_style(agents)
-        section = AGENTS_SECTION.format(start=MARK_START, end=MARK_END)
+        section = AGENTS_SECTION.format(start=MARK_START, end=MARK_END, skill=skill_ref, tool=tool_ref)
         if MARK_START in text and MARK_END in text:
             head, rest = text.split(MARK_START, 1)
-            tail = rest.split(MARK_END, 1)[1]
-            new = head + section + tail
+            new = head + section + rest.split(MARK_END, 1)[1]
         else:
             new = text.rstrip("\n") + ("\n\n" if text else "") + section + "\n"
         if new != text:
@@ -182,26 +221,47 @@ def install(args: argparse.Namespace) -> None:
             if not args.dry_run:
                 write_keep_style(agents, new, newline, bom)
 
-    print(f"agents-collaboration {manifest.get('version', '')} from {source.label()} into {root}")
+    if args.claude:
+        stub = base / ".claude" / "skills" / SKILL / "SKILL.md"
+        if stub.exists() and STUB_MARK not in stub.read_text(encoding="utf-8", errors="replace"):
+            fail(f"{stub} exists and is not this installer's pointer; move it, or install without --claude")
+        content = CLAUDE_STUB.format(
+            description=description_of(files["SKILL.md"]), mark=STUB_MARK, skill=skill_ref, tool=tool_ref
+        )
+        actions.append(f"write {shown}/.claude/skills/{SKILL}/SKILL.md (Claude Code pointer)")
+        if not args.dry_run:
+            stub.parent.mkdir(parents=True, exist_ok=True)
+            stub.write_bytes(content.encode("utf-8"))
+
+    where = str(dest) if args.user else str(root)
+    print(f"agents-collaboration {manifest.get('version', '')} from {source.label()} into {where}")
     for line in actions:
         print(f"  {'(dry run) ' if args.dry_run else ''}{line}")
-    tool = f"python .agents/skills/{SKILL}/swarm.py"
-    print("\nNext:")
+    tool = f"python {tool_ref}"
+    print("\nVerify, then start:")
+    print(f"  {tool} version")
     print(f"  {tool} environment          # what this machine is, and the rules for it")
-    print("  edit .agents/swarm/config.toml and .agents/swarm/backlog.md for this project")
-    print(f"  {tool} init                 # import the backlog")
+    if root is not None:
+        print("  edit .agents/swarm/config.toml and .agents/swarm/backlog.md for this project")
+    print(f"  {tool} init                 # in a repository: import its backlog")
     print(f"  {tool} join --as <name> --kind <cli>")
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Install the agents-collaboration skill into a git repository.")
-    parser.add_argument("--project", default=".", help="a path inside the target repository (default: here)")
+    parser = argparse.ArgumentParser(description="Install the agents-collaboration skill.")
+    parser.add_argument("--project", default=None, help="a path inside the target repository (default: here)")
+    parser.add_argument("--user", action="store_true", help="install once into your home folder, for every repository")
     parser.add_argument("--ref", default=DEFAULT_REF, help=f"release tag or branch on GitHub (default {DEFAULT_REF})")
     parser.add_argument("--source", default="", help="install from a local checkout instead of GitHub")
     parser.add_argument("--agents-md", action="store_true", help="add a pointer section to AGENTS.md")
+    parser.add_argument("--claude", action="store_true", help="add a Claude Code skill pointer in .claude/skills/")
+    parser.add_argument("--all", action="store_true", help="--agents-md and --claude (in a repository)")
     parser.add_argument("--force", action="store_true", help="overwrite local edits to installed files")
     parser.add_argument("--dry-run", action="store_true", help="show what would change")
-    install(parser.parse_args())
+    args = parser.parse_args()
+    if args.user and args.all and args.project is None:
+        args.all, args.claude = False, True  # no repository to put AGENTS.md in
+    install(args)
 
 
 if __name__ == "__main__":

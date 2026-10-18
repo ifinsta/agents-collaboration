@@ -43,6 +43,16 @@ migrations = {{ paths = ["app/migrations/**"], always = true }}
 version = ["python", "--version"]
 auth = []
 run = ["python", "-c", "print('{{prompt}}')"]
+interactive = ["python", "-c", "print('{{prompt}}')"]
+model = []
+unattended = []
+verified = true
+
+[adapters.fakeplain]
+version = ["python", "--version"]
+auth = []
+run = ["python", "-c", "print(1)"]
+interactive = ["python", "-c", "print(1)"]
 model = []
 unattended = []
 verified = true
@@ -735,6 +745,99 @@ class FirstRealRun(SwarmCase):
         self.assertIn("would run", out)
         self.assertEqual(self.task("T2")["state"], "open")
         self.assertNotIn("fay", self.sw("agents"))
+
+
+class Console(SwarmCase):
+    """v0.2.0: the console, interactive agents, worktree files, version and update."""
+
+    PANES = [{"title": f"p{i}", "argv": ["python", "swarm.py", f"cmd{i}"]} for i in range(4)]
+
+    def test_ec148_git_ignored_local_files_follow_into_worktrees(self):
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        cfg.write_text(
+            cfg.read_text(encoding="utf-8") + '\n[worktree]\ncopy = [".env", "local.txt"]\n', encoding="utf-8"
+        )
+        (self.root / ".gitignore").write_text("__pycache__/\n.env\n", encoding="utf-8")
+        self.git("commit", "-qam", "worktree copy")
+        (self.root / ".env").write_text("SECRET=x\n", encoding="utf-8")
+        (self.root / "local.txt").write_text("not ignored\n", encoding="utf-8")
+        self.join("ann")
+        out = self.sw("--as", "ann", "claim", "T1")
+        self.assertIn("copied    .env", out)
+        self.assertIn("not copied: local.txt", out)
+        wt = Path(self.task("T1")["worktree"])
+        self.assertTrue((wt / ".env").exists())
+        self.assertFalse((wt / "local.txt").exists())
+        self.assertEqual(self.git("status", "--porcelain", cwd=wt), "")
+
+    def test_ec149_the_coordinator_asks_once_about_the_console(self):
+        self.assertIn("ASK THE HUMAN", self.join("ann"))
+        self.join("bob")
+        self.assertNotIn("ASK THE HUMAN", self.sw("--as", "bob", "whoami"))  # workers are not asked
+        self.sw("--as", "ann", "console", "--decline")
+        self.assertNotIn("ASK THE HUMAN", self.sw("--as", "ann", "whoami"))
+
+    def test_ec150_console_observes_when_a_monitor_runs(self):
+        self.assertNotIn("--observe", self.sw("console", "--dry-run"))
+        con = self.db()
+        con.execute(
+            "INSERT OR REPLACE INTO meta(key,value) VALUES('monitor', ?)",
+            (json.dumps({"who": "pid 1", "at": swarm_module.iso()}),),
+        )
+        con.commit()
+        con.close()
+        self.assertIn("--observe", self.sw("console", "--dry-run"))
+        self.assertIn("observing", self.sw("monitor", "--observe", "--once"))
+
+    def test_ec151_a_pane_command_with_a_separator_is_refused(self):
+        bad = [{"title": "x", "argv": ["python", "a;b"]}]
+        with self.assertRaises(swarm_module.SwarmError):
+            swarm_module.check_pane_commands(bad)
+        swarm_module.check_pane_commands(self.PANES)
+
+    def test_ec152_every_platform_gets_a_layout(self):
+        plan = swarm_module.plan_console
+        has = lambda *tools: lambda t: t in tools  # noqa: E731
+        wt = plan(self.PANES, "C:/repo", "windows", has("wt"))
+        self.assertEqual(wt["kind"], "windows-terminal")
+        self.assertEqual(wt["steps"][0][0], "wt")
+        self.assertEqual(wt["steps"][0].count("split-pane"), 3)
+        self.assertEqual(wt["steps"][0].count("C:/repo"), 4)
+        self.assertEqual(plan(self.PANES, "C:/repo", "windows", has())["kind"], "separate-windows")
+        tmux = plan(self.PANES, "/repo", "linux", has("tmux", "gnome-terminal"), display=True)
+        self.assertEqual(tmux["kind"], "tmux")
+        self.assertEqual(tmux["window"][:2], ["gnome-terminal", "--"])
+        self.assertEqual(sum(1 for s in tmux["steps"] if "split-window" in s), 3)
+        self.assertIsNone(plan(self.PANES, "/repo", "linux", has("tmux"), display=False)["window"])
+        mac = plan(self.PANES, "/repo", "macos", has())
+        self.assertEqual(mac["kind"], "separate-windows")
+        self.assertTrue(all(step[0] == "osascript" for step in mac["steps"]))
+        self.assertEqual(plan(self.PANES, "/repo", "linux", has(), display=False)["kind"], "manual")
+
+    def test_ec153_ec155_launch_prepares_nothing_on_a_dry_run(self):
+        out = self.sw("launch", "fake", "--name", "fay", "--task", "T2", "--dry-run")
+        self.assertIn("would run fay interactively", out)
+        self.assertEqual(self.task("T2")["state"], "open")
+        self.assertNotIn("fay", self.sw("agents"))
+        self.assertIn("paste this one", self.sw("launch", "fakeplain", "--name", "pia", "--dry-run"))
+
+    def test_ec154_agent_panes_get_distinct_names(self):
+        out = self.sw("console", "--agents", "fake,fake", "--dry-run")
+        self.assertIn("fake-1 (fake)", out)
+        self.assertIn("fake-2 (fake)", out)
+        self.assertIn("5 panes", out)
+
+    def test_dashboard_renders_once(self):
+        self.join("ann")
+        out = self.sw("dashboard", "--once")
+        self.assertIn("swarm board", out)
+        self.assertIn("recent events", out)
+
+    def test_ec158_version_and_update(self):
+        self.assertIn(swarm_module.__version__, self.sw("version"))
+        out = self.sw("update", "--dry-run")
+        self.assertIn("install.py", out)
+        self.assertIn("--project", out)
 
 
 class Messages(SwarmCase):

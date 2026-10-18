@@ -1,5 +1,43 @@
 # Changelog
 
+## v0.2.0 - 2026-10-18
+
+See the pool, and drive it, from a terminal. Agents can install the skill
+themselves.
+
+### Added
+
+- **`swarm console`** opens a visible terminal in the project, split into at least
+  three panes:
+  - an event monitor;
+  - the live board;
+  - an agent launcher;
+  - one interactive pane per agent asked for with `--agents`.
+
+  On Windows it uses Windows Terminal split panes; on Linux and macOS, tmux in a
+  new window. Without either it uses separate windows, and on a machine with no
+  display it prints what to run (EC-152).
+- **The console question.** The coordinator is told to ask the human once per
+  board whether to open the console; `--decline` records a no (EC-149).
+- **`swarm launch <cli>`** starts an agent CLI interactively in the current
+  terminal, already joined and holding a task, inside its worktree with its brief
+  (EC-153). If the CLI cannot take a first message, it prints the one to paste
+  (EC-155).
+- **`swarm launcher`** (a menu), **`swarm dashboard`** (the live board) and
+  **`swarm monitor --observe`** (follow events beside a running monitor, EC-150).
+- **`[worktree] copy`** copies git-ignored local files such as `.env` into each new
+  worktree (EC-148).
+- **`swarm version`** and **`swarm update`** (EC-158).
+- **Installer:**
+  - `--claude` adds a Claude Code pointer skill (EC-156);
+  - `--user` installs once for every repository (EC-157);
+  - `--all` adds every pointer.
+- **INSTALL.md**, an install guide written for agents.
+
+### Changed
+
+- `spawn` and `launch` share one preparation step: join, claim, brief.
+
 ## v0.1.2 - 2026-10-18
 
 - The installer keeps the line endings and byte-order mark of the files it edits.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import subprocess
 import sys
 import tempfile
@@ -77,6 +78,38 @@ class Installer(unittest.TestCase):
             else:
                 self.assertEqual(data.count(b"\n"), data.count(b"\r\n"))
 
+    def test_ec156_claude_code_pointer(self):
+        self.install("--all")
+        stub = self.repo / ".claude" / "skills" / "agents-collaboration" / "SKILL.md"
+        text = stub.read_text(encoding="utf-8")
+        self.assertIn("name: agents-collaboration", text)
+        self.assertIn(".agents/skills/agents-collaboration/SKILL.md", text)
+        self.install("--all")  # its own pointer is refreshed
+        stub.write_text("---\nname: agents-collaboration\n---\nmine\n", encoding="utf-8")
+        self.assertIn("not this installer's pointer", self.install("--claude", ok=False))
+
+    def test_ec157_user_install_serves_every_repository(self):
+        home = Path(self.tmp.name) / "home"
+        home.mkdir()
+        env = {**os.environ, "HOME": str(home), "USERPROFILE": str(home)}
+        done = subprocess.run(
+            [sys.executable, str(INSTALL), "--source", str(ROOT), "--user", "--claude"],
+            cwd=self.tmp.name,
+            env=env,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
+        tool = home / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        self.assertTrue(tool.exists())
+        stub = (home / ".claude" / "skills" / "agents-collaboration" / "SKILL.md").read_text(encoding="utf-8")
+        self.assertIn(tool.parent.as_posix(), stub)
+        run = subprocess.run(
+            [sys.executable, str(tool), "version"], cwd=self.repo, env=env, capture_output=True, text=True, check=False
+        )
+        self.assertEqual(run.returncode, 0, run.stderr)
+
     def test_installed_tool_runs(self):
         self.install()
         done = subprocess.run(
@@ -102,6 +135,15 @@ class Release(unittest.TestCase):
             check=False,
         )
         self.assertEqual(done.returncode, 0, done.stderr)
+
+    def test_tool_version_matches_release(self):
+        text = (ROOT / "skills" / "agents-collaboration" / "swarm.py").read_text(encoding="utf-8")
+        version = next(
+            line.split("=", 1)[1].strip().strip('"')
+            for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
+            if line.startswith("version")
+        )
+        self.assertIn(f'__version__ = "{version}"', text)
 
     def test_installer_default_ref_matches_version(self):
         version = next(

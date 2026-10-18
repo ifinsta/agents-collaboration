@@ -19,22 +19,28 @@ Run ``swarm.py -h`` for commands. Agent identity is ``--as NAME`` or ``SWARM_AS`
 from __future__ import annotations
 
 import argparse
+import contextlib
 import copy
+import io
 import fnmatch
 import json
 import locale
 import os
 import platform
 import re
+import shlex
 import shutil
 import sqlite3
 import subprocess
 import sys
 import time
 import tomllib
+import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
+__version__ = "0.2.0"
+REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
 TASK_RE = re.compile(r"^[A-Za-z][A-Za-z0-9-]{1,47}$")
@@ -97,6 +103,8 @@ DEFAULTS: dict = {
     "hotspots": {},
     "env": {},
     "spawn": {"allow_unattended": False, "max_turns": 80},
+    "worktree": {"copy": []},  # git-ignored files (.env, local settings) copied into each new worktree
+    "console": {"max_panes": 6},
     "adapters": {
         "claude": {
             "version": ["claude", "--version"],
@@ -968,6 +976,9 @@ def cmd_join(sw: Swarm, a) -> None:
         print("SOLO: no other live agent. You are coordinator and worker; questions go to the human.")
     if me["task"]:
         print(f"you hold {me['task']}: run `swarm whoami --as {name}` to pick up where you left off")
+    question = console_question(sw, name)
+    if question:
+        print(question)
 
 
 def cmd_leave(sw: Swarm, a) -> None:
@@ -1217,6 +1228,8 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
         raise
     with sw.tx():
         sw.update_task(task_id, worktree=str(path), base_sha=git("rev-parse", sw.target(), cwd=sw.main_root))
+    for line in copy_into_worktree(sw, path):
+        print(line)
     me = sw.agent(who)
     print(f"claimed {task_id}: {sw.task(task_id)['title']}")
     print(f"  worktree  {path}")
@@ -2031,6 +2044,9 @@ def cmd_whoami(sw: Swarm, a) -> None:
             print("  answers arrived after your plan: re-run `swarm plan`")
         print(f"  next: {next_action(sw, t)}")
     print(f"command: {self_command()} <subcommand> --as {me['name']}")
+    question = console_question(sw, me["name"])
+    if question:
+        print(question)
     n = sw.unread(me["name"])
     if n:
         print(f"{n} unread message(s): `swarm inbox --as {me['name']}`")
@@ -2199,6 +2215,9 @@ def cmd_resume(sw: Swarm, a) -> None:
 
 
 def cmd_monitor(sw: Swarm, a) -> None:
+    if a.observe:
+        observe_events(sw, a)
+        return
     me = f"pid {os.getpid()}"
     with sw.tx():
         holder = sw.meta("monitor")
@@ -2291,6 +2310,67 @@ def cmd_probe(sw: Swarm, a) -> None:
         print("\n--live also sends each installed agent a one-line prompt (costs one request each).")
 
 
+def render(template: list[str], values: dict) -> list[str]:
+    return [part.format(**values) for part in template]
+
+
+def brief_prompt(name: str) -> str:
+    prompt = f"You are swarm agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
+    if not SAFE_PROMPT_RE.match(prompt):  # a Windows .cmd shim passes argv through cmd.exe
+        raise SwarmError("The agent name makes an unsafe prompt.")
+    return prompt
+
+
+def write_brief(sw: Swarm, name: str, kind: str, t: sqlite3.Row) -> None:
+    # The brief sits inside the worktree (agents in print mode may not read outside it) and is ignored
+    # through the shared info/exclude, so it is never committed and never blocks the worktree's removal.
+    exclude = sw.common / "info" / "exclude"
+    exclude.parent.mkdir(exist_ok=True)
+    if BRIEF_NAME not in (exclude.read_text(encoding="utf-8") if exclude.exists() else ""):
+        with exclude.open("a", encoding="utf-8") as fh:
+            fh.write(f"\n{BRIEF_NAME}\n")
+    text = BRIEF.format(
+        name=name,
+        kind=kind,
+        task=t["id"],
+        title=t["title"],
+        worktree=t["worktree"],
+        swarm=self_command(),
+        skill=(Path(__file__).parent / "SKILL.md").resolve().as_posix(),
+        environment=describe_environment(detect_environment(sw.main_root)),
+    )
+    (Path(t["worktree"]) / BRIEF_NAME).write_text(text, encoding="utf-8")
+    (sw.dir / "briefs" / f"{name}.md").write_text(text, encoding="utf-8")
+
+
+def prepare_agent(sw: Swarm, kind: str, name: str, model: str, caps: str, task: str) -> sqlite3.Row:
+    """Join `name`, claim `task` (or the best open one) for it, and write its brief into the worktree."""
+    cmd_join(sw, argparse.Namespace(as_=name, kind=kind, model=model, caps=caps, resume=False, pid=None))
+    try:
+        if task:
+            claim(sw, name, task, force=False, take_over=False)
+        else:
+            cmd_next(sw, argparse.Namespace(as_=name))
+    except SwarmError:
+        with sw.tx():
+            sw.update_agent(name, state="left", left_at=iso())
+        raise
+    t = sw.task(sw.agent(name)["task"])
+    write_brief(sw, name, kind, t)
+    return t
+
+
+def free_name(sw: Swarm, kind: str, taken: set[str] | None = None) -> str:
+    base = re.sub(r"[^a-z0-9-]", "", kind.lower())[:24] or "agent"
+    if not base[0].isalpha():
+        base = f"a-{base}"
+    for n in range(1, 1000):
+        candidate = f"{base}-{n}"
+        if candidate not in (taken or set()) and not sw.agent(candidate):
+            return candidate
+    raise SwarmError(f"No free name for {kind}.")
+
+
 def cmd_spawn(sw: Swarm, a) -> None:
     ad = sw.config["adapters"].get(a.kind)
     if not ad:
@@ -2309,71 +2389,23 @@ def cmd_spawn(sw: Swarm, a) -> None:
         with sw.tx():
             sw.require_coordinator(caller)
     name = a.name
-    if a.dry_run:  # no join, no claim, no worktree: only show the command line
-        if not NAME_RE.match(name):
-            raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
-        prompt = f"You are swarm agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
-        where = str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>"
-        values = {
-            "prompt": prompt,
-            "cwd": where,
-            "git_common": str(sw.common),
-            "max_turns": sw.config["spawn"]["max_turns"],
-            "model": a.model or "",
-        }
-        argv = [part.format(**values) for part in ad["run"]]
-        if a.model:
-            argv += [part.format(**values) for part in ad["model"]]
-        if a.unattended:
-            argv += ad["unattended"]
-        print("would run (in the task's worktree): " + " ".join(argv))
-        print("nothing was changed: no agent joined, no task claimed")
-        return
-    fake = argparse.Namespace(as_=name, kind=a.kind, model=a.model, caps=a.caps, resume=False, pid=None)
-    cmd_join(sw, fake)
-    try:
-        if a.task:
-            claim(sw, name, a.task, force=False, take_over=False)
-        else:
-            cmd_next(sw, argparse.Namespace(as_=name))
-    except SwarmError:
-        with sw.tx():
-            sw.update_agent(name, state="left", left_at=iso())
-        raise
-    t = sw.task(sw.agent(name)["task"])
-    swarm_cmd = self_command()
-    # The brief sits inside the worktree (agents in print mode may not read outside it) and is ignored
-    # through the shared info/exclude, so it is never committed and never blocks the worktree's removal.
-    exclude = sw.common / "info" / "exclude"
-    exclude.parent.mkdir(exist_ok=True)
-    if BRIEF_NAME not in (exclude.read_text(encoding="utf-8") if exclude.exists() else ""):
-        with exclude.open("a", encoding="utf-8") as fh:
-            fh.write(f"\n{BRIEF_NAME}\n")
-    text = BRIEF.format(
-        name=name,
-        kind=a.kind,
-        task=t["id"],
-        title=t["title"],
-        worktree=t["worktree"],
-        swarm=swarm_cmd,
-        skill=(Path(__file__).parent / "SKILL.md").resolve().as_posix(),
-        environment=describe_environment(detect_environment(sw.main_root)),
-    )
-    (Path(t["worktree"]) / BRIEF_NAME).write_text(text, encoding="utf-8")
-    (sw.dir / "briefs" / f"{name}.md").write_text(text, encoding="utf-8")
-    prompt = f"You are swarm agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
-    if not SAFE_PROMPT_RE.match(prompt):  # a Windows .cmd shim passes argv through cmd.exe
-        raise SwarmError("The agent name makes an unsafe prompt.")
+    if not NAME_RE.match(name):
+        raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
     values = {
-        "prompt": prompt,
-        "cwd": t["worktree"],
+        "prompt": brief_prompt(name),
+        "cwd": str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>",
         "git_common": str(sw.common),
         "max_turns": sw.config["spawn"]["max_turns"],
         "model": a.model or "",
     }
-    argv = [part.format(**values) for part in ad["run"]]
-    if a.model:
-        argv += [part.format(**values) for part in ad["model"]]
+    if a.dry_run:  # no join, no claim, no worktree: only show the command line
+        argv = render(ad["run"], values) + (render(ad["model"], values) if a.model else [])
+        print("would run (in the task's worktree): " + " ".join(argv + (ad["unattended"] if a.unattended else [])))
+        print("nothing was changed: no agent joined, no task claimed")
+        return
+    t = prepare_agent(sw, a.kind, name, a.model, a.caps, a.task)
+    values["cwd"] = t["worktree"]
+    argv = render(ad["run"], values) + (render(ad["model"], values) if a.model else [])
     if a.unattended:
         argv += ad["unattended"]
     log = sw.dir / "logs" / f"{name}.log"
@@ -2396,6 +2428,373 @@ def cmd_spawn(sw: Swarm, a) -> None:
         sw.update_agent(name, pid=proc.pid)
         sw.event("spawned", name, t["id"], f"{a.kind} pid {proc.pid}")
     print(f"spawned {name} ({a.kind}) on {t['id']}, pid {proc.pid}; log {log}")
+
+
+# --------------------------------------------------------------------------- interactive agents and the console
+
+# How each CLI starts interactively with a first message. A CLI that cannot take one (`prompt: False`)
+# starts empty and the launcher prints the message to paste.
+INTERACTIVE = {
+    "claude": ["claude", "{prompt}"],
+    "opencode": ["opencode", "--prompt", "{prompt}"],
+    "qodercli": ["qodercli", "-w", "{cwd}"],
+    "codex": ["codex", "{prompt}"],
+    "gemini": ["gemini", "-i", "{prompt}"],
+    "deepseek": ["deepseek", "{prompt}"],
+}
+
+
+def interactive_argv(sw: Swarm, kind: str) -> list[str] | None:
+    ad = sw.config["adapters"].get(kind) or {}
+    return ad.get("interactive") or INTERACTIVE.get(kind)
+
+
+def interactive_kinds(sw: Swarm) -> list[str]:
+    return [k for k in sw.config["adapters"] if (argv := interactive_argv(sw, k)) and shutil.which(argv[0])]
+
+
+def cmd_launch(sw: Swarm, a) -> None:
+    """Start an agent CLI interactively in this terminal, already joined and holding a task in its worktree."""
+    template = interactive_argv(sw, a.kind)
+    if not template:
+        raise SwarmError(f"No interactive command for {a.kind}; set [adapters.{a.kind}] interactive = [...].")
+    if not shutil.which(template[0]):
+        raise SwarmError(f"{template[0]} is not installed (`swarm probe`).")
+    name = a.name or free_name(sw, a.kind)
+    if not NAME_RE.match(name):
+        raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
+    prompt = brief_prompt(name)
+    takes_prompt = any("{prompt}" in part for part in template)
+    if a.dry_run:
+        where = str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>"
+        argv = render(template, {"prompt": prompt, "cwd": where})
+        print(f"would run {name} interactively in {where}: " + " ".join(argv))
+        if not takes_prompt:
+            print(f"{a.kind} takes no first message on its command line; paste this one: {prompt}")
+        print("nothing was changed: no agent joined, no task claimed")
+        return
+    t = prepare_agent(sw, a.kind, name, a.model, a.caps, a.task)
+    argv = render(template, {"prompt": prompt, "cwd": t["worktree"]})
+    print(f"\n{name} ({a.kind}) takes {t['id']}: {t['title']}\n  worktree {t['worktree']}\n")
+    if not takes_prompt:
+        print(f"{a.kind} takes no first message on its command line. Paste this as your first message:\n  {prompt}\n")
+    proc = subprocess.Popen(resolve_bin(argv), cwd=t["worktree"], env=sw.env_for(sw.agent(name), t["id"]))
+    with sw.tx():
+        sw.update_agent(name, pid=proc.pid)
+        sw.event("launched", name, t["id"], f"{a.kind} interactive, pid {proc.pid}")
+    code = proc.wait()
+    print(f"\n{a.kind} exited ({code}). Anything {name} still held is orphaned for another agent to continue.")
+
+
+def cmd_launcher(sw: Swarm, a) -> None:
+    """A menu, for a console pane: pick an installed agent CLI and start it on the next task."""
+    taken: set[str] = set()
+    while True:
+        kinds = interactive_kinds(sw)
+        print("\nStart an agent here. It joins the swarm, takes the next task, and opens in that task's worktree.")
+        if not kinds:
+            print("No agent CLI is installed (`swarm probe`).")
+            return
+        for i, kind in enumerate(kinds, 1):
+            print(f"  {i}. {kind}")
+        print("  q. close the launcher")
+        try:
+            choice = input("agent> ").strip().lower()
+        except EOFError:
+            return
+        if choice in ("q", "quit", "exit"):
+            return
+        kind = kinds[int(choice) - 1] if choice.isdigit() and 0 < int(choice) <= len(kinds) else choice
+        if kind not in kinds:
+            continue
+        default = free_name(sw, kind, taken)
+        try:
+            name = input(f"name [{default}]: ").strip() or default
+        except EOFError:
+            return
+        taken.add(name)
+        try:
+            cmd_launch(sw, argparse.Namespace(kind=kind, name=name, task="", model="", caps="", dry_run=False))
+        except SwarmError as exc:
+            print(f"swarm: {exc}")
+
+
+def cmd_dashboard(sw: Swarm, a) -> None:
+    """The live board for a console pane: agents, tasks, locks, questions and the last events."""
+    if os.name == "nt":
+        os.system("")  # turns on ANSI escapes in a classic Windows console
+    while True:
+        buf = io.StringIO()
+        with contextlib.redirect_stdout(buf):
+            cmd_agents(sw, a)
+            print()
+            cmd_status(sw, argparse.Namespace(all=False))
+            print("\nrecent events:")
+            cmd_log(sw, argparse.Namespace(task="", limit=8))
+        head = f"swarm board  {iso()}  (every {a.interval}s, Ctrl+C to stop)\n\n"
+        sys.stdout.write(("" if a.once else "\x1b[2J\x1b[H") + head + buf.getvalue())
+        sys.stdout.flush()
+        if a.once:
+            return
+        time.sleep(a.interval)
+
+
+def observe_events(sw: Swarm, a) -> None:
+    last = 0 if a.replay else int(sw.db.execute("SELECT COALESCE(MAX(id),0) FROM events").fetchone()[0])
+    print("observing events (another monitor does the sweeps)", flush=True)
+    while True:
+        for e in sw.db.execute("SELECT * FROM events WHERE id>? ORDER BY id", (last,)).fetchall():
+            print(
+                f"[{e['at']}] {e['kind']} {e['agent'] or ''} {e['task'] or ''} {e['detail'] or ''}".rstrip(), flush=True
+            )
+            last = e["id"]
+        if a.once:
+            return
+        time.sleep(a.interval)
+
+
+def console_question(sw: Swarm, name: str) -> str | None:
+    if not sw.is_coordinator(name) or sw.meta("console"):
+        return None
+    return (
+        'ASK THE HUMAN NOW, once per board, with your question tool: "Open a terminal console to watch all agents '
+        "and start others? It opens a visible terminal in this project, split into panes: an event monitor, the live "
+        'board, an agent launcher, and one pane per agent you name." '
+        "Yes: `swarm console [--agents opencode,qodercli]`. No: `swarm console --decline`."
+    )
+
+
+def short_path(path: str) -> str:
+    """cmd.exe mangles a command line with more than one quoted path; a Windows short (8.3) path has no spaces."""
+    if os.name != "nt" or " " not in path:
+        return path
+    import ctypes
+
+    buf = ctypes.create_unicode_buffer(1024)
+    got = ctypes.windll.kernel32.GetShortPathNameW(path, buf, len(buf))
+    return buf.value if got and " " not in buf.value else path
+
+
+def console_panes(sw: Swarm, agents: list[str]) -> list[dict]:
+    python = "python" if os.name == "nt" and _which("python") else sys.executable
+    me = [short_path(python), short_path(str(Path(__file__).resolve()))]
+    holder = sw.meta("monitor")
+    running = bool(holder) and minutes_since(json.loads(holder)["at"]) < 2
+    panes = [
+        {"title": "swarm monitor", "argv": [*me, "monitor", *(["--observe"] if running else [])]},
+        {"title": "swarm board", "argv": [*me, "dashboard"]},
+        {"title": "start agents", "argv": [*me, "launcher"]},
+    ]
+    taken: set[str] = set()
+    for kind in agents:
+        template = interactive_argv(sw, kind)
+        if not template or not shutil.which(template[0]):
+            raise SwarmError(f"{kind} cannot start interactively here (`swarm probe`; or set its interactive command).")
+        name = free_name(sw, kind, taken)
+        taken.add(name)
+        panes.append({"title": f"{name} ({kind})", "argv": [*me, "launch", kind, "--name", name]})
+    limit = int(sw.config["console"]["max_panes"])
+    if len(panes) > limit:
+        raise SwarmError(
+            f"{len(panes)} panes asked for; at most {limit} ([console] max_panes). Start more from the launcher."
+        )
+    check_pane_commands(panes)
+    return panes
+
+
+def check_pane_commands(panes: list[dict]) -> None:
+    for pane in panes:
+        if any(";" in arg for arg in pane["argv"]):  # Windows Terminal splits its command line at ';'
+            raise SwarmError(f"A pane command contains ';', which the terminal would split: {pane['argv']}")
+
+
+def terminal_window(os_name: str, has, command: list[str], display: bool) -> list[str] | None:
+    """A command that opens one new terminal window running `command`, or None if there is no way to."""
+    if os_name == "macos":
+        script = shlex.join(command).replace("\\", "\\\\").replace('"', '\\"')
+        return [
+            "osascript",
+            "-e",
+            f'tell application "Terminal" to do script "{script}"',
+            "-e",
+            'tell application "Terminal" to activate',
+        ]
+    if os_name == "linux" and display:
+        for term, flag in (
+            ("x-terminal-emulator", ["-e"]),
+            ("gnome-terminal", ["--"]),
+            ("konsole", ["-e"]),
+            ("xfce4-terminal", ["-x"]),
+            ("kitty", []),
+            ("alacritty", ["-e"]),
+            ("wezterm", ["start", "--"]),
+            ("xterm", ["-e"]),
+        ):
+            if has(term):
+                return [term, *flag, *command]
+    return None
+
+
+def plan_console(panes: list[dict], cwd: str, os_name: str, has, display: bool = True, session: str = "swarm") -> dict:
+    """How to show the panes on this machine. Pure: `has(tool)` says what is installed."""
+    if os_name == "windows":
+        if has("wt"):
+            args = ["wt", "-w", "new"]
+            for i, pane in enumerate(panes):
+                if i == 0:
+                    args += ["new-tab"]
+                else:
+                    args += [";"]
+                    if i == 3:
+                        args += ["move-focus", "left", ";"]
+                    args += ["split-pane", "-V" if i == 1 else "-H"]
+                args += ["-d", cwd, "--title", pane["title"], "cmd", "/k", *pane["argv"]]
+            return {"kind": "windows-terminal", "steps": [args], "detach": True, "attach": None}
+        steps = [["cmd", "/c", "start", pane["title"], "/d", cwd, "cmd", "/k", *pane["argv"]] for pane in panes]
+        return {"kind": "separate-windows", "steps": steps, "detach": True, "attach": None}
+    if has("tmux"):
+
+        def keep(pane: dict) -> str:
+            return shlex.join(pane["argv"]) + '; exec "${SHELL:-sh}"'
+
+        steps = [
+            ["tmux", "new-session", "-d", "-s", session, "-c", cwd, "-n", "swarm", keep(panes[0])],
+            ["tmux", "select-pane", "-t", session, "-T", panes[0]["title"]],
+        ]
+        for pane in panes[1:]:
+            steps += [
+                ["tmux", "split-window", "-t", session, "-c", cwd, keep(pane)],
+                ["tmux", "select-pane", "-t", session, "-T", pane["title"]],
+                ["tmux", "select-layout", "-t", session, "tiled"],
+            ]
+        steps.append(["tmux", "set-option", "-t", session, "pane-border-status", "top"])
+        attach = ["tmux", "attach", "-t", session]
+        window = terminal_window(os_name, has, attach, display)
+        return {"kind": "tmux", "steps": steps, "detach": False, "attach": attach, "window": window}
+    windows = []
+    for pane in panes:
+        command = ["sh", "-c", f'cd {shlex.quote(cwd)} && {shlex.join(pane["argv"])}; exec "${{SHELL:-sh}}"']
+        window = terminal_window(os_name, has, command, display)
+        if not window:
+            return {
+                "kind": "manual",
+                "steps": [],
+                "detach": False,
+                "attach": None,
+                "manual": [f"cd {shlex.quote(cwd)} && {shlex.join(p['argv'])}" for p in panes],
+            }
+        windows.append(window)
+    return {"kind": "separate-windows", "steps": windows, "detach": True, "attach": None}
+
+
+def cmd_console(sw: Swarm, a) -> None:
+    who = a.as_ or HUMAN
+    if a.decline:
+        with sw.tx():
+            sw.set_meta("console", json.dumps({"decision": "declined", "by": who, "at": iso()}))
+            sw.event("console_declined", who)
+        print("noted: no console. `swarm console` opens one whenever you want it.")
+        return
+    panes = console_panes(sw, split_list(a.agents))
+    env = detect_environment(sw.main_root)
+    display = env["os"] != "linux" or bool(os.environ.get("DISPLAY") or os.environ.get("WAYLAND_DISPLAY"))
+    session = re.sub(r"[^A-Za-z0-9_-]", "-", f"swarm-{sw.main_root.name}")
+    if env["os"] != "windows" and shutil.which("tmux"):
+        n = 1
+        while run(["tmux", "has-session", "-t", session], check=False).returncode == 0:
+            n += 1
+            session = re.sub(r"-\d+$", "", session) + f"-{n}"
+    plan = plan_console(panes, str(sw.main_root), env["os"], shutil.which, display, session)
+    print(f"console: {len(panes)} panes in {sw.main_root} via {plan['kind']}")
+    for pane in panes:
+        print(f"  - {pane['title']}")
+    if a.dry_run:
+        quote = subprocess.list2cmdline if os.name == "nt" else shlex.join
+        for step in plan["steps"]:
+            print("would run: " + quote(step))
+        for line in plan.get("manual", []):
+            print("open a terminal and run: " + line)
+        return
+    if plan["kind"] == "manual":
+        print("No terminal can be opened from here (no window system). Open one terminal per line:")
+        for line in plan["manual"]:
+            print(f"  {line}")
+    flags = {"creationflags": 0x00000200 | 0x00000008} if os.name == "nt" else {"start_new_session": True}
+    for step in plan["steps"]:
+        if plan["detach"]:
+            subprocess.Popen(
+                resolve_bin(step),
+                cwd=sw.main_root,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                **flags,
+            )
+        else:
+            run(step, cwd=sw.main_root)
+    if plan["kind"] == "tmux":
+        if plan.get("window"):
+            subprocess.Popen(
+                plan["window"],
+                cwd=sw.main_root,
+                stdin=subprocess.DEVNULL,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                **flags,
+            )
+        else:
+            print(f"The panes are ready in tmux. Attach from your terminal: {' '.join(plan['attach'])}")
+    with sw.tx():
+        sw.set_meta("console", json.dumps({"decision": "opened", "by": who, "at": iso(), "via": plan["kind"]}))
+        sw.event("console_opened", who, None, f"{len(panes)} panes via {plan['kind']}")
+    print("opened. Close a pane to stop what runs in it; agents keep their tasks until they merge or release.")
+
+
+def copy_into_worktree(sw: Swarm, path: Path) -> list[str]:
+    """Copy git-ignored local files ([worktree] copy, e.g. .env) from the main checkout into a new worktree.
+    Only ignored files: anything else would show up as untracked and could be committed."""
+    lines = []
+    for pattern in sw.config["worktree"]["copy"]:
+        for src in sorted(sw.main_root.glob(pattern)):
+            if not src.is_file():
+                continue
+            rel = src.relative_to(sw.main_root).as_posix()
+            dest = path / rel
+            if dest.exists():
+                continue
+            if run(["git", "check-ignore", "-q", rel], cwd=sw.main_root, check=False).returncode != 0:
+                lines.append(f"  not copied: {rel} is not git-ignored, so it could be committed")
+                continue
+            dest.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(src, dest)
+            lines.append(f"  copied    {rel} (git-ignored, from the main checkout)")
+    return lines
+
+
+def cmd_version(sw: Swarm, a) -> None:
+    print(f"agents-collaboration {__version__} at {Path(__file__).resolve().parent}")
+
+
+def cmd_update(sw: Swarm, a) -> None:
+    here = Path(__file__).resolve().parent
+    user = here.is_relative_to((Path.home() / ".agents" / "skills").resolve())
+    url = f"https://raw.githubusercontent.com/{REPO}/main/install.py"
+    args = [sys.executable, "-", *(["--ref", a.ref] if a.ref else [])]
+    args += ["--user"] if user else ["--project", str(sw.main_root)]
+    agents_md = sw.main_root / "AGENTS.md"
+    if agents_md.exists() and "agents-collaboration:start" in agents_md.read_text(encoding="utf-8", errors="replace"):
+        args.append("--agents-md")
+    claude_root = (Path.home() if user else sw.main_root) / ".claude" / "skills" / "agents-collaboration"
+    if claude_root.exists():
+        args.append("--claude")
+    if a.dry_run:
+        print(f"would download {url} and run: {' '.join(args)}")
+        return
+    with urllib.request.urlopen(url, timeout=30) as response:  # noqa: S310 - fixed https URL
+        installer = response.read()
+    done = subprocess.run(args, input=installer, check=False)
+    if done.returncode != 0:
+        raise SwarmError("The installer refused; its message is above.")
 
 
 BRIEF_NAME = ".swarm-brief.md"
@@ -2614,6 +3013,7 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--once", action="store_true")
     sp.add_argument("--force", action="store_true")
     sp.add_argument("--replay", action="store_true")
+    sp.add_argument("--observe", action="store_true", help="only follow events; another monitor does the sweeps")
     sp = add("probe", cmd_probe, "which agent CLIs are installed, signed in, and answering")
     sp.add_argument("kinds", nargs="*")
     sp.add_argument("--live", action="store_true")
@@ -2629,6 +3029,27 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--force", action="store_true")
     sp = add("environment", cmd_environment, "facts and rules for the machine you are on: read before working")
     sp.add_argument("--json", action="store_true")
+    sp = add("console", cmd_console, "open a visible terminal split into panes: monitor, board, launcher, agents")
+    sp.add_argument(
+        "--agents", default="", help="comma-separated CLIs to start in their own panes, e.g. opencode,claude"
+    )
+    sp.add_argument("--decline", action="store_true", help="record that the human does not want a console")
+    sp.add_argument("--dry-run", action="store_true")
+    sp = add("launch", cmd_launch, "start an agent CLI interactively here, joined and holding a task")
+    sp.add_argument("kind")
+    sp.add_argument("--name", default="")
+    sp.add_argument("--task", default="")
+    sp.add_argument("--model", default="")
+    sp.add_argument("--caps", default="")
+    sp.add_argument("--dry-run", action="store_true")
+    add("launcher", cmd_launcher, "a menu that starts agents one after another (for a console pane)")
+    sp = add("dashboard", cmd_dashboard, "the live board, refreshed (for a console pane)")
+    sp.add_argument("--interval", type=int, default=5)
+    sp.add_argument("--once", action="store_true")
+    add("version", cmd_version, "the installed version and where it lives")
+    sp = add("update", cmd_update, "reinstall the latest release from GitHub, keeping your pointers")
+    sp.add_argument("--ref", default="")
+    sp.add_argument("--dry-run", action="store_true")
     sp = add("doctor", cmd_doctor, "find drift between the board and git")
     sp.add_argument("--fix", action="store_true")
     return p

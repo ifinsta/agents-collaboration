@@ -122,6 +122,24 @@ there, detached. The prompt on the command line is one safe sentence that points
 at the brief. On Windows, npm-installed CLIs are `.cmd` shims that pass arguments
 through `cmd.exe`, so nothing else may travel there.
 
+## The console
+
+`swarm console` turns the pool into something a person can watch and steer:
+an event monitor (or an observer, when a monitor already runs), the live board,
+a launcher menu, and one pane per requested agent. `plan_console` is a pure
+function that takes the panes, the OS and what is installed, and returns the
+commands to run:
+
+- Windows Terminal split panes;
+- else tmux, plus a new terminal window attached to it;
+- else separate windows;
+- else instructions.
+
+Tests check every layout on every OS. Agent panes run `swarm launch`, which joins,
+claims and writes the brief before starting the CLI interactively in the task's
+worktree. The coordinator is told to ask the human once per board, and the answer
+is recorded.
+
 ## Limits, stated plainly
 
 - **One machine.** Pools across machines are not supported: there is no network
