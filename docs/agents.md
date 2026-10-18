@@ -8,13 +8,19 @@ started headless. Any agent that can run a shell command can join by hand
 |---|---|---|---|---|
 | `claude` (Claude Code) | `claude -p "<prompt>"` | `claude auth status` | `--dangerously-skip-permissions` | verified with 2.1.280 |
 | `opencode` | `opencode run "<prompt>"` | `opencode auth list` | `--auto` | verified with 2.0.32 |
-| `qodercli` (Qoder) | `qodercli -p "<prompt>" -w <dir> -q --max-turns N` | `qodercli status` | `--dangerously-skip-permissions` | verified with 0.1.46 |
+| `qodercli` (Qoder) | `qodercli -p "<prompt>" -w <dir>` (interactive: `-i "<prompt>"`) | `qodercli status` | `--dangerously-skip-permissions` | verified with 1.1.73 |
 | `codex` | `codex exec "<prompt>" -C <dir> --add-dir <git dir>` | `codex login status` | `--full-auto` | verified with 0.104.0 |
 | `gemini` | `gemini -p "<prompt>"` | none (reported as unknown) | `--approval-mode yolo` | verified with 0.53.1 |
+| `kilocode` (Kilo Code) | `kilocode --auto --nosplash --workspace <dir> "<prompt>"` | none (`kilocode auth` starts a login, so it is never run; reported as unknown) | `--yolo` | verified with 0.18.0 |
 | `deepseek` (deepseek-tui) | `deepseek exec "<prompt>"` | `deepseek auth status` | none | **unverified**: `exec` does not document its arguments |
 
 "Verified" means the command line was taken from that CLI version's own `--help`.
-Re-verify with `swarm probe --live` before relying on an adapter.
+
+CLIs update themselves. Qoder went from 0.1.46 to 1.1.73 during one session and
+dropped two options its adapter passed. Before `spawn`, `launch` or `probe` uses
+a CLI, the tool checks every option it is about to pass against that CLI's own
+help. A missing option stops the launch and is named; `probe` reports it as
+`CHANGED`. Re-verify with `swarm probe --live` before relying on an adapter.
 
 **DeepSeek models through opencode** is the proven path today. opencode accepts
 a DeepSeek API key, so:
@@ -22,6 +28,11 @@ a DeepSeek API key, so:
 ```bash
 swarm spawn opencode --name ds1 --task T1 --model deepseek/deepseek-chat
 ```
+
+**Kilo Code** has its own parallel mode (`--parallel`), which creates a git branch
+of its own. The adapter never uses it: the claim has already made the task's
+worktree and branch. A model is chosen with `-mo`, and a provider with `kilocode
+config` beforehand.
 
 ## Readiness
 

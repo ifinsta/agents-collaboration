@@ -523,6 +523,7 @@ class Liveness(SwarmCase):
         self.join("ann")
         self.join("bob")
         self.sw("--as", "ann", "claim", "T1")
+        self.sw("--as", "ann", "plan", *PLAN, cwd=Path(self.task("T1")["worktree"]))  # real work: kept for a take-over
         con = self.db()
         con.execute("UPDATE agents SET heartbeat_at='2020-01-01T00:00:00+00:00' WHERE name='ann'")
         con.commit()
@@ -540,19 +541,44 @@ class Liveness(SwarmCase):
         self.assertIn("bob took over T1", self.sw("--as", "ann", "inbox"))
         self.assertIn("holds no task", self.sw("--as", "ann", "plan", *PLAN, ok=False))
 
-    def test_ec009_ec111_exited_process_releases_its_task_at_once(self):
+    def test_ec009_ec111_ec184_an_agent_that_exits_untouched_returns_its_task_to_the_pool(self):
         self.join("ann")
         out = self.sw("spawn", "fake", "--name", "fay", "--task", "T2")
         self.assertIn("spawned fay", out)
+        wt = self.worktree_of("T2")
+        self.assertTrue((wt / ".swarm-brief.md").exists())
+        self.assertEqual(self.git("status", "--porcelain", cwd=wt), "")  # the brief is ignored, never committed
         for _ in range(50):
             time.sleep(0.2)
             self.sw("status")
-            if self.task("T2")["state"] == "orphaned":
+            if self.task("T2")["state"] == "open":
                 break
-        self.assertEqual(self.task("T2")["state"], "orphaned")
-        brief = Path(self.task("T2")["worktree"]) / ".swarm-brief.md"
-        self.assertTrue(brief.exists())
-        self.assertEqual(self.git("status", "--porcelain", cwd=brief.parent), "")  # ignored, never committed
+        self.assertEqual(self.task("T2")["state"], "open")
+        self.assertFalse(wt.exists())
+        self.assertIn("back in the pool", self.sw("monitor", "--observe", "--once", "--replay"))
+        self.assertIn("claimed T2", self.sw("--as", "ann", "claim", "T2"))
+
+    def test_ec185_work_left_behind_is_offered_by_next(self):
+        self.join("ann")
+        self.join("bob")
+        self.sw("--as", "ann", "claim", "T1")
+        self.sw("--as", "ann", "plan", *PLAN, cwd=self.worktree_of("T1"))
+        con = self.db()
+        con.execute("UPDATE agents SET heartbeat_at='2020-01-01T00:00:00+00:00' WHERE name='ann'")
+        con.execute("UPDATE tasks SET state='done' WHERE id IN ('T2','T4','T5','T6')")
+        con.commit()
+        self.sw("status")  # ann goes offline
+        con.execute("UPDATE agents SET offline_at='2020-01-01T00:00:00+00:00' WHERE name='ann'")
+        con.commit()
+        con.close()
+        self.sw("status")  # past the reclaim window
+        self.assertEqual(self.task("T1")["state"], "orphaned")  # it has a plan: it keeps its work
+        out = self.sw("--as", "bob", "next")
+        self.assertIn("left behind by ann", out)
+        self.assertEqual(self.task("T1")["assignee"], "bob")
+
+    def worktree_of(self, tid):
+        return Path(self.task(tid)["worktree"])
 
     def test_ec010_pid_alive(self):
         self.assertTrue(swarm_module.pid_alive(os.getpid()))
@@ -1156,6 +1182,17 @@ class ReadableConsole(SwarmCase):
         self.assertIn("ann claimed T1", out)
         self.assertNotIn("+00:00", out)
         self.assertNotIn("['", out)
+        internals = {
+            "kind": "goal_task",
+            "agent": "x",
+            "task": "T9",
+            "at": swarm_module.iso(),
+            "detail": "G, serves [2], needs ['T1']",
+        }
+        text = swarm_module.describe_event(internals)[1]
+        self.assertNotIn("[", text)
+        claimed = {"kind": "claimed", "agent": "x", "task": "T9", "at": swarm_module.iso(), "detail": "epoch 3"}
+        self.assertEqual(swarm_module.describe_event(claimed)[1], "x claimed T9")
         old = {
             "kind": "agent_joined",
             "agent": "x",
@@ -1194,6 +1231,38 @@ class ReadableConsole(SwarmCase):
         tmux = swarm_module.plan_console(panes, "/repo", "linux", lambda t: t == "tmux", display=False)["steps"]
         self.assertTrue(any("main-vertical" in step for step in tmux))
         self.assertTrue(any(step[1] == "new-window" for step in tmux))
+
+
+class Adapters(unittest.TestCase):
+    def test_kilocode_is_a_supported_cli(self):
+        ad = swarm_module.DEFAULTS["adapters"]["kilocode"]
+        self.assertEqual(ad["run"][:2], ["kilocode", "--auto"])
+        self.assertIn("{prompt}", ad["run"])
+        self.assertIn("{cwd}", ad["run"])
+        self.assertEqual(ad["unattended"], ["--yolo"])
+        self.assertEqual(ad["auth"], [])  # `kilocode auth` starts an interactive login: never run it in a probe
+        self.assertIn("{prompt}", swarm_module.INTERACTIVE["kilocode"])
+
+    def test_ec182_a_cli_that_changed_its_options_is_caught(self):
+        self.assertEqual(swarm_module.missing_options(["python", "-c", "x"], ["python", "--help"]), [])
+        gone = swarm_module.missing_options(["python", "--no-such-option", "x"], ["python", "--help"])
+        self.assertEqual(gone, ["--no-such-option"])
+        self.assertEqual(swarm_module.missing_options(["x", "--y"], ["no-such-cli-anywhere", "--help"]), [])
+
+    def test_qodercli_starts_with_its_instructions(self):
+        self.assertIn("{prompt}", swarm_module.INTERACTIVE["qodercli"])
+        self.assertNotIn("--max-turns", swarm_module.DEFAULTS["adapters"]["qodercli"]["run"])
+
+    def test_ec181_no_adapter_uses_a_cli_s_own_branching(self):
+        """A CLI's own parallel or worktree mode would make branches beside the swarm's worktree."""
+        own_branching = {
+            "kilocode": {"--parallel", "-p", "--existing-branch", "-eb"},
+            "qodercli": {"--worktree", "--branch", "--path"},
+        }
+        for kind, flags in own_branching.items():
+            ad = swarm_module.DEFAULTS["adapters"][kind]
+            used = set(ad["run"]) | set(ad["unattended"]) | set(swarm_module.INTERACTIVE[kind])
+            self.assertFalse(used & flags, f"{kind} uses its own branching: {used & flags}")
 
 
 class Messages(SwarmCase):

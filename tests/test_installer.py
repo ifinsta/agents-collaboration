@@ -158,6 +158,25 @@ class Installer(unittest.TestCase):
         out = self.board()
         self.assertNotIn("EX-", out)
 
+    def test_ec186_an_uncommitted_skill_is_named(self):
+        subprocess.run(["git", "checkout", "-q", "-b", "main"], cwd=self.repo, check=True)
+        self.install()
+        env = {
+            **os.environ,
+            "GIT_AUTHOR_NAME": "t",
+            "GIT_AUTHOR_EMAIL": "t@t",
+            "GIT_COMMITTER_NAME": "t",
+            "GIT_COMMITTER_EMAIL": "t@t",
+        }
+        subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "init"], cwd=self.repo, check=True, env=env)
+        tool = [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "doctor"]
+        out = subprocess.run(tool, cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False).stdout
+        self.assertIn("not committed", out)
+        subprocess.run(["git", "add", ".agents"], cwd=self.repo, check=True)
+        subprocess.run(["git", "commit", "-qm", "skill"], cwd=self.repo, check=True, env=env)
+        out = subprocess.run(tool, cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False).stdout
+        self.assertNotIn("not committed", out)
+
     def test_installed_tool_runs(self):
         self.install()
         done = subprocess.run(

@@ -38,7 +38,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -117,6 +117,7 @@ DEFAULTS: dict = {
             "version": ["opencode", "--version"],
             "auth": ["opencode", "auth", "list"],
             "run": ["opencode", "run", "{prompt}"],
+            "help": ["opencode", "run", "--help"],
             "model": ["-m", "{model}"],
             "unattended": ["--auto"],
             "verified": True,
@@ -124,7 +125,7 @@ DEFAULTS: dict = {
         "qodercli": {
             "version": ["qodercli", "--version"],
             "auth": ["qodercli", "status"],
-            "run": ["qodercli", "-p", "{prompt}", "-w", "{cwd}", "-q", "--max-turns", "{max_turns}"],
+            "run": ["qodercli", "-p", "{prompt}", "-w", "{cwd}"],
             "model": ["--model", "{model}"],
             "unattended": ["--dangerously-skip-permissions"],
             "verified": True,
@@ -133,6 +134,7 @@ DEFAULTS: dict = {
             "version": ["codex", "--version"],
             "auth": ["codex", "login", "status"],
             "run": ["codex", "exec", "{prompt}", "-C", "{cwd}", "--add-dir", "{git_common}"],
+            "help": ["codex", "exec", "--help"],
             "model": ["-m", "{model}"],
             "unattended": ["--full-auto"],
             "verified": True,
@@ -143,6 +145,16 @@ DEFAULTS: dict = {
             "run": ["gemini", "-p", "{prompt}"],
             "model": ["-m", "{model}"],
             "unattended": ["--approval-mode", "yolo"],
+            "verified": True,
+        },
+        "kilocode": {
+            # Kilo Code CLI (@kilocode/cli), verified with 0.18.0. Never --parallel: Kilo would create its own
+            # git branch beside the task's worktree. It has no sign-in status command (`auth` starts a login).
+            "version": ["kilocode", "-V"],
+            "auth": [],
+            "run": ["kilocode", "--auto", "--nosplash", "--workspace", "{cwd}", "{prompt}"],
+            "model": ["-mo", "{model}"],
+            "unattended": ["--yolo"],
             "verified": True,
         },
         "deepseek": {
@@ -732,6 +744,8 @@ class Swarm:
                     holder["offline_reason"] == "exited" or minutes_since(holder["offline_at"]) > s["reclaim_after_min"]
                 )
             )
+            if gone and return_if_untouched(self, t, "its holder left before doing any work"):
+                continue
             if gone:
                 self.update_task(t["id"], state="orphaned")
                 self.event("task_orphaned", t["assignee"], t["id"], "holder offline; branch and worktree kept")
@@ -749,6 +763,8 @@ class Swarm:
                 self.update_task(t["id"], budget_flagged=1)
                 self.event("budget_exceeded", t["assignee"], t["id"], f"over {s['task_budget_min']} min")
                 self.notify_coordinator(f"{t['id']} has run past its {s['task_budget_min']} min budget.", t["id"])
+        for t in self.db.execute("SELECT * FROM tasks WHERE state='orphaned'").fetchall():
+            return_if_untouched(self, t, "its holder left before doing any work")
         for t in self.db.execute("SELECT * FROM tasks WHERE reserved_for IS NOT NULL AND state='open'").fetchall():
             if minutes_since(t["reserved_at"]) > s["assign_ttl_min"]:
                 self.update_task(t["id"], reserved_for=None, reserved_at=None)
@@ -1008,6 +1024,9 @@ def cmd_join(sw: Swarm, a) -> None:
     question = console_question(sw, name)
     if question:
         print(question)
+    warning = skill_not_committed(sw) if sw.is_coordinator(name) else None
+    if warning:
+        print(f"WARNING: {warning}")
 
 
 def cmd_leave(sw: Swarm, a) -> None:
@@ -1112,6 +1131,108 @@ def cmd_status(sw: Swarm, a) -> None:
             )
 
 
+def untouched(sw: Swarm, t) -> bool:
+    """No plan, no step, no commit, nothing uncommitted: the holder never started."""
+    if t["plan"] or t["step_idx"] or json.loads(t["steps"] or "[]"):
+        return False
+    if t["branch"] and git("branch", "--list", t["branch"], cwd=sw.main_root, check=False):
+        base = t["base_sha"] or sw.target()
+        ahead = git("rev-list", "--count", f"{base}..{t['branch']}", cwd=sw.main_root, check=False)
+        if ahead not in ("", "0"):
+            return False
+    tree = Path(t["worktree"]) if t["worktree"] else None
+    if tree and tree.exists() and git("status", "--porcelain", cwd=tree, check=False):
+        return False
+    return True
+
+
+def return_if_untouched(sw: Swarm, t, why: str) -> bool:
+    """Called inside a transaction: put a never-started task back in the pool and remove its empty worktree."""
+    if not untouched(sw, t):
+        return False
+    tree = Path(t["worktree"]) if t["worktree"] else None
+    if tree and tree.exists():
+        run(["git", "worktree", "remove", "--force", str(tree)], cwd=sw.main_root, check=False)
+    if t["branch"]:
+        run(["git", "branch", "-D", t["branch"]], cwd=sw.main_root, check=False)
+    sw.update_task(t["id"], state="open", assignee=None, epoch=t["epoch"] + 1, worktree=None, started_at=None)
+    sw.db.execute("DELETE FROM locks WHERE task=?", (t["id"],))
+    if t["assignee"]:
+        sw.db.execute("UPDATE agents SET task=NULL WHERE name=? AND task=?", (t["assignee"], t["id"]))
+    sw.event("returned_to_pool", t["assignee"], t["id"], why)
+    return True
+
+
+def orphans_for(sw: Swarm, me) -> list[sqlite3.Row]:
+    """Tasks left behind with work in them, which this agent's machine can continue."""
+    caps = set(json.loads(me["caps"]))
+    return [
+        t
+        for t in sw.db.execute("SELECT * FROM tasks WHERE state='orphaned' AND removed=0 ORDER BY ord")
+        if set(json.loads(t["caps"])) <= caps
+    ]
+
+
+FLAG_RE = r"(?<![\w-]){}(?![\w-])"
+
+
+def missing_options(argv: list[str], help_argv: list[str]) -> list[str]:
+    """The options in `argv` that the installed CLI's own help no longer lists. CLIs update themselves; an
+    adapter written for one version can pass options the next one rejects. Empty when the help says nothing."""
+    try:
+        done = run(resolve_bin(help_argv), check=False, timeout=60)
+    except SwarmError:
+        return []
+    text = (done.stdout or "") + (done.stderr or "")
+    if not text.strip():
+        return []
+    flags = [part for part in argv if part.startswith("-") and "{" not in part]
+    return [f for f in flags if not re.search(FLAG_RE.format(re.escape(f)), text)]
+
+
+def require_options(kind: str, argv: list[str], help_argv: list[str]) -> None:
+    gone = missing_options(argv, help_argv)
+    if gone:
+        raise SwarmError(
+            f"The installed {kind} no longer lists {', '.join(gone)} in `{' '.join(help_argv)}`: it changed since its "
+            f"adapter was written. Override [adapters.{kind}] in .agents/swarm/config.toml, or update agents-collaboration."
+        )
+
+
+def copy_to_clipboard(text: str) -> bool:
+    for argv in (["clip"], ["pbcopy"], ["wl-copy"], ["xclip", "-selection", "clipboard"]):
+        if shutil.which(argv[0]):
+            try:
+                subprocess.run(argv, input=text, text=True, check=True, timeout=10)
+                return True
+            except (OSError, subprocess.SubprocessError):
+                continue
+    return False
+
+
+def skill_not_committed(sw: Swarm) -> str | None:
+    here = Path(__file__).resolve()
+    try:
+        rel = here.relative_to(sw.main_root).as_posix()
+    except ValueError:
+        return None  # installed for the user, outside this repository
+    if (
+        run(
+            ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{sw.target()}"], cwd=sw.main_root, check=False
+        ).returncode
+        != 0
+    ):
+        return None  # doctor names a missing target branch on its own
+    tracked = run(["git", "ls-tree", "-r", "--name-only", sw.target(), "--", rel], cwd=sw.main_root, check=False)
+    if tracked.stdout.strip():
+        return None
+    return (
+        f"The skill is not committed to {sw.target()}. Task worktrees are made from {sw.target()}, so agents in them "
+        "cannot see .agents/ or the AGENTS.md pointer; only their brief tells them the protocol. Commit .agents/ "
+        "and AGENTS.md."
+    )
+
+
 def eligible(sw: Swarm, me: sqlite3.Row) -> list[sqlite3.Row]:
     done = {r["id"] for r in sw.db.execute("SELECT id FROM tasks WHERE state='done'")}
     held_locks = {r["name"] for r in sw.db.execute("SELECT name FROM locks")}
@@ -1148,15 +1269,21 @@ def cmd_next(sw: Swarm, a) -> None:
             raise SwarmError(f"You still hold {me['task']}. Merge it (or release it) before taking another task.")
         pending = sw.db.execute("SELECT id FROM tasks WHERE cleanup_pending=1 AND assignee=?", (me["name"],)).fetchone()
         options = eligible(sw, me)
-        if not options:
+        left_behind = [] if options else orphans_for(sw, me)
+        if not options and not left_behind:
             raise SwarmError(
                 "Nothing you can take now (dependencies, capabilities, locks or reservations). "
                 "`swarm status --all` shows why; tell the coordinator you are free."
             )
-        pick = options[0]
+        pick = options[0] if options else left_behind[0]
     if pending:
         cleanup(sw, sw.task(pending["id"]))
-    claim(sw, me["name"], pick["id"], force=False, take_over=False)
+    if not options:
+        print(
+            f"No open task; {pick['id']} was left behind by {pick['assignee']} with work in it. Taking it over: "
+            f"read its plan and steps first (`swarm whoami`)."
+        )
+    claim(sw, me["name"], pick["id"], force=False, take_over=not options)
 
 
 def cmd_claim(sw: Swarm, a) -> None:
@@ -1721,7 +1848,12 @@ def cmd_submit(sw: Swarm, a) -> None:
     with sw.tx():
         t = sw.require_holder(a.as_)
         sw.update_task(t["id"], state="ready_to_merge", submit=json.dumps(record), failure=None)
-        sw.event("submitted", a.as_, t["id"], f"{len(files)} files" + (f"; owed: {a.owed}" if a.owed else ""))
+        sw.event(
+            "submitted",
+            a.as_,
+            t["id"],
+            f"{len(files)} file{'' if len(files) == 1 else 's'}" + (f"; owed: {a.owed}" if a.owed else ""),
+        )
     print(f"{t['id']} is ready to merge. Next: `swarm merge --as {a.as_}` (it joins the merge queue).")
 
 
@@ -1842,7 +1974,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         if failure:
             with sw.tx():
                 sw.update_task(t["id"], state="gates_failed", failure=failure[-2000:])
-                sw.event("gates_failed", who, t["id"], failure.splitlines()[0])
+                sw.event("gates_failed", who, t["id"], failure.splitlines()[0].rstrip(":"))
             return f"Gates failed on the rebased branch:\n{failure}\nFix, commit, `swarm submit`, then merge again."
         message = sw.config["merge"]["message"].format(task=t["id"], title=t["title"], agent=who)
         hook = sw.config["merge"]["message_command"]
@@ -2349,6 +2481,14 @@ def cmd_probe(sw: Swarm, a) -> None:
                 except SwarmError:
                     live = "timeout"
         note = ad.get("note", "") if not ad.get("verified", True) else ""
+        if exe:
+            gone = missing_options(
+                [*ad["run"], *ad["model"], *ad["unattended"]], ad.get("help") or [ad["run"][0], "--help"]
+            )
+            template = interactive_argv(sw, kind) or []
+            gone += [f for f in missing_options(template, [template[0], "--help"]) if f not in gone] if template else []
+            if gone:
+                note = f"CHANGED: no longer lists {', '.join(gone)}"
         print(f"{kind:10} {'yes' if exe else 'no':10} {version:28} {signed:10} {live:6} {note}")
     if not a.live:
         print("\n--live also sends each installed agent a one-line prompt (costs one request each).")
@@ -2436,6 +2576,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
     name = a.name
     if not NAME_RE.match(name):
         raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
+    require_options(a.kind, [*ad["run"], *ad["model"], *ad["unattended"]], ad.get("help") or [ad["run"][0], "--help"])
     values = {
         "prompt": brief_prompt(name),
         "cwd": str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>",
@@ -2482,9 +2623,10 @@ def cmd_spawn(sw: Swarm, a) -> None:
 INTERACTIVE = {
     "claude": ["claude", "{prompt}"],
     "opencode": ["opencode", "--prompt", "{prompt}"],
-    "qodercli": ["qodercli", "-w", "{cwd}"],
+    "qodercli": ["qodercli", "-w", "{cwd}", "-i", "{prompt}"],
     "codex": ["codex", "{prompt}"],
     "gemini": ["gemini", "-i", "{prompt}"],
+    "kilocode": ["kilocode", "--nosplash", "--workspace", "{cwd}", "{prompt}"],
     "deepseek": ["deepseek", "{prompt}"],
 }
 
@@ -2571,10 +2713,14 @@ EVENT_TEXT = {
     "unlocked": ("dim", "{agent} unlocked {detail}"),
     "goal_created": ("cyan", "{agent} started goal {detail}"),
     "goal_task": ("dim", "{agent} drafted {task} ({detail})"),
+    "goal_answered": ("dim", "{agent} answered questions on goal {detail}"),
+    "goal_outcome": ("dim", "{agent} set outcome {detail}"),
     "goal_committed": ("green", "goal committed by {agent}: {detail}"),
     "goal_closed": ("green", "goal {detail} closed by {agent}"),
     "recorded_done": ("green", "{task} recorded as done: {detail}"),
     "launched": ("cyan", "{agent} launched on {task} ({detail})"),
+    "agent_exited": ("yellow", "{agent} {detail}"),
+    "returned_to_pool": ("green", "{task} is back in the pool: {detail}"),
     "spawned": ("cyan", "{agent} spawned on {task} ({detail})"),
     "console_opened": ("dim", "console opened: {detail}"),
     "console_declined": ("dim", "{agent} declined the console"),
@@ -2591,6 +2737,11 @@ def describe_event(e) -> tuple[str, str]:
     color, template = EVENT_TEXT.get(e["kind"], ("", "{kind} {agent} {task} {detail}"))
     detail = re.sub(r"caps=\[(.*?)\]", lambda m: "caps " + m.group(1).replace("'", ""), e["detail"] or "")
     detail = detail.replace("-> *", "to everyone").replace("-> ", "to ")
+    if e["kind"] == "goal_answered":
+        detail = detail.split(":", 1)[0]  # older boards listed every answered key
+    detail = re.sub(r"\bepoch \d+(, )?", "", detail)  # an internal counter, not news for a person
+    detail = re.sub(r", needs \[\]", "", detail)
+    detail = re.sub(r"\[([^\]]*)\]", lambda m: m.group(1).replace("'", ""), detail)
     text = template.format(kind=e["kind"], agent=e["agent"] or "someone", task=e["task"] or "-", detail=detail)
     return color, re.sub(r"\s+", " ", text).replace(" ()", "").replace(": -", "").strip()
 
@@ -2641,6 +2792,7 @@ def cmd_launch(sw: Swarm, a) -> None:
     name = a.name or free_name(sw, a.kind)
     if not NAME_RE.match(name):
         raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
+    require_options(a.kind, template, [template[0], "--help"])
     takes_prompt = any("{prompt}" in part for part in template)
     if a.no_task:
         prompt = (
@@ -2672,13 +2824,38 @@ def cmd_launch(sw: Swarm, a) -> None:
         print(f"\n{name} ({a.kind}) takes {t['id']}: {t['title']}\n  worktree {t['worktree']}\n")
     argv = render(template, {"prompt": prompt, "cwd": str(cwd)})
     if not takes_prompt:
-        print(f"{a.kind} takes no first message on its command line. Paste this as your first message:\n  {prompt}\n")
+        # The CLI's screen will cover anything printed here, so the first message goes to the clipboard and the
+        # person confirms they have it before the CLI starts.
+        copied = copy_to_clipboard(prompt)
+        print(f"{a.kind} cannot take a first message on its command line. Its first message must be:\n  {prompt}")
+        if copied:
+            print("It is on your clipboard: paste it into the agent as soon as it opens.")
+        if sys.stdin.isatty():
+            input("Press Enter to start the agent...")
+    started = utcnow()
     proc = subprocess.Popen(resolve_bin(argv), cwd=cwd, env=sw.env_for(sw.agent(name), task_id))
     with sw.tx():
         sw.update_agent(name, pid=proc.pid)
         sw.event("launched", name, task_id, f"{a.kind} interactive, pid {proc.pid}")
     code = proc.wait()
-    print(f"\n{a.kind} exited ({code}). Anything {name} still held is orphaned for another agent to continue.")
+    minutes = (utcnow() - started).total_seconds() / 60
+    back = False
+    with sw.tx():
+        sw.update_agent(name, state="offline", offline_at=iso(), offline_reason="exited", pid=None)
+        sw.event("agent_exited", name, task_id, f"{a.kind} exited with code {code} after {minutes:.0f} min")
+        if task_id:
+            t = sw.task(task_id)
+            if t["assignee"] == name and t["state"] in HELD:
+                back = return_if_untouched(sw, t, f"{name} exited before doing any work")
+                if not back:
+                    sw.update_task(task_id, state="orphaned")
+                    sw.event("task_orphaned", name, task_id, "holder exited; branch and worktree kept")
+    if back:
+        print(f"\n{a.kind} exited ({code}) before starting {task_id}; the task is back in the pool.")
+    elif task_id:
+        print(f"\n{a.kind} exited ({code}). {task_id} keeps its work and is offered to the next free agent.")
+    else:
+        print(f"\n{a.kind} exited ({code}).")
 
 
 def open_in_new_tab(cwd: Path, title: str, argv: list[str]) -> bool:
@@ -2846,6 +3023,14 @@ def board_lines(sw: Swarm, width: int, height: int) -> list[str]:
     for t in flight:
         steps = json.loads(t["steps"])
         progress = f"step {t['step_idx']}/{len(steps)}" if steps else ""
+        if t["state"] == "orphaned":
+            lines.append(
+                paint(
+                    clip(f"  {t['id']:<16} needs a new owner (was {t['assignee']}, {progress or 'no steps'})", width),
+                    "yellow",
+                )
+            )
+            continue
         lines.append(
             paint(
                 clip(f"  {t['id']:<16} {t['state']:<16} {t['assignee'] or '-':<12} {progress}", width),
@@ -3287,7 +3472,7 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
                 raise SwarmError(f"{key}: {value!r} is too thin to plan from. Say what is actually true.")
             answers[key] = value
         sw.db.execute("UPDATE goals SET answers=?, updated_at=? WHERE id=?", (json.dumps(answers), iso(), a.goal))
-        sw.event("goal_answered", who, None, f"{a.goal}: {', '.join(sorted(answers))}")
+        sw.event("goal_answered", who, None, a.goal)
     missing = [k for k in GOAL_KEYS if not answers.get(k)]
     waiting = [k for k in GOAL_KEYS if str(answers.get(k, "")).startswith("UNKNOWN (")]
     print(
@@ -3325,7 +3510,7 @@ def cmd_goal_outcome(sw: Swarm, a) -> None:
         number = max((o["n"] for o in outcomes), default=0) + 1
         outcomes.append({"n": number, "text": a.text, "check": a.check, "evidence": None})
         sw.db.execute("UPDATE goals SET outcomes=?, updated_at=? WHERE id=?", (json.dumps(outcomes), iso(), a.goal))
-        sw.event("goal_outcome", who, None, f"{a.goal} #{number}")
+        sw.event("goal_outcome", who, None, f"{a.goal} #{number}: {a.text}")
     print(f"outcome {number} of {a.goal}: {a.text}")
 
 
@@ -3376,7 +3561,13 @@ def cmd_goal_task(sw: Swarm, a) -> None:
         )
         if g["state"] == "interrogating":
             sw.db.execute("UPDATE goals SET state='drafting', updated_at=? WHERE id=?", (iso(), a.goal))
-        sw.event("goal_task", who, a.task, f"{a.goal}, serves {serves}, needs {needs}")
+        sw.event(
+            "goal_task",
+            who,
+            a.task,
+            f"{a.goal}, serves outcome {', '.join(map(str, serves))}"
+            + (f", after {', '.join(needs)}" if needs else ""),
+        )
     print(
         f"draft task {a.task} for {a.goal}: serves outcome(s) {serves}"
         + (f", needs {', '.join(needs)}" if needs else "")
@@ -3735,6 +3926,19 @@ def cmd_doctor(sw: Swarm, a) -> None:
     for name, spot in sw.config["hotspots"].items():
         if not spot.get("paths"):
             problems.append(f"hotspot {name} has no paths")
+    if (
+        run(
+            ["git", "rev-parse", "--verify", "--quiet", f"refs/heads/{sw.target()}"], cwd=sw.main_root, check=False
+        ).returncode
+        != 0
+    ):
+        problems.append(
+            f"the target branch {sw.target()!r} does not exist here: set [project] target in "
+            ".agents/swarm/config.toml to the branch work should merge into"
+        )
+    warning = skill_not_committed(sw)
+    if warning:
+        problems.append(warning)
     if not gate_commands(sw):
         problems.append("no gates configured for this OS: merges are unverified ([gates] commands)")
     sample = sw.worktree_path("TASK")

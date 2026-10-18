@@ -1,6 +1,6 @@
 ---
 name: agents-collaboration
-description: Use whenever you work in a repository where other coding agents (Claude Code, opencode, Qoder, Codex, Gemini, DeepSeek or others) may work at the same time, or when you are asked to pick up, split, assign, coordinate, plan, hand off or merge work from a shared backlog. A coordination service (swarm.py) tells you whether you are alone or in a pool of up to five, what machine you are on, which task is yours, and what you must do next. It forces critical questions and a sequential plan before any change, and makes you merge your finished work safely before you may take another task. Triggers on "other agents", "swarm", "pool", "parallel agents", "collaborate", "pick up a task", "next task", "claim", "hand off", "coordinate", "assign", "readiness", "spawn an agent", "backlog", "merge my work".
+description: Use whenever you work in a repository where other coding agents (Claude Code, opencode, Qoder, Codex, Gemini, Kilo Code, DeepSeek or others) may work at the same time, or when you are asked to pick up, split, assign, coordinate, plan, hand off or merge work from a shared backlog. A coordination service (swarm.py) tells you whether you are alone or in a pool of up to five, what machine you are on, which task is yours, and what you must do next. It forces critical questions and a sequential plan before any change, and makes you merge your finished work safely before you may take another task. Triggers on "other agents", "swarm", "pool", "parallel agents", "collaborate", "pick up a task", "next task", "claim", "hand off", "coordinate", "assign", "readiness", "spawn an agent", "backlog", "merge my work".
 ---
 
 # Agents collaboration
@@ -276,7 +276,7 @@ The coordinator:
 - checks which CLIs exist on this machine: `swarm probe` (installed, version,
   signed in); `swarm probe --live` also asks each one to reply READY, which
   costs one request each;
-- starts agents: `swarm spawn <claude|opencode|qodercli|codex|gemini|deepseek> --name <name> --task <task>`.
+- starts agents: `swarm spawn <claude|opencode|qodercli|codex|gemini|kilocode|deepseek> --name <name> --task <task>`.
   The service joins and claims for the new agent, writes its brief into the
   worktree, and launches the CLI headless there. Unattended permission bypass
   (`--unattended`) needs `[spawn] allow_unattended = true` in the project
@@ -316,6 +316,8 @@ one line per event.
   the target branch.
 - Never run another CLI's `init` or setup command that writes project files
   (`AGENTS.md` and the like) unless it is your task.
+- Never turn on your CLI's own branching modes (Kilo Code's `--parallel`, Qoder's
+  `--worktree`). Your claim already made your worktree and branch; work there.
 - Never put secrets in notes, questions or messages: they are stored in the
   repository's git directory, readable by every agent on the machine.
 - Report outcomes as they are: failed gates, owed checks and skipped steps are

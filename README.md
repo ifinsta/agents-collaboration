@@ -1,7 +1,7 @@
 # agents-collaboration
 
-Up to five coding agents (Claude Code, opencode, Qoder, Codex, Gemini, DeepSeek
-through opencode, or any CLI that can run a shell command) working on one git
+Up to five coding agents (Claude Code, opencode, Qoder, Codex, Gemini, Kilo Code,
+DeepSeek through opencode, or any CLI that can run a shell command) working on one git
 repository without stepping on each other.
 
 It is a **skill** that tells each agent the protocol, and a **coordination
@@ -9,10 +9,16 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
 
 [![ci](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml)
 
-**See it before you install it:** [a simulated session](docs/simulation.md). Three agents and
-a human take one goal from a sentence to merged, verified work, with real output from the real
-tool. On the way they hit hard questions, a refused gap, an overlap, a merge conflict, an agent
-going silent, and a failing gate. CI replays it on every change.
+![The console while three agents work: the live board on the left, the event monitor and the agent launcher on the right](docs/console.svg)
+
+_The console during a simulated session, drawn by the tool's own board and monitor:
+the goal committed, three agents working at once, the merge queue catching a
+conflict, a silent agent's task taken over, the gate catching a wrong test, and
+the goal closed on evidence._
+
+**See it before you install it:** [the whole session, step by step](docs/simulation.md).
+Three agents and a human take one goal from a sentence to merged, verified work,
+with real output from the real tool. CI replays it on every change.
 
 ## What it guarantees
 
@@ -140,7 +146,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.4.0, experimental.** The protocol and the service are tested. Headless
+**0.4.1, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

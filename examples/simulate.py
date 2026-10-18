@@ -2,20 +2,24 @@
 """A scripted session: three agents and a human take one goal from a sentence to merged, verified work.
 
 It runs the real installer and the real tool against a real git repository in a temporary directory,
-and writes what happened as a transcript, so anyone can see what to expect before installing:
+and writes what happened as a transcript and as pictures of the console, so anyone can see what to
+expect before installing:
 
     python examples/simulate.py                         # print the transcript
     python examples/simulate.py --write docs/simulation.md
+        # also writes docs/console.svg (animated) and docs/console-three-agents.svg (a still)
     python examples/simulate.py --check                 # run it and verify every milestone, quietly (CI)
 
 Agents are simulated by one script calling `swarm.py --as <name>`, which is exactly what each real agent's
-shell does. The only things faked are time passing (an agent going silent for hours) and the human typing.
+shell does. The only things faked are time passing (an agent going silent for hours), the human typing,
+and the launcher pane in the pictures, which shows how a person would have started the three agents.
 Every step checks its own result; if the tool ever stops behaving as described, the script stops there.
 """
 
 from __future__ import annotations
 
 import argparse
+import importlib.util
 import os
 import platform
 import re
@@ -24,6 +28,7 @@ import sqlite3
 import subprocess
 import sys
 import tempfile
+import xml.etree.ElementTree as ET
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
@@ -34,6 +39,8 @@ VERSION = next(
     for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
     if line.startswith("version")
 )
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import console_svg  # noqa: E402
 
 
 class Diverged(SystemExit):
@@ -45,20 +52,24 @@ class Sim:
         self.base = base
         self.repo = base / "shop"
         self.out: list[str] = []
+        self.frames: list[dict] = []
+        self.launcher: list[str] = []
         self.tool = self.repo / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        self._module = None
 
     # ---- recording
-    def norm(self, text: str) -> str:
+    def norm(self, text: str, picture: bool = False) -> str:
         for raw in {str(self.base), self.base.as_posix(), str(self.base.resolve()), self.base.resolve().as_posix()}:
             text = text.replace(raw, "~/demo")
         for raw in {str(ROOT), ROOT.as_posix()}:
             text = text.replace(raw, f"github.com/ifinsta/agents-collaboration@v{VERSION}")
         text = text.replace("\\", "/")
+        if picture:  # a picture keeps real hashes and timings; only machine paths are hidden
+            return text
         text = re.sub(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+00:00", "<time>", text)
         text = re.sub(r"\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b", "<sha>", text)
         text = re.sub(r"pid \d+", "pid <n>", text)
         text = re.sub(r"\d+\.\d+ min", "<n> min", text)
-        text = re.sub(r"python \S*~/demo", "python ~/demo", text)
         return text
 
     def section(self, title: str, text: str) -> None:
@@ -85,7 +96,7 @@ class Sim:
         display: str = "",
     ) -> str:
         argv = [sys.executable, str(self.tool), *args, *(["--as", who] if who else [])]
-        env = {k: v for k, v in os.environ.items() if k != "SWARM_AS"}
+        env = {k: v for k, v in os.environ.items() if k not in ("SWARM_AS", "WT_SESSION", "TMUX")}
         done = subprocess.run(
             argv, cwd=cwd or self.repo, capture_output=True, text=True, encoding="utf-8", env=env, check=False
         )
@@ -128,7 +139,7 @@ class Sim:
         self.git("commit", "-qm", message, cwd=wt, who=who)
 
     def age_agent(self, name: str, hours: int) -> None:
-        """The one shortcut: pretend an agent has been silent for hours."""
+        """The one shortcut in time: pretend an agent has been silent for hours."""
         con = sqlite3.connect(self.repo / ".git" / "swarm" / "swarm.db")
         then = datetime.now(UTC).replace(microsecond=0) - timedelta(hours=hours)
         old = then.isoformat()
@@ -139,6 +150,50 @@ class Sim:
         )
         con.commit()
         con.close()
+
+    # ---- pictures of the console, drawn by the tool's own views
+    def module(self):
+        if self._module is None:
+            spec = importlib.util.spec_from_file_location("swarm_installed", self.tool)
+            self._module = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(self._module)
+            self._module.use_color = lambda: True
+        return self._module
+
+    def launch_line(self, number: int, kind: str, mode: str, name: str) -> None:
+        mod = self.module()
+        self.launcher += [
+            f"agent: {number}   on what? [n]: {mode}   name [{name}]: ",
+            mod.paint(f"opened {name} ({kind}) in a new tab, joined and waiting for work", "green"),
+        ]
+
+    def snapshot(self, caption: str) -> None:
+        mod = self.module()
+        sw = mod.Swarm(self.repo)
+        try:
+            board = [self.norm(line, picture=True) for line in mod.board_lines(sw, 82, console_svg.BOARD_LINES)]
+            events = sw.db.execute("SELECT * FROM events ORDER BY id DESC LIMIT 30").fetchall()
+            monitor_lines = [line for e in reversed(events) for line in mod.event_lines(e, 82)]
+            header = mod.paint("SWARM MONITOR", "bold") + mod.paint("  events as they happen, local time", "dim")
+            room = console_svg.BOARD_LINES // 2 - 2
+            agents = sw.db.execute("SELECT * FROM agents WHERE state<>'left' ORDER BY joined_at").fetchall()
+        finally:
+            sw.db.close()
+        menu = [
+            mod.paint("START AGENTS", "bold") + "  in shop",
+            mod.paint("Each agent joins the swarm with a brief, in its own tab.", "dim"),
+            "  1. claude   2. opencode   3. qodercli   4. codex   5. gemini",
+        ]
+        tail = self.launcher[-(room - len(menu) - 1) :] if self.launcher else []
+        self.frames.append(
+            {
+                "caption": caption,
+                "tabs": ["swarm", *[f"{a['name']} ({a['kind']})" for a in agents if a["state"] != "offline"]],
+                "board": board,
+                "monitor": [header, *[self.norm(line, picture=True) for line in monitor_lines[-room:]]],
+                "launcher": [*menu, *tail, "agent (number or name, q to close): "],
+            }
+        )
 
 
 APP = """VERSION = "1.4.0"
@@ -171,6 +226,13 @@ commands = [["python", "-m", "unittest", "discover", "-s", "tests", "-q"]]
 strategy = "squash"
 message = "{task}: {title}"
 """
+PLAN_COMMON = [
+    "--set=out_of_scope=anything outside the scope above",
+    "--set=dependencies=none beyond main",
+    "--set=risks=low; README is shared with another task",
+    "--set=rollback=revert the squash commit",
+    "--set=unknowns=none",
+]
 
 
 def run(sim: Sim) -> None:
@@ -191,11 +253,17 @@ def run(sim: Sim) -> None:
         "",
         "Three coding agents and one human take a single goal from a sentence to merged, verified work.",
         "Everything below is real output from the real tool and real git, produced by",
-        "[`examples/simulate.py`](../examples/simulate.py) in a throwaway repository. Only two things are",
-        "simulated: the human typing, and an agent going silent for hours. Paths, times and commit hashes",
-        "are normalised.",
+        "[`examples/simulate.py`](../examples/simulate.py) in a throwaway repository. Only these things are",
+        "simulated: the human typing, an agent going silent for hours, and the launcher pane in the pictures.",
+        "Paths, times and commit hashes are normalised.",
         "",
-        f"Generated with agents-collaboration on {platform.system()}, Python {platform.python_version()}.",
+        "![The console while three agents work: the live board on the left, the event monitor and the agent "
+        "launcher on the right](console.svg)",
+        "",
+        "_The console at six moments of this session, drawn by the tool's own board and monitor. "
+        "A still: [three agents working](console-three-agents.svg)._",
+        "",
+        f"Generated with agents-collaboration v{VERSION} on {platform.system()}, Python {platform.python_version()}.",
         "Regenerate it with `python examples/simulate.py --write docs/simulation.md`.",
         "",
         "`swarm` below stands for `python .agents/skills/agents-collaboration/swarm.py`, the command every",
@@ -226,9 +294,9 @@ def run(sim: Sim) -> None:
     sim.git("commit", "-qm", "install agents-collaboration", cwd=repo)
     sim.section(
         "1. Install",
-        "The installer adds the skill, a pointer in `AGENTS.md` for most agent CLIs, and one for "
-        "Claude Code. Nothing else: no tasks, no backlog. This project then states its own facts in a short "
-        "config: its gate, and a branch prefix.",
+        "The installer adds the skill, a pointer in `AGENTS.md` for most agent CLIs, and one for Claude Code. "
+        "Nothing else: no tasks, no backlog. This project then states its own facts in a short config: its gate, "
+        "and a branch prefix.",
     )
     sim.block(
         "curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all",
@@ -239,30 +307,33 @@ def run(sim: Sim) -> None:
     # 2. environment and joining
     sim.section(
         "2. Where am I, and who else is here?",
-        "Every agent starts by reading the machine it is on, so it "
-        "does not assume Linux on Windows (or the reverse). Then it joins. The first agent finds itself "
-        "alone, becomes the coordinator, and is told to ask the human about a console.",
+        "Every agent starts by reading the machine it is on, so it does not assume Linux on Windows (or the "
+        "reverse). Then it joins. The first agent finds itself alone, becomes the coordinator, and is told to ask "
+        "the human about a console.",
     )
     sim.swarm("environment", expect=("rules:",))
     sim.swarm(
         "join", "--kind", "claude", "--model", "sonnet", who="claude-1", expect=("SOLO", "coordinator", "ASK THE HUMAN")
     )
     sim.note(
-        "The human says no to the console for now (`swarm console` opens one later). Two more agents join; "
-        "the pool is no longer solo."
+        "The human says yes: the console opens with the board, the event monitor and a launcher. From the "
+        "launcher they start two more agents, each in its own tab. (Here the joins are run directly; the pictures "
+        "show the same console a person would see.)"
     )
-    sim.swarm("console", "--decline", who="claude-1", expect=("no console",))
+    sim.swarm("console", "--dry-run", who="claude-1", expect=("3 panes",))
     sim.swarm("join", "--kind", "opencode", "--model", "deepseek-chat", who="opencode-1", expect=("peers: claude-1",))
     sim.swarm("join", "--kind", "qodercli", who="qoder-1", expect=("peers: claude-1, opencode-1",))
     sim.swarm("agents", expect=("*claude-1",))
+    sim.launch_line(1, "claude", "w", "claude-1")
+    sim.launch_line(2, "opencode", "w", "opencode-1")
+    sim.launch_line(3, "qodercli", "w", "qoder-1")
 
     # 3. the goal and its hard questions
     sim.section(
         "3. A sentence becomes a goal",
-        "The human asks for a health check. Before anyone may split it into "
-        "tasks, the coordinator must answer hard questions in four stages: understand, backward, forward, "
-        "challenge. It does not know the riskiest assumption, so it says `unknown`, and that becomes a "
-        "question for the human.",
+        "The human asks for a health check. Before anyone may split it into tasks, the coordinator must answer "
+        "hard questions in four stages: understand, backward, forward, challenge. It does not know the riskiest "
+        "assumption, so it says `unknown`, and that becomes a question for the human.",
     )
     sim.swarm(
         "goal",
@@ -278,10 +349,10 @@ def run(sim: Sim) -> None:
         "not_included": "no network server, no authentication, no metrics endpoint",
         "must_not_break": "greet() and its test keep working exactly as before",
         "true_now": "src/app.py has VERSION and greet(); tests run with python -m unittest",
-        "last_step": "documentation tells operators what health() returns",
+        "last_step": "documentation and the changelog tell operators what health() returns",
         "before_that": "health() exists and is covered by a test the gate runs",
-        "first_moves": "write health() and the docs page in parallel; tests follow health()",
-        "in_parallel": "health() in src/ and the docs in docs/ touch different files except README",
+        "first_moves": "write health(), the docs page and the changelog entry in parallel; tests follow health()",
+        "in_parallel": "health() in src/, docs in docs/ and the changelog touch different files except README",
         "smallest_version": "a function returning a dict with status and version, one test, one doc page",
         "wrong_if": "operators need more than status and version; we would hear it when they read the docs",
         "hard_to_undo": "the shape of the health() answer, once the monitor parses it; the human approves it",
@@ -321,9 +392,8 @@ def run(sim: Sim) -> None:
     # 4. backward: outcomes and tasks
     sim.section(
         "4. Backward from the outcomes, then forward",
-        "Outcomes are what is observably true when the goal is "
-        "done, each with its check. Tasks work backward from them. The coordinator forgets one, and review "
-        "says so.",
+        "Outcomes are what is observably true when the goal is done, each with its check. Tasks work backward from "
+        "them. The coordinator forgets one, and review says so.",
     )
     sim.swarm(
         "goal",
@@ -349,7 +419,7 @@ def run(sim: Sim) -> None:
         "health",
         "operators can read what health() returns",
         "--check",
-        "docs/api.md describes health() and README lists it under Endpoints",
+        "docs/api.md and CHANGELOG.md describe health(), and README lists it",
         who="claude-1",
     )
     sim.swarm(
@@ -380,6 +450,20 @@ def run(sim: Sim) -> None:
         "docs/api.md explains both fields and README lists health()",
         who="claude-1",
     )
+    sim.swarm(
+        "goal",
+        "task",
+        "health",
+        "H-changelog",
+        "Announce health() in the changelog",
+        "--serves",
+        "3",
+        "--scope",
+        "CHANGELOG.md",
+        "--done-when",
+        "CHANGELOG.md has an entry for health() naming both fields",
+        who="claude-1",
+    )
     sim.swarm("goal", "review", "health", who="claude-1", ok=False, expect=("outcome 2 has no task",))
     sim.swarm(
         "goal",
@@ -402,22 +486,27 @@ def run(sim: Sim) -> None:
         "review",
         "health",
         who="claude-1",
-        expect=("wave 1 (now): H-api, H-docs", "wave 2 (after wave 1): H-tests", "review passed"),
+        expect=("wave 1 (now): H-api, H-changelog, H-docs", "wave 2 (after wave 1): H-tests", "review passed"),
     )
     sim.note(
         "Committing opens the tasks and gives the first wave to free agents whose machines can verify them. "
         "H-tests waits for H-api."
     )
     sim.swarm(
-        "goal", "commit", "health", "--assign", who="claude-1", expect=("H-api -> claude-1", "H-docs -> opencode-1")
+        "goal",
+        "commit",
+        "health",
+        "--assign",
+        who="claude-1",
+        expect=("H-api -> claude-1", "H-docs -> opencode-1", "H-changelog -> qoder-1"),
     )
+    sim.snapshot("Goal committed: three tasks assigned to three agents; H-tests waits for H-api")
 
     # 5. claims and context
     sim.section(
         "5. One task each, with its place in the work",
-        "Each claim creates the agent's own worktree and "
-        "branch, and shows the task's context. **Previous** is what it builds on. **Next** is what waits on "
-        "it, and what that will need.",
+        "Each claim creates the agent's own worktree and branch, and shows the task's context: **previous** (what "
+        "it builds on) and **next** (what waits on it, and what that will need).",
     )
     sim.note(
         "Every command has been telling claude-1 it has unread messages. It reads them before taking its own task: "
@@ -426,30 +515,21 @@ def run(sim: Sim) -> None:
     sim.swarm("inbox", who="claude-1", expect=("Answer to Q1", "You are assigned H-api"))
     sim.swarm("claim", "H-api", who="claude-1", expect=("feeds (next):", "-> H-tests"))
     sim.swarm("claim", "H-docs", who="opencode-1", expect=("claimed H-docs",))
-    sim.note("qoder-1 asks for work, but nothing it may take is free yet: H-tests waits on H-api.")
-    sim.swarm("next", who="qoder-1", ok=False, expect=("Nothing you can take",))
+    sim.swarm("claim", "H-changelog", who="qoder-1", expect=("claimed H-changelog",))
 
     # 6. planning, with an overlap
     sim.section(
         "6. Plans, and a conflict caught before it happens",
-        "Plans answer the task-level questions and list "
-        "ordered steps. opencode-1's scope overlaps claude-1's (both touch README.md), so its plan is refused "
-        "until it says how they avoid the clash.",
+        "Plans answer the task-level questions and list ordered steps. opencode-1's scope overlaps claude-1's "
+        "(both touch README.md), so its plan is refused until it says how they avoid the clash.",
     )
-    plan_common = [
-        "--set=out_of_scope=anything outside the scope above",
-        "--set=dependencies=none beyond main",
-        "--set=risks=low; README is shared with another task",
-        "--set=rollback=revert the squash commit",
-        "--set=unknowns=none",
-    ]
-    api = sim.worktree("H-api")
+    api, docs, log = sim.worktree("H-api"), sim.worktree("H-docs"), sim.worktree("H-changelog")
     sim.swarm(
         "plan",
         "--set=outcome=health() in src/app.py and README lists it",
         "--set=acceptance=calling health() by hand prints status ok and 1.4.0",
         "--set=scope=src/,README.md",
-        *plan_common,
+        *PLAN_COMMON,
         "--step",
         "add health() to src/app.py",
         "--step",
@@ -458,12 +538,11 @@ def run(sim: Sim) -> None:
         cwd=api,
         expect=("plan recorded",),
     )
-    docs = sim.worktree("H-docs")
     docs_plan = [
         "--set=outcome=docs/api.md and README describe health()",
         "--set=acceptance=docs/api.md names both fields and README links it",
         "--set=scope=docs/,README.md",
-        *plan_common,
+        *PLAN_COMMON,
         "--step",
         "write docs/api.md for health()",
         "--step",
@@ -479,13 +558,26 @@ def run(sim: Sim) -> None:
         cwd=docs,
         expect=("plan recorded",),
     )
+    sim.swarm(
+        "plan",
+        "--set=outcome=CHANGELOG.md announces health()",
+        "--set=acceptance=the entry names status and version and says where to read more",
+        "--set=scope=CHANGELOG.md",
+        *PLAN_COMMON,
+        "--step",
+        "write the changelog entry for health()",
+        "--step",
+        "check the entry against the docs plan",
+        who="qoder-1",
+        cwd=log,
+        expect=("plan recorded",),
+    )
 
-    # 7. claude-1 works and merges
+    # 7. three agents at once
     sim.section(
-        "7. Work in order, with evidence, then join it to main",
-        "Steps are recorded in order, each with "
-        "evidence. `merge` joins the single queue: it rebases onto main, runs the gate on the rebased "
-        "result, and only then advances main. Only after that is the agent free.",
+        "7. Three agents working at once",
+        "Each agent works in its own worktree, steps in order, each with evidence. The board shows all three in "
+        "flight.",
     )
     sim.swarm("start", who="claude-1", cwd=api)
     sim.write(api / "src" / "app.py", APP + '\n\ndef health():\n    return {"status": "ok", "version": VERSION}\n')
@@ -496,6 +588,30 @@ def run(sim: Sim) -> None:
         "python -c 'import app; print(app.health())' printed status ok, 1.4.0",
         who="claude-1",
         cwd=api,
+    )
+    sim.swarm("start", who="opencode-1", cwd=docs)
+    sim.write(
+        docs / "docs" / "api.md",
+        '# API\n\n## health()\n\nReturns `{"status": "ok", "version": "<VERSION>"}`. `status` is always `ok` when '
+        "the service answers.\n",
+    )
+    sim.swarm("step", "1", "--evidence", "docs/api.md describes status and version", who="opencode-1", cwd=docs)
+    sim.swarm("start", who="qoder-1", cwd=log)
+    sim.write(
+        log / "CHANGELOG.md",
+        "# Changelog\n\n## Unreleased\n\n- `health()` reports `status` and `version` (see docs/api.md).\n",
+    )
+    sim.swarm("step", "1", "--evidence", "CHANGELOG.md has the health() entry", who="qoder-1", cwd=log)
+    sim.swarm("status", expect=("H-api", "H-docs", "H-changelog"))
+    sim.snapshot("Three agents working at once, each in its own worktree")
+
+    # 8. the merge queue, with a real conflict
+    sim.section(
+        "8. The merge queue, and a real conflict resolved by the agent that owns it",
+        "`merge` joins a single queue: it rebases onto main, runs the gate on the rebased result, and only then "
+        "advances main. claude-1 and qoder-1 merge cleanly. opencode-1 changed the same README line as claude-1, "
+        "so the queue refuses it and touches nothing on main; the agent rebases in its own worktree and resolves "
+        "the conflict.",
     )
     sim.write(api / "README.md", "# shop\n\nA small service.\n\nEndpoints: health()\n")
     sim.block("git diff   # in claude-1's worktree", sim.git("diff", cwd=api))
@@ -514,21 +630,18 @@ def run(sim: Sim) -> None:
     sim.swarm("merge", who="claude-1", cwd=repo, expect=("merged H-api",))
     sim.note("The merge told opencode-1, whose scope it touched, to rebase now rather than later.")
     sim.swarm("inbox", who="opencode-1", expect=("rebase",))
-
-    # 8. a real conflict
-    sim.section(
-        "8. A real merge conflict, resolved by the agent that owns it",
-        "opencode-1 changed the same README "
-        "line. The queue refuses to merge it and touches nothing on main. The agent rebases in its own "
-        "worktree, resolves the conflict, and submits again.",
+    sim.commit("H-changelog", "qoder-1", "changelog entry for health()")
+    sim.swarm("step", "2", "--evidence", "entry matches the fields in docs/api.md", who="qoder-1", cwd=log)
+    sim.swarm(
+        "submit",
+        "--evidence",
+        "CHANGELOG.md names status and version",
+        "--changelog",
+        "changelog entry for health()",
+        who="qoder-1",
+        cwd=log,
     )
-    sim.swarm("start", who="opencode-1", cwd=docs)
-    sim.write(
-        docs / "docs" / "api.md",
-        '# API\n\n## health()\n\nReturns `{"status": "ok", "version": '
-        '"<VERSION>"}`. `status` is always `ok` when the service answers.\n',
-    )
-    sim.swarm("step", "1", "--evidence", "docs/api.md describes status and version", who="opencode-1", cwd=docs)
+    sim.swarm("merge", who="qoder-1", cwd=repo, expect=("merged H-changelog",))
     sim.write(docs / "README.md", "# shop\n\nA small service.\n\nEndpoints: see docs/api.md\n")
     sim.commit("H-docs", "opencode-1", "docs for health()")
     sim.swarm("step", "2", "--evidence", "README Endpoints line points at docs/api.md", who="opencode-1", cwd=docs)
@@ -542,6 +655,7 @@ def run(sim: Sim) -> None:
         cwd=docs,
     )
     sim.swarm("merge", who="opencode-1", cwd=repo, expect=("conflicts in", "README.md"))
+    sim.snapshot("The queue: two merged; opencode-1's README conflicts and nothing reached main")
     sim.git("rebase", "main", cwd=docs, ok=False)
     sim.write(docs / "README.md", "# shop\n\nA small service.\n\nEndpoints: health() (see docs/api.md)\n")
     sim.git("add", "README.md", cwd=docs)
@@ -564,9 +678,8 @@ def run(sim: Sim) -> None:
     # 9. silence and take-over
     sim.section(
         "9. An agent goes silent; another continues its work",
-        "qoder-1 takes H-tests (its input, H-api, has "
-        "merged), reads what H-api produced, plans and starts, then stops answering. The service marks it "
-        "offline and, after the reclaim window, orphans the task with its branch and worktree intact.",
+        "qoder-1 takes H-tests (its input, H-api, has merged), reads what H-api produced, plans and starts, then "
+        "stops answering.",
     )
     sim.swarm("next", who="qoder-1", expect=("claimed H-tests", "produced: health() reports status and version"))
     tests_wt = sim.worktree("H-tests")
@@ -575,7 +688,7 @@ def run(sim: Sim) -> None:
         "--set=outcome=tests/test_health.py checks health()",
         "--set=acceptance=python -m unittest discover -s tests passes with the new test",
         "--set=scope=tests/",
-        *plan_common,
+        *PLAN_COMMON,
         "--step",
         "write tests/test_health.py",
         "--step",
@@ -586,26 +699,27 @@ def run(sim: Sim) -> None:
     sim.swarm("start", who="qoder-1", cwd=tests_wt)
     sim.age_agent("qoder-1", 1)
     sim.note(
-        "_(Simulated: an hour passes with no heartbeat from qoder-1.)_ The service marks it offline but leaves "
-        "its task alone: a crashed agent often comes back."
+        "_(Simulated: an hour passes with no heartbeat from qoder-1.)_ The service marks it offline but leaves its "
+        "task alone: a crashed agent often comes back."
     )
     sim.swarm("status", expect=("H-tests",))
     sim.swarm("agents", expect=("offline",))
     sim.age_agent("qoder-1", 3)
     sim.note(
-        "_(Simulated: two more hours pass, beyond the two-hour reclaim window.)_ The task is orphaned: its "
-        "branch, worktree and plan stay, ready for someone else."
+        "_(Simulated: two more hours pass, beyond the two-hour reclaim window.)_ The task is orphaned: its branch, "
+        "worktree and plan stay, ready for someone else."
     )
     sim.swarm("status", expect=("orphaned",))
     sim.swarm("claim", "H-tests", "--take-over", who="claude-1", expect=("claimed H-tests",))
+    sim.snapshot("qoder-1 went silent; claude-1 took over H-tests from its branch")
     sim.note("If qoder-1 comes back, it is fenced: nothing it does counts until it rejoins, and then it holds nothing.")
     sim.swarm("whoami", who="qoder-1", ok=False, expect=("offline",))
 
     # 10. a failing gate
     sim.section(
         "10. The gate catches a mistake",
-        "claude-1 continues qoder-1's plan, but its first test expects the "
-        "wrong value. The gate runs on the rebased branch, fails, and nothing reaches main.",
+        "claude-1 continues qoder-1's plan, but its first test expects the wrong value. The gate runs on the "
+        "rebased branch, fails, and nothing reaches main.",
     )
     sim.write(
         tests_wt / "tests" / "test_health.py",
@@ -619,6 +733,7 @@ def run(sim: Sim) -> None:
     sim.swarm("step", "2", "--evidence", "committed the test", who="claude-1", cwd=tests_wt)
     sim.swarm("submit", "--evidence", "test written", "--changelog", "health() is tested", who="claude-1", cwd=tests_wt)
     sim.swarm("merge", who="claude-1", cwd=repo, expect=("Gates failed",))
+    sim.snapshot("The gate caught a wrong test on the rebased branch; nothing reached main")
     sim.write(
         tests_wt / "tests" / "test_health.py",
         (tests_wt / "tests" / "test_health.py").read_text(encoding="utf-8").replace('"fine"', '"ok"'),
@@ -669,19 +784,20 @@ def run(sim: Sim) -> None:
         "health",
         f"--evidence=1=health() printed {health}",
         f"--evidence=2=unittest on main: {suite}, including test_health",
-        "--evidence=3=docs/api.md describes status and version; README lists health()",
+        "--evidence=3=docs/api.md and CHANGELOG.md describe status and version; README lists health()",
         who="claude-1",
         expect=("closed",),
     )
+    sim.snapshot("Goal closed on evidence for every outcome; every worktree merged and removed")
 
     # 12. what remains
     sim.section(
         "12. What is left behind",
-        "Main carries one squash commit per task. Every worktree and task branch "
-        "is gone, and the board remembers who did what.",
+        "Main carries one squash commit per task. Every worktree and task branch is gone, and the board remembers "
+        "who did what.",
     )
-    log = sim.git("log", "--oneline", "main", cwd=repo)
-    sim.block("git log --oneline main", log)
+    log_main = sim.git("log", "--oneline", "main", cwd=repo)
+    sim.block("git log --oneline main", log_main)
     sim.note(
         "The coordinator's inbox holds what the service flagged along the way. It warned about steps finished within "
         "two minutes of starting: worth checking in real work, expected here because the simulation runs instantly. "
@@ -690,16 +806,19 @@ def run(sim: Sim) -> None:
     sim.swarm("inbox", who="claude-1", expect=("orphaned",))
     sim.swarm("goal", "list", expect=("closed",))
     sim.swarm("agents")
-    if "H-api: Add health()" not in log or "H-tests: Test health()" not in log:
-        raise Diverged("main does not carry the merged tasks:\n" + log)
+    for task in ("H-api", "H-docs", "H-changelog", "H-tests"):
+        if f"{task}: " not in log_main:
+            raise Diverged(f"main does not carry {task}:\n{log_main}")
     leftover = sim.git("worktree", "list", cwd=repo).splitlines()
     if len(leftover) != 1:
         raise Diverged("worktrees were left behind:\n" + "\n".join(leftover))
     sim.note(
         "**What to take from it:**\n\n"
         "- No task was touched before its questions were answered.\n"
-        "- A missing outcome, an overlap, a conflict, a silent agent and a wrong test were each caught, by the "
-        "service, at the point they happened, with the next step named.\n"
+        "- Three agents worked at once without stepping on each other: the one overlap was caught at planning, and "
+        "the one conflict at merge, without touching main.\n"
+        "- A missing outcome, a silent agent and a wrong test were each caught by the service at the point they "
+        "happened, with the next step named.\n"
         "- Main only ever moved through the queue, after the gate passed on the rebased result.\n"
         "- The goal closed on evidence for its outcomes, not on merged tasks alone."
     )
@@ -707,7 +826,7 @@ def run(sim: Sim) -> None:
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--write", default="", help="write the transcript to this file")
+    parser.add_argument("--write", default="", help="write the transcript to this file (and the SVGs beside it)")
     parser.add_argument("--check", action="store_true", help="run every milestone; print only the outcome")
     args = parser.parse_args()
     base = Path(tempfile.mkdtemp(prefix="swarm-sim-"))
@@ -721,11 +840,19 @@ def main() -> int:
         subprocess.run(["git", "worktree", "prune"], cwd=sim.repo, capture_output=True, check=False)
         shutil.rmtree(base, ignore_errors=True)
     text = "\n".join(sim.out).rstrip() + "\n"
+    animated = console_svg.render(sim.frames)
+    three = next(f for f in sim.frames if f["caption"].startswith("Three agents"))
+    still = console_svg.render([three])
+    for svg in (animated, still):
+        ET.fromstring(svg)  # a malformed picture fails the run
     if args.check:
-        print("simulation: every milestone held")
+        print(f"simulation: every milestone held; {len(sim.frames)} console frames rendered")
     elif args.write:
-        Path(args.write).write_text(text, encoding="utf-8", newline="\n")
-        print(f"wrote {args.write}")
+        out = Path(args.write)
+        out.write_text(text, encoding="utf-8", newline="\n")
+        (out.parent / "console.svg").write_text(animated, encoding="utf-8", newline="\n")
+        (out.parent / "console-three-agents.svg").write_text(still, encoding="utf-8", newline="\n")
+        print(f"wrote {out}, {out.parent / 'console.svg'} and {out.parent / 'console-three-agents.svg'}")
     else:
         sys.stdout.reconfigure(encoding="utf-8")
         print(text)

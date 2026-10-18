@@ -1,5 +1,58 @@
 # Changelog
 
+## v0.4.1 - 2026-10-18
+
+### Added
+
+- **Pictures of the console**, at the top of the README. `docs/console.svg` loops
+  through six moments of the simulated session:
+  - the goal committed;
+  - three agents working at once;
+  - the merge queue catching a conflict;
+  - a silent agent's task taken over;
+  - the gate catching a wrong test;
+  - the goal closed on evidence.
+
+  `docs/console-three-agents.svg` is a still of the three agents working. The
+  simulation draws both from the tool's own board and monitor views, and CI
+  builds them on every change.
+- The simulated goal gains a third task (a changelog entry), so the first wave
+  really runs three agents in parallel.
+
+- **Kilo Code** (`kilocode`, verified with `@kilocode/cli` 0.18.0) is a supported
+  agent CLI. It works with `probe`, `spawn` (`--auto`, `--yolo` when unattended,
+  `-mo` for the model) and the console's `launch`. The adapter never uses Kilo's
+  own `--parallel` branching, and a test keeps every adapter away from a CLI's
+  own branching modes (EC-181).
+
+### Fixed: work never leaves the pool
+
+Found when two Qoder agents in a real project each took a task, received no
+instructions, and were closed, which left both tasks orphaned and out of reach.
+
+- **Untouched tasks return to the pool.** If an agent exits before planning,
+  stepping, committing or changing anything, its task goes straight back to the
+  pool and its empty worktree is removed. Existing boards are cleaned on the next
+  command (EC-184).
+- **Work left behind is offered.** When nothing is open, `next` offers an
+  orphaned task as a take-over. The board lists it as "needs a new owner"
+  (EC-185).
+- **Every agent receives its instructions.** Qoder now starts with its first
+  message (`-i`, new in Qoder 1.1.73). For a CLI that cannot take one, the
+  message goes to the clipboard and the launch waits for Enter, instead of
+  printing it behind the CLI's screen (EC-183).
+- **CLIs that change are caught.** Qoder updated itself mid-session and dropped
+  `-q` and `--max-turns`. Before `spawn`, `launch` or `probe` uses a CLI, every
+  option is checked against its own `--help` (EC-182). The Qoder adapter is
+  updated for 1.1.73.
+- **An uncommitted skill is named.** `doctor`, and the coordinator's `join`, warn
+  when the skill is installed but not committed, because then agents in
+  worktrees cannot see it (EC-186).
+- A launched agent's exit is recorded with its exit code and how long it ran.
+- Events no longer show internals: no Python lists (`needs ['H-api']`), no claim
+  epochs, and no list of every answered key. Goal outcomes and answers read as
+  sentences.
+
 ## v0.4.0 - 2026-10-18
 
 A console people can read, shaped by using the v0.2.0 console for real.

@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 180 cases. 96 Tested, 60 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 186 cases. 101 Tested, 61 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -281,6 +281,12 @@ Found by using the v0.2.0 console for real.
 | EC-177 | Leaving the launcher silently drops the pane to a bare shell, and the person starts an agent by hand, in the main checkout, without a brief. | Leaving says what the pane now is, how to reopen the menu, and why the menu is the safer way. | Tested |
 | EC-178 | The person wants an agent present without handing it a task yet. | The launcher's "no task" choice and `launch --no-task` join it in the main checkout, told to ask for work. | Tested |
 | EC-179 | The person wants an agent on a particular task, not whatever is next. | The launcher lists the open tasks this machine can take and starts the agent on the chosen one. | Tested |
+| EC-182 | An agent CLI updates itself and drops options its adapter passes (Qoder went from 0.1.46 to 1.1.73 mid-session and dropped `-q` and `--max-turns`). | Before `spawn`, `launch` or `probe` uses a CLI, every option it is about to pass is checked against that CLI's own `--help`. A missing one stops the launch and names the options. | Tested |
+| EC-183 | An interactive CLI cannot take a first message, and the message printed before it opens is hidden behind its screen, so the agent starts without its instructions. | Adapters pass the first message where the CLI allows it (Qoder's `-i`). Otherwise it goes on the clipboard, and the launch waits for Enter before the CLI starts. | Enforced |
+| EC-184 | An agent exits before doing anything, and its task is held as orphaned, out of the pool. | A task with no plan, no step, no commit and nothing uncommitted goes straight back to the pool, and its empty worktree is removed. Boards that already hold such orphans are cleaned on the next command. | Tested |
+| EC-185 | A task with real work in it is orphaned and waits for someone to know they should take it over. | When nothing is open, `next` offers it as a take-over, telling the agent to read its plan and steps first. The board lists it as needing a new owner. | Tested |
+| EC-186 | The skill is installed but not committed, so task worktrees (made from the target branch) contain neither the skill nor the `AGENTS.md` pointer. | `doctor`, and the coordinator's `join`, say so and what to commit. The brief always carries the skill's full path. | Tested |
+| EC-181 | An agent CLI has its own parallel or worktree mode (Kilo Code's `--parallel`, Qoder's `--worktree`) that creates branches beside the swarm's worktree, so work lands where no task tracks it. | No adapter uses those modes, and a test fails if one does. The agent works in the worktree its claim made. | Tested |
 | EC-180 | The board gets a quarter of the screen, and agent TUIs are squeezed into small panes. | The board takes the left half at full height; agents open in their own tab (the launcher opens each new agent in a new tab of the same terminal). | Tested |
 
 ## What would close the open ones
