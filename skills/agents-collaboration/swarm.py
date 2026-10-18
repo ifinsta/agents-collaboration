@@ -39,7 +39,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.3.1"
+__version__ = "0.3.2"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -829,6 +829,14 @@ def parse_backlog(text: str) -> list[dict]:
     return rows
 
 
+EXAMPLE_MARK = "agents-collaboration:example"
+EXAMPLE_IDS = {"EX-docs", "EX-api", "EX-api-tests", "EX-deploy"}  # the rows v0.3.1 and earlier shipped
+
+
+def is_example_backlog(text: str, rows: list[dict]) -> bool:
+    return EXAMPLE_MARK in text or (bool(rows) and {r["id"] for r in rows} <= EXAMPLE_IDS)
+
+
 def check_graph(tasks: dict[str, list[str]]) -> None:
     for tid, needs in tasks.items():
         for n in needs:
@@ -864,7 +872,19 @@ def sync_backlog(sw: Swarm, quiet: bool = True) -> None:
         if not quiet:
             print("No backlog configured ([project] backlog); add tasks with `swarm add`.")
         return
-    rows = parse_backlog(read_text(sw.main_root / rel))
+    path = sw.main_root / rel
+    if not path.is_file():
+        print(f"warning: the backlog {rel} named in the config does not exist; no tasks imported", file=sys.stderr)
+        return
+    text = read_text(path)
+    rows = parse_backlog(text)
+    if is_example_backlog(text, rows):
+        print(
+            f"warning: {rel} is the example backlog that ships with agents-collaboration; it is never imported "
+            "as work. Write your own table, or create tasks with `swarm goal`.",
+            file=sys.stderr,
+        )
+        rows = []
     ids = [r["id"] for r in rows]
     backlog_ids = set(ids)
     dupes = {i for i in ids if ids.count(i) > 1}

@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.3.2 - 2026-10-18
+
+### Fixed
+
+- **`--scaffold` no longer puts example tasks on the board.** In v0.3.1 the example
+  config pointed at the example backlog, so the first command imported
+  "EX-docs" and "EX-api" as real, claimable work. Now `--scaffold` creates only a
+  config that explains every setting and names no backlog. The example backlog is marked, and the
+  tool never imports it (EC-171).
+- **A backlog file named in the config but missing** is reported instead of
+  crashing the command (EC-172).
+
+### If you used `--scaffold` with v0.3.1
+
+Run `swarm update`, then `swarm sync`. It withdraws EX- tasks nobody has
+touched. Delete `.agents/swarm/backlog.md` if it is the copied example.
+
 ## v0.3.1 - 2026-10-18
 
 - The tool's output is UTF-8 on every OS. Through a pipe, which is how agents

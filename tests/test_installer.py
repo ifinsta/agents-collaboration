@@ -115,6 +115,48 @@ class Installer(unittest.TestCase):
         self.assertFalse((self.repo / ".agents" / "swarm").exists())
         self.install("--scaffold")
         self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
+        self.assertFalse((self.repo / ".agents" / "swarm" / "backlog.md").exists())
+
+    def board(self):
+        subprocess.run(
+            ["git", "commit", "-q", "--allow-empty", "-m", "init"],
+            cwd=self.repo,
+            check=True,
+            env={
+                **os.environ,
+                "GIT_AUTHOR_NAME": "t",
+                "GIT_AUTHOR_EMAIL": "t@t",
+                "GIT_COMMITTER_NAME": "t",
+                "GIT_COMMITTER_EMAIL": "t@t",
+            },
+        )
+        done = subprocess.run(
+            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "status", "--all"],
+            cwd=self.repo,
+            capture_output=True,
+            text=True,
+            encoding="utf-8",
+            check=False,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        return done.stdout
+
+    def test_ec171_a_fresh_install_starts_with_an_empty_board(self):
+        self.install("--all")
+        lines = self.board().strip().splitlines()
+        self.assertEqual(len(lines), 1, lines)  # only the "agents live" line: no tasks
+        self.install("--scaffold")
+        lines = self.board().strip().splitlines()
+        self.assertEqual(len(lines), 1, lines)
+
+    def test_ec171_the_example_backlog_is_never_work(self):
+        self.install("--scaffold")
+        swarm_dir = self.repo / ".agents" / "swarm"
+        (swarm_dir / "backlog.md").write_bytes((ROOT / "examples" / "backlog.md").read_bytes())
+        cfg = swarm_dir / "config.toml"
+        cfg.write_text(cfg.read_text(encoding="utf-8").replace("# backlog = ", "backlog = ", 1), encoding="utf-8")
+        out = self.board()
+        self.assertNotIn("EX-", out)
 
     def test_installed_tool_runs(self):
         self.install()

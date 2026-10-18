@@ -6,7 +6,8 @@
 target = "main"                       # the branch work is merged into
 branch_prefix = "swarm/"              # each task's branch is <prefix><task id>
 worktree_root = "../{repo}-wt"        # worktrees live beside the repository, one per task
-backlog = ".agents/swarm/backlog.md"  # the task table imported by `swarm init` / `swarm sync`
+# backlog = ".agents/swarm/backlog.md"  # optional: a task table of YOUR OWN, imported by `swarm sync`.
+                                        # Without one, work comes from `swarm goal`.
 remote = "origin"
 check_remote = true                   # refuse a task whose branch already exists on the remote
 

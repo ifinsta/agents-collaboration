@@ -50,7 +50,8 @@ next command.
 1. Read `.agents/skills/agents-collaboration/SKILL.md` and follow it from section 1.
 2. Do not create project settings by guessing. If the person wants to state the
    project's own facts (gates, target branch, shared files), they add `--scaffold`
-   to the install, or write `.agents/swarm/config.toml` themselves.
+   to the install (an explained config with defaults, no tasks), or write `.agents/swarm/config.toml`
+   themselves. The board starts empty either way.
 3. Turn the work you were given into tasks with `swarm goal` (SKILL.md, section 1.5).
 
 ## 5. Install once for every repository

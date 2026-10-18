@@ -34,8 +34,8 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[170 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 87 are proved by tests on Linux, Windows and macOS, and the few
+[172 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 89 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -60,7 +60,8 @@ irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.
 
 This installs `.agents/skills/agents-collaboration/`, verified against the
 release manifest. It creates no project files unless you add `--scaffold`
-(an optional `.agents/swarm/config.toml` and backlog). `--all` adds the pointers agent
+(an explained `.agents/swarm/config.toml` holding defaults, nothing else). A fresh install always
+starts with an empty board: no tasks, no goals, nothing from any other project. `--all` adds the pointers agent
 CLIs look for: a short marked section in `AGENTS.md` (opencode, Codex, Qoder,
 DeepSeek-TUI) and a pointer skill in `.claude/skills/` (Claude Code). It refuses to
 overwrite files you edited unless you pass `--force`, and keeps the line endings
@@ -131,7 +132,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.3.1, experimental.** The protocol and the service are tested. Headless
+**0.3.2, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

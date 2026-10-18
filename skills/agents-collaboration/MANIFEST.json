@@ -1,8 +1,8 @@
 {
-  "version": "0.3.1",
+  "version": "0.3.2",
   "files": {
     "SKILL.md": "f021db261f1abde6daaf44b6e5ab044367d2893fce3d26b7682b76300088df4a",
-    "swarm.py": "0463af71e5e82a34713f6d15b058765707c1a43ddde142650f7aa98bf91716e0",
-    "EDGE-CASES.md": "b7dfca4f908ac8de1ecd8744ff67c58fc0ea95bcb882efc95b104d81386abd3c"
+    "swarm.py": "f66c20a8157029069e092b279661d48b904158420c1ca60b238d6e079cd09e8a",
+    "EDGE-CASES.md": "15604ee4efdaa7ce13bb3fd5982bf38a244b2dc84551640f5e2748a71adb1518"
   }
 }

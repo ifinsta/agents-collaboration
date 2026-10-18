@@ -1,4 +1,8 @@
-# Backlog
+<!-- agents-collaboration:example - never imported as work -->
+# Backlog (example)
+
+This file only shows the format. The tool refuses to import it; write your own
+table, or let agents create the tasks with `swarm goal`.
 
 The coordinator keeps this table; `swarm sync` imports it. One row is one task an
 agent can finish, verify and merge on its own.

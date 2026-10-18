@@ -1094,6 +1094,34 @@ class Output(SwarmCase):
         self.assertIn("rebase \u2192 now", self.sw("--as", "bob", "inbox"))
 
 
+class ExampleContent(SwarmCase):
+    OLD_EXAMPLE = """| Id | Title | Scope | Needs | Locks | Caps |
+|---|---|---|---|---|---|
+| EX-docs | Write the contributor quick start | `docs/` | — | — | |
+| EX-api | Add the health endpoint | `src/api/` | — | — | |
+"""
+
+    def test_ec171_tasks_imported_from_the_old_example_are_withdrawn(self):
+        self.sw("status")  # imports the real backlog
+        con = self.db()
+        for tid, title in (("EX-docs", "Write the contributor quick start"), ("EX-api", "Add the health endpoint")):
+            con.execute(
+                "INSERT INTO tasks(id,title,state,needs,caps,locks,ord,created_at,updated_at) "
+                "VALUES(?,?,'open','[]','[]','[]',99,'x','x')",
+                (tid, title),
+            )
+        con.commit()
+        con.close()
+        (self.root / "backlog.md").write_text(self.OLD_EXAMPLE, encoding="utf-8")
+        out = self.sw("sync")
+        self.assertIn("example backlog", out)
+        self.assertNotIn("EX-", self.sw("status"))
+
+    def test_ec172_a_missing_backlog_file_is_reported_not_fatal(self):
+        (self.root / "backlog.md").unlink()
+        self.assertIn("does not exist", self.sw("status"))
+
+
 class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")
