@@ -1,5 +1,23 @@
 # Changelog
 
+## v0.3.3 - 2026-10-18
+
+### Added
+
+- **[A simulated session](docs/simulation.md)** shows what to expect before you
+  install. [`examples/simulate.py`](examples/simulate.py) runs it with the real
+  installer, tool and git, and `--check` verifies every milestone in CI on every OS.
+  Three agents and a human take one goal from a sentence to merged, verified work.
+  On the way they meet hard questions, a refused gap, an overlap, a merge conflict,
+  a silent agent taken over, and a failing gate.
+
+### Fixed
+
+- `goal answer` no longer counts an `unknown` as answered. It says which questions
+  wait, which question each became, and who it went to (EC-173). Found by the
+  simulation.
+- The merge message has no trailing space when nothing was pushed.
+
 ## v0.3.2 - 2026-10-18
 
 ### Fixed

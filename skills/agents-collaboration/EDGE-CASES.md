@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 172 cases. 89 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 173 cases. 90 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -266,6 +266,7 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-169 | A goal is declared done because its tasks merged, though its outcomes were never checked. | Closing needs evidence for every outcome's own check. | Tested |
 | EC-171 | Example content shipped with the tool is imported as real work (v0.3.1's `--scaffold` put two placeholder tasks on every new board). | `--scaffold` creates only a config of explained defaults that names no backlog; the example backlog carries a marker, and the tool never imports it; `swarm sync` withdraws tasks imported from it that nobody touched. | Tested |
 | EC-172 | The config names a backlog file that does not exist. | Reported as a warning; the board stays as it is. | Tested |
+| EC-173 | An agent answers a goal question with "unknown" and is told every question is answered, so it believes the interrogation is finished. | An unknown is not counted: the output says which questions wait, and which question each became and who it went to. Found by the published simulation. | Tested |
 | EC-170 | On Windows, the tool's output through a pipe (how agents read it) is cp1252: "§" arrives garbled and "→" in a note crashes the command. | Output is UTF-8 on every OS, whatever the console or pipe. | Tested |
 
 ## What would close the open ones

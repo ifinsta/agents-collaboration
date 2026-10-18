@@ -1,6 +1,6 @@
 [project]
 name = "agents-collaboration"
-version = "0.3.2"
+version = "0.3.3"
 description = "A skill and a coordination service that let up to five coding agents work on one repository without stepping on each other."
 readme = "README.md"
 license = { file = "LICENSE" }

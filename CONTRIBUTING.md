@@ -38,6 +38,9 @@ Rules:
    `python scripts/make_manifest.py`. CI fails while it is stale, because the
    installer verifies every file against it.
 6. `install.py` stays ASCII-only (Windows PowerShell pipes text as ASCII).
+7. **The simulation is part of the contract.** `examples/simulate.py --check` runs in the
+   suite. When behaviour or output changes on purpose, regenerate the published transcript:
+   `python examples/simulate.py --write docs/simulation.md`.
 
 ## Adding an agent adapter
 

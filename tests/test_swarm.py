@@ -939,6 +939,14 @@ class Goals(SwarmCase):
         self.sw("answer", "1", "the provider's response time; measure it before caching anything")
         self.sw("goal", "review", "GQ")
 
+    def test_ec173_an_unknown_is_not_counted_as_answered(self):
+        self.sw("goal", "new", "GU", "Make exports resumable")
+        self.answer_all("GU", skip=("wrong_if",))
+        out = self.sw("goal", "answer", "GU", "--set", "wrong_if=unknown")
+        self.assertIn("14 of 15 questions answered with substance", out)
+        self.assertIn("waiting on: wrong_if", out)
+        self.assertIn("became Q1, asked of human", out)
+
     def test_backward_and_forward_views_then_commit(self):
         self.join("ann")
         self.build()

@@ -39,7 +39,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.3.2"
+__version__ = "0.3.3"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -1908,7 +1908,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             nudge_overlaps(sw, t, submit.get("files", []))
         cleaned = cleanup(sw, sw.task(t["id"])) if sw.config["merge"]["cleanup"] else "kept"
         return (
-            f"merged {t['id']} into {target} as {new_sha[:10]} ({message}). {pushed}\n"
+            f"merged {t['id']} into {target} as {new_sha[:10]} ({message})." + (f" {pushed}" if pushed else "") + "\n"
             f"worktree: {cleaned}. You are free: `swarm next --as {who}`."
         )
     with sw.tx():
@@ -2924,6 +2924,7 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
         if g["state"] == "closed":
             raise SwarmError(f"{a.goal} is closed.")
         answers = json.loads(g["answers"] or "{}")
+        asked = []
         for item in a.set or []:
             if "=" not in item:
                 raise SwarmError(f"--set {item!r}: use key=value.")
@@ -2938,6 +2939,10 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
                 )
                 sw.message(who, to, f"Q{cur.lastrowid} on goal {a.goal}: {GOAL_KEYS[key][1]}", kind="question")
                 answers[key] = f"UNKNOWN (Q{cur.lastrowid})"
+                asked.append(
+                    f"  {key}: unknown, so it became Q{cur.lastrowid}, asked of {to}. The plan waits for the "
+                    "answer; then answer this question again with what you learned."
+                )
                 continue
             if key == "unknowns" and value.lower() in ("none", "no"):
                 answers[key] = value
@@ -2948,11 +2953,15 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
         sw.db.execute("UPDATE goals SET answers=?, updated_at=? WHERE id=?", (json.dumps(answers), iso(), a.goal))
         sw.event("goal_answered", who, None, f"{a.goal}: {', '.join(sorted(answers))}")
     missing = [k for k in GOAL_KEYS if not answers.get(k)]
+    waiting = [k for k in GOAL_KEYS if str(answers.get(k, "")).startswith("UNKNOWN (")]
     print(
-        f"{len(GOAL_KEYS) - len(missing)} of {len(GOAL_KEYS)} questions answered"
-        + (f"; still open: {', '.join(missing)}" if missing else "")
+        f"{len(GOAL_KEYS) - len(missing) - len(waiting)} of {len(GOAL_KEYS)} questions answered with substance"
+        + (f"; waiting on: {', '.join(waiting)}" if waiting else "")
+        + (f"; still unanswered: {', '.join(missing)}" if missing else "")
     )
-    if not missing:
+    for line in asked:
+        print(line)
+    if not missing and not waiting:
         print(f'next: the outcomes (end of the backward chain): swarm goal outcome {a.goal} "..." --check "..."')
 
 

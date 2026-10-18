@@ -9,6 +9,11 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
 
 [![ci](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml)
 
+**See it before you install it:** [a simulated session](docs/simulation.md). Three agents and
+a human take one goal from a sentence to merged, verified work, with real output from the real
+tool. On the way they hit hard questions, a refused gap, an overlap, a merge conflict, an agent
+going silent, and a failing gate. CI replays it on every change.
+
 ## What it guarantees
 
 - **An agent knows whether it is alone.** `join` reports SOLO or names its peers.
@@ -34,8 +39,8 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[172 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 89 are proved by tests on Linux, Windows and macOS, and the few
+[173 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 90 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -132,7 +137,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.3.2, experimental.** The protocol and the service are tested. Headless
+**0.3.3, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).
