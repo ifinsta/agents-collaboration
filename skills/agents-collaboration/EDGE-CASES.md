@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 140 cases. 56 Tested, 60 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 145 cases. 62 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -73,7 +73,7 @@ Totals: 140 cases. 56 Tested, 60 Enforced, 12 Partial, 9 Rule, 3 Open.
 | EC-039 | The task's branch already exists on the remote. | Refused as held outside the board. | Enforced |
 | EC-040 | Another agent continues an orphaned task. | `claim --take-over` moves the task, its locks and its branch; the epoch increases. | Tested |
 | EC-041 | The previous holder comes back and keeps working. | While offline every command is refused; after `--resume` it holds nothing. | Tested |
-| EC-042 | A branch or worktree is left from an earlier attempt. | Reused on take-over; otherwise refused and reported by `doctor`. | Enforced |
+| EC-042 | A branch or worktree is left from an earlier attempt. | Reused on take-over or `--adopt`; otherwise `claim` refuses and `next` skips the task. | Tested |
 | EC-043 | Creating the worktree fails (path exists, disk full). | The claim is released, so the task is not stranded. | Enforced |
 
 ## E. Critical questions and sequential planning
@@ -217,6 +217,19 @@ Totals: 140 cases. 56 Tested, 60 Enforced, 12 Partial, 9 Rule, 3 Open.
 | EC-138 | The filesystem ignores case. | Detected; two-step renames. | Enforced |
 | EC-139 | Long paths are disabled. | Detected; keep paths short. | Enforced |
 | EC-140 | The shell is Windows PowerShell 5.1. | Rules for `&&`, `export` and `timeout`; `env` prints PowerShell syntax by default there. | Enforced |
+
+## N. Found in the first real run
+
+Installed into a repository where five agents were already working through an
+earlier board, v0.1.0 met these within minutes. Each is now handled.
+
+| Id | Situation | Handling | Status |
+|---|---|---|---|
+| EC-141 | Work on a task was started outside the board (its branch already exists). | `claim` refuses and names the branch's commits; `--adopt` continues it and tells the coordinator; `next` never hands it out. | Tested |
+| EC-142 | An agent rubber-stamps the protocol (plans and finishes every step in seconds). | Finishing all steps within two minutes of `start` is logged and sent to the coordinator. The service cannot judge the evidence itself. | Tested |
+| EC-143 | A newly promoted coordinator lifts a pause another coordinator set for a reason it does not know. | Only whoever set the pause, or a human, may lift it. | Tested |
+| EC-144 | A gate names a program by relative path, and Windows resolves it from the caller's directory, not the worktree. | Relative program paths are resolved against the task's worktree on every OS; `doctor` checks them from a worktree. | Tested |
+| EC-145 | A dry run of `spawn` joins an agent and claims a task. | `--dry-run` only prints the command line; nothing on the board changes. | Tested |
 
 ## What would close the open ones
 

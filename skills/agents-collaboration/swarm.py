@@ -486,7 +486,7 @@ CREATE TABLE IF NOT EXISTS meta (key TEXT PRIMARY KEY, value TEXT);
 CREATE TABLE IF NOT EXISTS agents (
   name TEXT PRIMARY KEY, kind TEXT, model TEXT, caps TEXT DEFAULT '[]', slot INTEGER,
   state TEXT, task TEXT, joined_at TEXT, heartbeat_at TEXT, left_at TEXT, pid INTEGER,
-  offline_at TEXT, offline_reason TEXT, env TEXT DEFAULT '{}');
+  offline_at TEXT, offline_reason TEXT, env TEXT DEFAULT '{}', first_msg INTEGER DEFAULT 0);
 CREATE TABLE IF NOT EXISTS tasks (
   id TEXT PRIMARY KEY, title TEXT, scope_hint TEXT, needs TEXT DEFAULT '[]', caps TEXT DEFAULT '[]',
   locks TEXT DEFAULT '[]', ord INTEGER, state TEXT, assignee TEXT, reserved_for TEXT,
@@ -523,6 +523,7 @@ class Swarm:
         self.db.execute("PRAGMA journal_mode=WAL")
         self.db.execute("PRAGMA busy_timeout=30000")
         self.db.executescript(SCHEMA)
+        self._upgrade()
         version = self.meta("schema_version")
         if version is None:
             self.set_meta("schema_version", str(SCHEMA_VERSION))
@@ -530,6 +531,15 @@ class Swarm:
             raise SwarmError(f"The board was written by a newer swarm (schema {version}). Update swarm.py.")
 
     # ---- setup
+    def _upgrade(self) -> None:
+        """Add columns that later releases introduced to a board an earlier release created."""
+        added = {"agents": {"offline_reason": "TEXT", "env": "TEXT DEFAULT '{}'", "first_msg": "INTEGER DEFAULT 0"}}
+        for table, columns in added.items():
+            have = {row[1] for row in self.db.execute(f"PRAGMA table_info({table})")}
+            for name, decl in columns.items():
+                if name not in have:
+                    self.db.execute(f"ALTER TABLE {table} ADD COLUMN {name} {decl}")
+
     def _main_worktree(self) -> Path:
         out = git("worktree", "list", "--porcelain", cwd=self.cwd)
         first = out.splitlines()[0]
@@ -654,11 +664,11 @@ class Swarm:
             "SELECT COUNT(*) FROM messages WHERE recipient=? AND read_at IS NULL", (who,)
         ).fetchone()[0]
         row = self.agent(who)
-        since = row["joined_at"] if row else iso()
+        first = row["first_msg"] if row else 0
         broadcast = self.db.execute(
-            "SELECT COUNT(*) FROM messages m WHERE recipient='*' AND sender<>? AND created_at>=? "
+            "SELECT COUNT(*) FROM messages m WHERE recipient='*' AND sender<>? AND id>? "
             "AND NOT EXISTS (SELECT 1 FROM reads r WHERE r.msg=m.id AND r.agent=?)",
-            (who, since, who),
+            (who, first or 0, who),
         ).fetchone()[0]
         return direct + broadcast
 
@@ -935,8 +945,8 @@ def cmd_join(sw: Swarm, a) -> None:
             sw.event("agent_rejoined", name, row["task"], a.kind or row["kind"] or "")
         else:
             sw.db.execute(
-                "INSERT INTO agents(name,kind,model,caps,slot,state,joined_at,heartbeat_at,pid,env) "
-                "VALUES(?,?,?,?,?,'ready',?,?,?,?)",
+                "INSERT INTO agents(name,kind,model,caps,slot,state,joined_at,heartbeat_at,pid,env,first_msg) "
+                "VALUES(?,?,?,?,?,'ready',?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM messages))",
                 (name, a.kind, a.model, json.dumps(caps), slot, iso(), iso(), a.pid, json.dumps(env)),
             )
             sw.event("agent_joined", name, None, f"{a.kind} {a.model or ''} caps={caps}")
@@ -1071,7 +1081,10 @@ def eligible(sw: Swarm, me: sqlite3.Row) -> list[sqlite3.Row]:
         for n in json.loads(t["needs"]):
             dependents[n] = dependents.get(n, 0) + 1
     out = []
+    outside = local_task_branches(sw)
     for t in sw.db.execute("SELECT * FROM tasks WHERE state='open' AND removed=0"):
+        if sw.branch_name(t["id"]) in outside:
+            continue
         if t["reserved_for"] and t["reserved_for"] != me["name"]:
             continue
         if any(n not in done for n in json.loads(t["needs"])):
@@ -1107,10 +1120,16 @@ def cmd_next(sw: Swarm, a) -> None:
 
 
 def cmd_claim(sw: Swarm, a) -> None:
-    claim(sw, a.as_, a.task, force=a.force, take_over=a.take_over)
+    claim(sw, a.as_, a.task, force=a.force, take_over=a.take_over, adopt=a.adopt)
 
 
-def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool) -> None:
+def local_task_branches(sw: Swarm) -> set[str]:
+    prefix = sw.config["project"]["branch_prefix"]
+    out = git("branch", "--list", f"{prefix}*", "--format=%(refname:short)", cwd=sw.main_root)
+    return {line.strip() for line in out.splitlines() if line.strip()}
+
+
+def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt: bool = False) -> None:
     branch = sw.branch_name(task_id)
     if sw.config["project"]["check_remote"] and not take_over:
         remote = sw.config["project"]["remote"]
@@ -1139,6 +1158,13 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool) -> No
                 )
         elif t["state"] != "open":
             raise SwarmError(f"{task_id} is {t['state']} (holder {t['assignee']}).")
+        if t["state"] == "open" and branch in local_task_branches(sw) and not adopt:
+            ahead = git("rev-list", "--count", f"{sw.target()}..{branch}", cwd=sw.main_root, check=False) or "?"
+            raise SwarmError(
+                f"Branch {branch} already exists ({ahead} commit(s) ahead of {sw.target()}): work started outside "
+                f"this board. If it is your own earlier work, claim with --adopt. Otherwise find its author "
+                f"(`git log {branch}`) and agree who continues before touching it."
+            )
         if t["reserved_for"] and t["reserved_for"] != who and not force:
             raise SwarmError(f"{task_id} is assigned to {t['reserved_for']}.")
         if force and not sw.is_coordinator(who):
@@ -1178,7 +1204,11 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool) -> No
                 sw.update_agent(previous, task=None)
                 sw.message("swarm", previous, f"{who} took over {task_id}. Do not continue it.", task=task_id)
         sw.update_agent(who, task=task_id, state="busy")
-        sw.event("claimed", who, task_id, f"epoch {epoch}" + (f", took over from {previous}" if take_over else ""))
+        detail = f"epoch {epoch}" + (f", took over from {previous}" if take_over else "")
+        if adopt:
+            detail += f", adopted existing branch {branch}"
+            sw.notify_coordinator(f"{who} adopted {branch} (work started outside the board) for {task_id}.", task_id)
+        sw.event("claimed", who, task_id, detail)
     try:
         path = ensure_worktree(sw, task_id, branch)
     except SwarmError:
@@ -1268,6 +1298,7 @@ def cmd_assign(sw: Swarm, a) -> None:
     print(f"{a.task} reserved for {a.agent} for {sw.config['swarm']['assign_ttl_min']} min")
 
 
+RAPID_MIN = 2  # all steps inside this many minutes of `start` is flagged as possible rubber-stamping
 REQUIRED_KEYS = ("acceptance", "scope", "unknowns")  # the service itself reads these
 
 
@@ -1546,6 +1577,14 @@ def cmd_step(sw: Swarm, a) -> None:
         steps[idx].update(done=True, evidence=a.evidence, at=iso())
         sw.update_task(t["id"], steps=json.dumps(steps), step_idx=idx + 1)
         sw.event("step_done", a.as_, t["id"], f"{idx + 1}/{len(steps)}")
+        if idx + 1 == len(steps) and len(steps) > 1 and minutes_since(t["started_at"]) < RAPID_MIN:
+            took = f"{minutes_since(t['started_at']):.1f}"
+            sw.event("rapid_completion", a.as_, t["id"], f"{len(steps)} steps in {took} min")
+            sw.notify_coordinator(
+                f"{a.as_} finished all {len(steps)} steps of {t['id']} within {took} min of starting. "
+                "Check the evidence before the merge (expected only when adopting work done earlier).",
+                t["id"],
+            )
     print(
         f"step {idx + 1} done."
         + (
@@ -1643,9 +1682,18 @@ def gate_commands(sw: Swarm) -> list[list[str]]:
     return g.get(os_name, {}).get("commands", g["commands"])
 
 
+def resolve_gate(argv: list[str], worktree: Path) -> list[str]:
+    """A gate's program given as a relative path is relative to the task's worktree, on every OS.
+    (On Windows, CreateProcess resolves it from the calling process's directory, not from cwd.)"""
+    exe = argv[0]
+    if ("/" in exe or "\\" in exe) and not Path(exe).is_absolute():
+        exe = str((worktree / exe).resolve())
+    return [exe, *argv[1:]]
+
+
 def gate_run(sw: Swarm, path: Path, env: dict) -> str | None:
     g = sw.config["gates"]
-    for argv in gate_commands(sw):
+    for argv in (resolve_gate(a, path) for a in gate_commands(sw)):
         for attempt in range(int(g["retries"]) + 1):
             try:
                 done = subprocess.run(
@@ -1912,14 +1960,14 @@ def cmd_inbox(sw: Swarm, a) -> None:
     with sw.tx():
         if who != HUMAN:
             me = sw.require_agent(who)
-            since = me["joined_at"]
+            first = me["first_msg"] or 0
         else:
-            since = ""
+            first = 0
         rows = sw.db.execute(
             "SELECT * FROM messages m WHERE (recipient=? AND (read_at IS NULL OR ?)) OR (recipient='*' AND sender<>? "
-            "AND created_at>=? AND (? OR NOT EXISTS (SELECT 1 FROM reads r WHERE r.msg=m.id AND r.agent=?))) "
+            "AND id>? AND (? OR NOT EXISTS (SELECT 1 FROM reads r WHERE r.msg=m.id AND r.agent=?))) "
             "ORDER BY id",
-            (who, a.all, who, since, a.all, who),
+            (who, a.all, who, first, a.all, who),
         ).fetchall()
         for m in rows:
             if m["recipient"] == "*":
@@ -2091,6 +2139,7 @@ def cmd_log(sw: Swarm, a) -> None:
 
 def cmd_pause(sw: Swarm, a) -> None:
     with sw.tx():
+        sw.sweep()
         sw.require_coordinator(a.as_ or HUMAN)
         sw.set_meta("paused", a.as_ or HUMAN)
         sw.message(a.as_ or HUMAN, "*", f"PAUSED: {a.reason}. Finish your current step, commit, and stop.")
@@ -2100,7 +2149,11 @@ def cmd_pause(sw: Swarm, a) -> None:
 
 def cmd_resume(sw: Swarm, a) -> None:
     with sw.tx():
+        sw.sweep()
         sw.require_coordinator(a.as_ or HUMAN)
+        setter = sw.meta("paused")
+        if setter and (a.as_ or HUMAN) not in (setter, HUMAN):
+            raise SwarmError(f"The pause was set by {setter}; only they or a human may lift it. Ask with `swarm send`.")
         sw.set_meta("paused", None)
         sw.message(a.as_ or HUMAN, "*", "RESUMED: carry on.")
         sw.event("resumed", a.as_ or HUMAN)
@@ -2218,6 +2271,26 @@ def cmd_spawn(sw: Swarm, a) -> None:
         with sw.tx():
             sw.require_coordinator(caller)
     name = a.name
+    if a.dry_run:  # no join, no claim, no worktree: only show the command line
+        if not NAME_RE.match(name):
+            raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
+        prompt = f"You are swarm agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
+        where = str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>"
+        values = {
+            "prompt": prompt,
+            "cwd": where,
+            "git_common": str(sw.common),
+            "max_turns": sw.config["spawn"]["max_turns"],
+            "model": a.model or "",
+        }
+        argv = [part.format(**values) for part in ad["run"]]
+        if a.model:
+            argv += [part.format(**values) for part in ad["model"]]
+        if a.unattended:
+            argv += ad["unattended"]
+        print("would run (in the task's worktree): " + " ".join(argv))
+        print("nothing was changed: no agent joined, no task claimed")
+        return
     fake = argparse.Namespace(as_=name, kind=a.kind, model=a.model, caps=a.caps, resume=False, pid=None)
     cmd_join(sw, fake)
     try:
@@ -2266,9 +2339,6 @@ def cmd_spawn(sw: Swarm, a) -> None:
     if a.unattended:
         argv += ad["unattended"]
     log = sw.dir / "logs" / f"{name}.log"
-    if a.dry_run:
-        print("would run: " + " ".join(argv))
-        return
     flags = {}
     if os.name == "nt":
         flags["creationflags"] = 0x00000200 | 0x00000008  # new process group, detached
@@ -2376,9 +2446,11 @@ def cmd_doctor(sw: Swarm, a) -> None:
             problems.append(f"hotspot {name} has no paths")
     if not gate_commands(sw):
         problems.append("no gates configured for this OS: merges are unverified ([gates] commands)")
+    sample = sw.worktree_path("TASK")
     for argv in gate_commands(sw):
-        if not shutil.which(argv[0]):
-            problems.append(f"gate command {argv[0]!r} is not available on this machine")
+        exe = resolve_gate(argv, sample)[0]
+        if not (shutil.which(exe) or Path(exe).is_file()):
+            problems.append(f"gate command {argv[0]!r} is not available from a worktree ({exe})")
     print("\n".join(problems) if problems else "no problems found")
 
 
@@ -2424,6 +2496,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("task")
     sp.add_argument("--force", action="store_true")
     sp.add_argument("--take-over", action="store_true")
+    sp.add_argument(
+        "--adopt", action="store_true", help="continue a branch for this task that exists outside the board"
+    )
     sp = add("release", cmd_release, "give a task back, with a handoff note")
     sp.add_argument("note")
     sp.add_argument("--task", default="")

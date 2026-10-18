@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.1.0"
+DEFAULT_REF = "v0.1.1"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"

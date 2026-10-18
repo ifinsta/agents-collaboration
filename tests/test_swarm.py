@@ -669,6 +669,54 @@ class Environment(SwarmCase):
         self.assertIn(data["os"], ("windows", "linux", "macos"))
 
 
+class FirstRealRun(SwarmCase):
+    """Edge cases found when real agents used v0.1.0 in a repository with work already in flight."""
+
+    def test_ec042_ec141_branch_from_outside_the_board_needs_adopt(self):
+        self.git("branch", "swarm/T1")
+        self.git("commit", "--allow-empty", "-qm", "outside work")  # on main; branch exists beside it
+        self.join("ann")
+        out = self.sw("--as", "ann", "claim", "T1", ok=False)
+        self.assertIn("--adopt", out)
+        self.assertNotIn("T1", self.sw("--as", "ann", "next").split("\n")[0])  # next skips it
+        self.sw("--as", "ann", "release", "picked the wrong one, giving it back")
+        self.sw("--as", "ann", "claim", "T1", "--adopt")
+        self.assertIn("adopted", self.sw("log", "--task", "T1"))
+
+    def test_ec142_rubber_stamped_steps_are_flagged(self):
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        self.assertIn("rapid_completion", self.sw("log", "--task", "T1"))
+
+    def test_ec143_only_the_setter_or_a_human_lifts_a_pause(self):
+        self.join("ann")
+        self.join("bob")
+        self.sw("--as", "ann", "pause", "two boards are live")
+        self.sw("--as", "ann", "leave")
+        self.assertIn("only they or a human", self.sw("--as", "bob", "resume", ok=False))
+        self.sw("resume")  # a human, no --as
+
+    def test_ec144_relative_gate_paths_resolve_from_the_worktree(self):
+        here = swarm_module.detect_environment()["os"]
+        worktree = Path(self.tmp.name) / "repo-wt" / "T1"
+        rel = os.path.relpath(sys.executable, worktree).replace("\\", "/")
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        cfg.write_text(
+            cfg.read_text(encoding="utf-8") + f'\n[gates.{here}]\ncommands = [["{rel}", "-c", "print(1)"]]\n',
+            encoding="utf-8",
+        )
+        self.git("commit", "-qam", "relative gate")
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        self.assertIn("merged T1", self.sw("--as", "ann", "merge"))
+
+    def test_ec145_dry_run_spawn_changes_nothing(self):
+        out = self.sw("spawn", "fake", "--name", "fay", "--task", "T2", "--dry-run")
+        self.assertIn("would run", out)
+        self.assertEqual(self.task("T2")["state"], "open")
+        self.assertNotIn("fay", self.sw("agents"))
+
+
 class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")
