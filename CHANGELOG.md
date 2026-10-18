@@ -1,5 +1,15 @@
 # Changelog
 
+## v0.1.2 - 2026-10-18
+
+- The installer keeps the line endings and byte-order mark of the files it edits.
+  On Windows it rewrote `AGENTS.md` with CRLF throughout, so a ten-line section
+  showed as a whole-file change (EC-146).
+- `swarm record <task> --commit <sha>` marks a task done when its work reached the
+  target outside the board. It is for migrating from an earlier board, or for
+  work a person merged. It checks the commit is in the target's history, frees the
+  holder and cleans up the worktree (EC-147).
+
 ## v0.1.1 - 2026-10-18
 
 Fixes from the first real run, in a repository where five agents were already

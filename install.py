@@ -36,7 +36,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.1.1"
+DEFAULT_REF = "v0.1.2"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"
@@ -82,6 +82,21 @@ class Source:
         except Exception as exc:  # noqa: BLE001 - every network failure means the same thing here
             fail(f"could not download {url}: {exc}")
         return b""
+
+
+def read_keep_style(path: Path) -> tuple[str, str, bool]:
+    """Text, its line ending and whether it had a BOM. Python's text mode would turn every
+    line ending into CRLF on Windows, rewriting the whole file in the diff."""
+    raw = path.read_bytes() if path.exists() else b""
+    bom = raw.startswith(b"\xef\xbb\xbf")
+    newline = "\r\n" if b"\r\n" in raw else "\n"
+    text = raw.decode("utf-8-sig").replace("\r\n", "\n")
+    return text, newline, bom
+
+
+def write_keep_style(path: Path, text: str, newline: str, bom: bool) -> None:
+    data = text.replace("\n", newline).encode("utf-8")
+    path.write_bytes((b"\xef\xbb\xbf" if bom else b"") + data)
 
 
 def project_root(path: Path) -> Path:
@@ -139,7 +154,7 @@ def install(args: argparse.Namespace) -> None:
         "files": {name: sha256(data) for name, data in files.items()},
     }
     if not args.dry_run:
-        record_path.write_text(json.dumps(record, indent=2) + "\n", encoding="utf-8")
+        record_path.write_bytes((json.dumps(record, indent=2) + "\n").encode("utf-8"))
 
     swarm_dir = root / ".agents" / "swarm"
     for example, target in (("examples/config.toml", "config.toml"), ("examples/backlog.md", "backlog.md")):
@@ -154,7 +169,7 @@ def install(args: argparse.Namespace) -> None:
 
     if args.agents_md:
         agents = root / "AGENTS.md"
-        text = agents.read_text(encoding="utf-8") if agents.exists() else ""
+        text, newline, bom = read_keep_style(agents)
         section = AGENTS_SECTION.format(start=MARK_START, end=MARK_END)
         if MARK_START in text and MARK_END in text:
             head, rest = text.split(MARK_START, 1)
@@ -165,7 +180,7 @@ def install(args: argparse.Namespace) -> None:
         if new != text:
             actions.append("update AGENTS.md (marked section)")
             if not args.dry_run:
-                agents.write_text(new, encoding="utf-8")
+                write_keep_style(agents, new, newline, bom)
 
     print(f"agents-collaboration {manifest.get('version', '')} from {source.label()} into {root}")
     for line in actions:

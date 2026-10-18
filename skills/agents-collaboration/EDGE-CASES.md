@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 145 cases. 62 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 147 cases. 64 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -230,6 +230,8 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-143 | A newly promoted coordinator lifts a pause another coordinator set for a reason it does not know. | Only whoever set the pause, or a human, may lift it. | Tested |
 | EC-144 | A gate names a program by relative path, and Windows resolves it from the caller's directory, not the worktree. | Relative program paths are resolved against the task's worktree on every OS; `doctor` checks them from a worktree. | Tested |
 | EC-145 | A dry run of `spawn` joins an agent and claims a task. | `--dry-run` only prints the command line; nothing on the board changes. | Tested |
+| EC-146 | A tool edits a project file and, on Windows, silently converts every line ending (Python text mode writes CRLF), so a ten-line change becomes a whole-file diff. | The installer keeps each file's own line endings and byte-order mark. | Tested |
+| EC-147 | Work reached the target outside the board (an earlier board, a person), so its task and everything that needs it stay blocked. | `record <task> --commit <sha>` marks it done after checking the commit is in the target's history, frees its holder and cleans its worktree. | Tested |
 
 ## What would close the open ones
 

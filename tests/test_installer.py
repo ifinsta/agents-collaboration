@@ -64,6 +64,19 @@ class Installer(unittest.TestCase):
         text = (self.repo / "AGENTS.md").read_text(encoding="utf-8")
         self.assertTrue(text.startswith("# Rules\n\nKeep me.\n"))
 
+    def test_ec146_agents_md_keeps_its_line_endings(self):
+        for ending in (b"\n", b"\r\n"):
+            body = b"# Rules" + ending + ending + b"Keep me." + ending
+            (self.repo / "AGENTS.md").write_bytes(body)
+            self.install("--agents-md", "--force")
+            data = (self.repo / "AGENTS.md").read_bytes()
+            self.assertTrue(data.startswith(body))
+            other = b"\r\n" if ending == b"\n" else None
+            if other:
+                self.assertNotIn(other, data)
+            else:
+                self.assertEqual(data.count(b"\n"), data.count(b"\r\n"))
+
     def test_installed_tool_runs(self):
         self.install()
         done = subprocess.run(

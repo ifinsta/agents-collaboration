@@ -2101,6 +2101,44 @@ def cmd_add(sw: Swarm, a) -> None:
     print(f"{a.task} {state}" + ("; the coordinator approves it" if state == "proposed" else ""))
 
 
+def cmd_record(sw: Swarm, a) -> None:
+    """Mark a task done whose work reached the target some other way (a migration, a person)."""
+    target = sw.target()
+    sha = git("rev-parse", "--verify", f"{a.commit}^{{commit}}", cwd=sw.main_root)
+    contained = run(["git", "merge-base", "--is-ancestor", sha, f"refs/heads/{target}"], cwd=sw.main_root, check=False)
+    if contained.returncode != 0:
+        raise SwarmError(f"{sha[:10]} is not in {target}'s history. Merge it first; record only what has landed.")
+    with sw.tx():
+        sw.sweep()
+        who = a.as_ or HUMAN
+        sw.require_coordinator(who)
+        t = sw.task(a.task)
+        if t["state"] == "done":
+            raise SwarmError(f"{a.task} is already done ({(t['merged_sha'] or '')[:10]}).")
+        holder = t["assignee"] if t["state"] in HELD else None
+        sw.update_task(
+            a.task,
+            state="done",
+            merged_sha=sha,
+            failure=None,
+            reserved_for=None,
+            cleanup_pending=1 if t["worktree"] else 0,
+        )
+        sw.db.execute("DELETE FROM locks WHERE task=?", (a.task,))
+        if holder:
+            sw.update_agent(holder, task=None, state="ready")
+            sw.message(
+                who,
+                holder,
+                f"{a.task} was recorded as already merged ({sha[:10]}). Stop work on it; "
+                "you are free for `swarm next`.",
+                task=a.task,
+            )
+        sw.event("recorded_done", who, a.task, f"{sha[:10]} {a.note}".strip())
+    cleaned = cleanup(sw, sw.task(a.task)) if t["worktree"] else "no worktree on the board"
+    print(f"{a.task} recorded as done at {sha[:10]}; worktree: {cleaned}")
+
+
 def cmd_approve(sw: Swarm, a) -> None:
     with sw.tx():
         sw.require_coordinator(a.as_ or HUMAN)
@@ -2557,6 +2595,10 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--locks", default="")
     sp = add("approve", cmd_approve, "coordinator: open a proposed task")
     sp.add_argument("task")
+    sp = add("record", cmd_record, "coordinator: mark a task done whose work already landed")
+    sp.add_argument("task")
+    sp.add_argument("--commit", required=True, help="a commit in the target's history that carries the work")
+    sp.add_argument("--note", default="")
     sp = add("block", cmd_block, "tell the coordinator you are stuck")
     sp.add_argument("reason")
     sp = add("note", cmd_note, "record a decision on your task")

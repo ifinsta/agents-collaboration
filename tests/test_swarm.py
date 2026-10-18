@@ -710,6 +710,26 @@ class FirstRealRun(SwarmCase):
         self.to_ready("ann", "T1")
         self.assertIn("merged T1", self.sw("--as", "ann", "merge"))
 
+    def test_ec147_work_merged_outside_the_board_is_recorded(self):
+        self.join("ann")
+        self.sw("--as", "ann", "claim", "T1")
+        (self.root / "landed.txt").write_text("x", encoding="utf-8")
+        self.git("add", "landed.txt")
+        self.git("commit", "-qm", "landed elsewhere")
+        sha = self.git("rev-parse", "HEAD").strip()
+        self.git("branch", "elsewhere")
+        self.git("commit", "--allow-empty", "-qm", "not yet")
+        self.sw("--as", "ann", "release", "the work landed elsewhere, giving it back")
+        outside = self.git("rev-parse", "elsewhere").strip()
+        self.assertIn("recorded", self.sw("record", "T1", "--commit", outside))
+        self.assertEqual(self.task("T1")["state"], "done")
+        self.sw("--as", "ann", "claim", "T3")  # T3 needed T1
+        self.git("checkout", "-q", "-b", "side", sha)
+        self.git("commit", "--allow-empty", "-qm", "only on a side branch")
+        side = self.git("rev-parse", "HEAD").strip()
+        self.git("checkout", "-q", "main")
+        self.assertIn("not in main's history", self.sw("record", "T2", "--commit", side, ok=False))
+
     def test_ec145_dry_run_spawn_changes_nothing(self):
         out = self.sw("spawn", "fake", "--name", "fay", "--task", "T2", "--dry-run")
         self.assertIn("would run", out)
