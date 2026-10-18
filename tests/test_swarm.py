@@ -1265,6 +1265,83 @@ class Adapters(unittest.TestCase):
             self.assertFalse(used & flags, f"{kind} uses its own branching: {used & flags}")
 
 
+class LongGates(SwarmCase):
+    """v0.4.2: a gate that runs long keeps its merge alive; a merge that lost the queue never moves main."""
+
+    def gate(self, code):
+        here = swarm_module.detect_environment()["os"]
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        text = cfg.read_text(encoding="utf-8").replace("[gates]", "[gates]\nkeepalive_sec = 1", 1)
+        cfg.write_text(text + f"\n[gates.{here}]\ncommands = [['python', '-c', '{code}']]\n", encoding="utf-8")
+        self.git("commit", "-qam", "gate")
+
+    def wait_for(self, probe, seconds=90):
+        """Poll until `probe()` is truthy. The tests wait for conditions, never for a fixed time: under load a fixed
+        sleep is a race."""
+        deadline = time.monotonic() + seconds
+        while time.monotonic() < deadline:
+            value = probe()
+            if value:
+                return value
+            time.sleep(0.2)
+        self.fail("timed out waiting for a condition")
+
+    def lock_at(self):
+        con = self.db()
+        row = con.execute("SELECT value FROM meta WHERE key='merge_lock'").fetchone()
+        con.close()
+        return json.loads(row[0])["at"] if row else None
+
+    def test_ec187_a_long_gate_keeps_the_merging_agent_alive(self):
+        # The gate blocks until the test releases it, so how long the merge takes cannot matter.
+        hold = 'import os,time;f=os.environ["SWARM_HOLD"];t=time.time();'
+        hold += "[time.sleep(0.1) for _ in iter(lambda: not os.path.exists(f) and time.time()-t<120, False)]"
+        self.gate(hold)
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        release = Path(self.tmp.name) / "release-gate"
+        proc = subprocess.Popen(
+            [sys.executable, str(SWARM), "merge", "--as", "ann"],
+            cwd=self.root,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            text=True,
+            encoding="utf-8",
+            env={**os.environ, "SWARM_HOLD": str(release)},
+        )
+        try:
+            first = self.wait_for(self.lock_at)  # the merge has taken the queue and is inside its gate
+            renewed = self.wait_for(lambda: (at := self.lock_at()) and at != first and at)
+            con = self.db()
+            beat = con.execute("SELECT heartbeat_at FROM agents WHERE name='ann'").fetchone()[0]
+            con.close()
+            self.assertGreater(renewed, first)  # the lease was renewed while the gate was still running
+            self.assertGreaterEqual(beat, first)
+            release.write_text("go", encoding="utf-8")
+            out = proc.communicate(timeout=120)[0]
+        finally:
+            if proc.poll() is None:  # a failed assertion must not leave the merge holding the database
+                release.write_text("go", encoding="utf-8")
+                proc.kill()
+                proc.communicate()
+        self.assertIn("merged T1", out)
+
+    def test_ec188_a_merge_that_lost_the_queue_never_moves_main(self):
+        steal = (
+            'import sqlite3,json,os;c=sqlite3.connect(os.environ["SWARM_DB"]);'
+            'c.execute("update meta set value=? where key=?",(json.dumps({"agent":"zed","task":"T9",'
+            '"at":"2099-01-01T00:00:00+00:00"}),"merge_lock"));c.commit()'
+        )
+        self.gate(steal)
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        before = self.git("rev-parse", "main")
+        out = self.sw("--as", "ann", "merge", env={"SWARM_DB": str(self.root / ".git" / "swarm" / "swarm.db")})
+        self.assertIn("lost its place in the merge queue", out)
+        self.assertEqual(self.git("rev-parse", "main"), before)
+        self.assertEqual(self.task("T1")["state"], "ready_to_merge")
+
+
 class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")

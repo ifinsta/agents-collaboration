@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.4.2 - 2026-10-18
+
+### Fixed
+
+- **Long gates keep their merge alive.** In a real project a 26-minute test suite
+  ran inside a merge with no heartbeat, so the service marked the merging agent
+  offline mid-merge. The queue's 45-minute lease could expire the same way. Gates
+  now run while the merge renews the agent's heartbeat and the lease every
+  `keepalive_sec`, 30 seconds by default (EC-187).
+- **A merge that lost the queue never moves the target.** Before the target
+  branch advances, the merge checks it still holds the queue. If the lease was
+  broken, it stops without touching anything (EC-188).
+
 ## v0.4.1 - 2026-10-18
 
 ### Added

@@ -38,7 +38,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.4.1"
+__version__ = "0.4.2"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -90,7 +90,7 @@ DEFAULTS: dict = {
         "task_budget_min": 0,  # 0 = no budget
     },
     "planning": {"checklist": DEFAULT_CHECKLIST, "extra": {}, "max_steps": 15},
-    "gates": {"commands": [], "timeout_min": 30, "retries": 0},
+    "gates": {"commands": [], "timeout_min": 30, "retries": 0, "keepalive_sec": 30},
     "merge": {
         "strategy": "squash",  # squash | rebase
         "message": "{task}: {title}",
@@ -1873,33 +1873,72 @@ def resolve_gate(argv: list[str], worktree: Path) -> list[str]:
     return [exe, *argv[1:]]
 
 
-def gate_run(sw: Swarm, path: Path, env: dict) -> str | None:
+def keepalive(sw: Swarm, who: str, task_id: str) -> None:
+    """While a merge works, its agent is alive and its hold on the queue is fresh. A test suite that runs longer
+    than the agent timeout must not get the merging agent marked offline, or let the queue's lease run out."""
+    with sw.tx():
+        sw.db.execute(
+            "UPDATE agents SET heartbeat_at=?, state=CASE WHEN state='offline' THEN 'busy' ELSE state END, "
+            "offline_at=NULL WHERE name=?",
+            (iso(), who),
+        )
+        lock = sw.meta("merge_lock")
+        if lock and json.loads(lock).get("task") == task_id:
+            info = json.loads(lock)
+            info["at"] = iso()
+            sw.set_meta("merge_lock", json.dumps(info))
+
+
+def holds_queue(sw: Swarm, task_id: str) -> bool:
+    lock = sw.meta("merge_lock")
+    return bool(lock) and json.loads(lock).get("task") == task_id
+
+
+def run_gate(argv: list[str], path: Path, env: dict, timeout_s: float, alive, every_s: float) -> tuple[int | None, str]:
+    """Run one gate, calling `alive()` every `every_s` seconds while it runs. Returns (exit code or None on
+    timeout, combined output)."""
+    proc = subprocess.Popen(
+        argv,
+        cwd=path,
+        env=env,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+    )
+    deadline = time.monotonic() + timeout_s
+    while True:
+        try:
+            out, _ = proc.communicate(timeout=max(min(every_s, deadline - time.monotonic()), 0.1))
+            return proc.returncode, out or ""
+        except subprocess.TimeoutExpired:
+            if time.monotonic() >= deadline:
+                proc.kill()
+                out, _ = proc.communicate()
+                return None, out or ""
+            if alive:
+                alive()
+
+
+def gate_run(sw: Swarm, path: Path, env: dict, alive=None) -> str | None:
     g = sw.config["gates"]
+    every = float(g.get("keepalive_sec", 30))
     for argv in (resolve_gate(a, path) for a in gate_commands(sw)):
         for attempt in range(int(g["retries"]) + 1):
             try:
-                done = subprocess.run(
-                    argv,
-                    cwd=path,
-                    env=env,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=g["timeout_min"] * 60,
-                    encoding="utf-8",
-                    errors="replace",
-                )
-            except subprocess.TimeoutExpired:
-                result = f"{' '.join(argv)} timed out after {g['timeout_min']} min"
-                continue
+                code, out = run_gate(argv, path, env, g["timeout_min"] * 60, alive, every)
             except FileNotFoundError:
                 return f"{argv[0]} is not installed"
-            if done.returncode == 0:
+            if code is None:
+                result = f"{' '.join(argv)} timed out after {g['timeout_min']} min"
+                continue
+            if code == 0:
                 result = None
                 if attempt:
                     sw.event("gate_flaky", env.get("SWARM_AS"), env.get("SWARM_TASK"), " ".join(argv))
                 break
-            result = f"{' '.join(argv)} exited {done.returncode}:\n{(done.stdout + done.stderr)[-2000:]}"
+            result = f"{' '.join(argv)} exited {code}:\n{out[-2000:]}"
         if result:
             return result
     return None
@@ -1970,7 +2009,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                 f"(`git rebase {target}`), resolve, run the gates, then `swarm submit` again."
             )
         commits = git("log", "--oneline", f"{target_sha}..HEAD", cwd=path)
-        failure = gate_run(sw, path, env)
+        failure = gate_run(sw, path, env, alive=lambda: keepalive(sw, who, t["id"]))
         if failure:
             with sw.tx():
                 sw.update_task(t["id"], state="gates_failed", failure=failure[-2000:])
@@ -2002,6 +2041,14 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         if git("rev-parse", f"refs/heads/{target}", cwd=sw.main_root) != target_sha:
             sw_event(sw, "target_moved", who, t["id"], "retrying")
             continue
+        if not holds_queue(sw, t["id"]):  # the lease was broken while we worked: never move the target
+            with sw.tx():
+                sw.update_task(t["id"], state="ready_to_merge", failure="lost the merge queue during the merge")
+                sw.event("merge_lost_queue", who, t["id"], "the queue's lease was taken while gates ran")
+            return (
+                f"{t['id']} lost its place in the merge queue while its gates ran, so {target} was not touched. "
+                "Run `swarm merge` again."
+            )
         holder_tree = worktree_of_branch(sw, target)
         if holder_tree:
             ff = run(["git", "merge", "--ff-only", new_sha], cwd=holder_tree, check=False, timeout=120)
@@ -2720,6 +2767,7 @@ EVENT_TEXT = {
     "recorded_done": ("green", "{task} recorded as done: {detail}"),
     "launched": ("cyan", "{agent} launched on {task} ({detail})"),
     "agent_exited": ("yellow", "{agent} {detail}"),
+    "merge_lost_queue": ("red", "{task} lost the merge queue while its gates ran; nothing was merged"),
     "returned_to_pool": ("green", "{task} is back in the pool: {detail}"),
     "spawned": ("cyan", "{agent} spawned on {task} ({detail})"),
     "console_opened": ("dim", "console opened: {detail}"),

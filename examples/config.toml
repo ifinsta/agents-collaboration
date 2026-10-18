@@ -31,6 +31,7 @@ max_steps = 15
 [gates]
 timeout_min = 30
 retries = 0
+keepalive_sec = 30                    # while gates run, renew the merging agent's heartbeat and the queue's lease
 commands = [
   # example: ["python", "-m", "pytest", "-q"],
 ]
