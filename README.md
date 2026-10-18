@@ -34,8 +34,8 @@ service** (`swarm.py`, one standard-library Python file) that enforces it.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[158 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 75 are proved by tests on Linux, Windows and macOS, and the few
+[169 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 86 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -59,8 +59,8 @@ irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.
 ```
 
 This installs `.agents/skills/agents-collaboration/`, verified against the
-release manifest. It creates `.agents/swarm/config.toml` and
-`.agents/swarm/backlog.md` if they do not exist. `--all` adds the pointers agent
+release manifest. It creates no project files unless you add `--scaffold`
+(an optional `.agents/swarm/config.toml` and backlog). `--all` adds the pointers agent
 CLIs look for: a short marked section in `AGENTS.md` (opencode, Codex, Qoder,
 DeepSeek-TUI) and a pointer skill in `.claude/skills/` (Claude Code). It refuses to
 overwrite files you edited unless you pass `--force`, and keeps the line endings
@@ -77,12 +77,26 @@ repository.
 
 ## Use
 
+Nothing about your project is assumed. Give the pool a piece of work, and the
+agents turn it into tasks:
+
 ```bash
 S="python .agents/skills/agents-collaboration/swarm.py"
+$S goal new health "Ship a health endpoint operators can rely on"
+$S goal answer health --set done_looks_like="..." ...   # hard questions: understand, backward, forward, challenge
+$S goal outcome health "GET /health answers 200 with the version" --check "curl returns 200"
+$S goal task health H-api "Add the endpoint" --serves 1 --done-when "the endpoint test passes"
+$S goal review health                            # backward and forward views; refuses gaps
+$S goal commit health --assign                   # opens tasks, assigns the first wave
+```
+
+Each agent then works one task at a time:
+
+```bash
 $S environment                                   # the machine, and the rules for it
-$S init                                          # import .agents/swarm/backlog.md
 $S join --as ann --kind claude                   # SOLO or peers; coordinator or worker
 $S next --as ann                                 # one task, its own worktree
+$S context --as ann                              # what it builds on, and what waits on it
 $S plan --as ann --template                      # the critical questions
 $S plan --as ann --set ... --step ... --step ...
 $S start --as ann
@@ -117,7 +131,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.2.0, experimental.** The protocol and the service are tested. Headless
+**0.3.0, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).

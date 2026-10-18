@@ -45,12 +45,13 @@ PY .agents/skills/agents-collaboration/swarm.py environment
 `environment` lists the facts and rules for this machine. Read them before your
 next command.
 
-## 4. Configure and start
+## 4. Start
 
-1. Tell the person to review `.agents/swarm/config.toml` (target branch, gates,
-   hotspots) and `.agents/swarm/backlog.md` (the tasks). Do not invent their gates.
-2. `PY .agents/skills/agents-collaboration/swarm.py init` imports the backlog.
-3. Read `.agents/skills/agents-collaboration/SKILL.md` and follow it from section 1.
+1. Read `.agents/skills/agents-collaboration/SKILL.md` and follow it from section 1.
+2. Do not create project settings by guessing. If the person wants to state the
+   project's own facts (gates, target branch, shared files), they add `--scaffold`
+   to the install, or write `.agents/swarm/config.toml` themselves.
+3. Turn the work you were given into tasks with `swarm goal` (SKILL.md, section 1.5).
 
 ## 5. Install once for every repository
 

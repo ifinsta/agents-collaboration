@@ -74,6 +74,59 @@ Each agent pane runs `swarm launch <cli>`: it joins the pool, takes the next tas
 writes the brief, and opens the CLI inside that task's worktree. The launcher pane
 does the same from a menu, one agent after another.
 
+## 1.5 Turning a piece of work into tasks: goals
+
+Nothing here assumes how a project is organised. When you are given a piece of
+work (a request, an issue, a section of a plan) rather than ready-made tasks,
+make it a **goal** and let the service make you think before you split it.
+
+```bash
+swarm goal new <id> "what should be achieved"
+swarm goal answer <id> --set done_looks_like="..." --set who_uses_it="..." ...   # every question, with substance
+swarm goal outcome <id> "an observable result" --check "exactly how to observe it"
+swarm goal task <id> <task-id> "title" --serves 1 --done-when "the check" [--needs a,b] [--caps x] [--size S|M]
+swarm goal review <id>
+swarm goal commit <id> --assign        # coordinator or human
+```
+
+1. **Ask yourself the hard questions first.** There are four stages:
+   - **understand:** what can someone observe when it is done; who uses it; what is
+     not included; what must not break; what is already true;
+   - **backward:** what is the last thing before done, and what comes before that,
+     back to what is true now;
+   - **forward:** what can start now; which assumption is riskiest and which task
+     tests it first; what can run in parallel;
+   - **challenge:** what is the smallest useful version; what would prove the plan
+     wrong; what is hard to undo and who approves it; how is each piece verified
+     here; what is unknown.
+
+   Thin answers are refused. Answer `unknown` and it becomes a critical question
+   for the coordinator or the human; nothing is committed until it is answered.
+2. **Outcomes are the end of the backward chain.** Each is something observable,
+   with the check that proves it.
+3. **Tasks work backward from outcomes.** Each task:
+   - names the outcome(s) it serves;
+   - names the tasks it needs;
+   - says how it is proved done;
+   - is S or M, because L must be split.
+4. **`review` attacks the plan before anyone works on it.** It shows two views:
+   - **backward:** each outcome and the work leading to it;
+   - **forward:** waves of tasks that can run together, in order.
+
+   It fails while any of these is true:
+   - an outcome has no work toward it;
+   - a task serves nothing;
+   - a task lacks a done-check;
+   - a task is too large;
+   - a question is still open.
+5. **`commit --assign`** opens the tasks and gives the first wave to free agents
+   whose machines can verify them. The rest follow as their inputs merge.
+6. **`goal close`** needs the result of every outcome's check, not just merged
+   tasks.
+
+Projects with a backlog file can still use one (`[project] backlog`); both kinds
+of task live on the same board.
+
 ## 2. Get exactly one task
 
 ```bash
@@ -86,6 +139,16 @@ slot sets your own port, test database and container project, so you never
 collide with another agent (`swarm env --as <name>` prints them for your shell).
 `cd` into the worktree. **Never work in the main checkout or in another agent's
 worktree**: the service refuses commands from there.
+
+**Read your task's place in the work before planning:** `swarm context` (also
+printed at claim, and in a spawned agent's brief) shows two directions:
+
+- **previous:** each task yours builds on, what it produced, how it was proved,
+  its files and commit, and anything still owed;
+- **next:** each task waiting on yours, and the done-check it will have to meet
+  with your result.
+
+Plan so that the next task can succeed, not only your own check.
 
 You hold **one task at a time**. `next` and `claim` refuse while you hold one.
 
@@ -267,7 +330,10 @@ one line per event.
 | `console [--agents a,b] [--decline]`, `launch <cli>`, `launcher`, `dashboard` | coordinator / human | see and drive the pool |
 | `record <task> --commit <sha>` | coordinator / human | mark work that landed outside the board |
 | `version`, `update` | anyone | the installed release |
+| `goal new/answer/ask/outcome/task/review/commit/show/list/close` | anyone; commit and close: coordinator / human | turn a piece of work into tasks |
+| `context [--task]` | anyone | previous and next for a task |
 
-The project's configuration is `.agents/swarm/config.toml` (backlog, target branch,
-gates per OS, hotspots, merge strategy, adapters). The edge cases this protocol
+Everything above works with no configuration. A project that wants to state its
+own facts puts them in an optional `.agents/swarm/config.toml`: target branch,
+gates per OS, hotspots, merge strategy, files copied into worktrees, and adapters. The edge cases this protocol
 handles, and the ones it does not, are listed in `EDGE-CASES.md` beside this file.

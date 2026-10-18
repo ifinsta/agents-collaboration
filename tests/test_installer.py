@@ -36,7 +36,7 @@ class Installer(unittest.TestCase):
         return out
 
     def test_installs_skill_config_and_agents_pointer(self):
-        self.install("--agents-md")
+        self.install("--agents-md", "--scaffold")
         skill = self.repo / ".agents" / "skills" / "agents-collaboration"
         for name in ("SKILL.md", "swarm.py", "EDGE-CASES.md", "INSTALLED.json"):
             self.assertTrue((skill / name).exists(), name)
@@ -44,10 +44,10 @@ class Installer(unittest.TestCase):
         self.assertIn("agents-collaboration:start", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
 
     def test_rerun_is_idempotent_and_keeps_project_config(self):
-        self.install("--agents-md")
+        self.install("--agents-md", "--scaffold")
         cfg = self.repo / ".agents" / "swarm" / "config.toml"
         cfg.write_text("# mine\n", encoding="utf-8")
-        self.install("--agents-md")
+        self.install("--agents-md", "--scaffold")
         self.assertEqual(cfg.read_text(encoding="utf-8"), "# mine\n")
         self.assertEqual((self.repo / "AGENTS.md").read_text(encoding="utf-8").count("agents-collaboration:start"), 1)
 
@@ -109,6 +109,12 @@ class Installer(unittest.TestCase):
             [sys.executable, str(tool), "version"], cwd=self.repo, env=env, capture_output=True, text=True, check=False
         )
         self.assertEqual(run.returncode, 0, run.stderr)
+
+    def test_ec168_nothing_about_the_project_is_assumed(self):
+        self.install("--all")
+        self.assertFalse((self.repo / ".agents" / "swarm").exists())
+        self.install("--scaffold")
+        self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
 
     def test_installed_tool_runs(self):
         self.install()

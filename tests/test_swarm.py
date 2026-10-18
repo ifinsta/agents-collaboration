@@ -840,6 +840,247 @@ class Console(SwarmCase):
         self.assertIn("--project", out)
 
 
+class Goals(SwarmCase):
+    """v0.3.0: from a piece of work to assigned tasks, through hard questions, backward and forward."""
+
+    def answer_all(self, goal, skip=()):
+        args = []
+        for key in swarm_module.GOAL_KEYS:
+            if key not in skip:
+                args += ["--set", f"{key}=" + ("none" if key == "unknowns" else f"a considered answer about {key}")]
+        self.sw("goal", "answer", goal, *args)
+
+    def build(self, caps_docs=""):
+        self.sw("goal", "new", "GL", "Ship the health endpoint")
+        self.answer_all("GL")
+        self.sw(
+            "goal",
+            "outcome",
+            "GL",
+            "GET /health answers 200 with the version",
+            "--check",
+            "curl localhost/health returns 200",
+        )
+        self.sw(
+            "goal",
+            "outcome",
+            "GL",
+            "the health endpoint is covered by tests",
+            "--check",
+            "python -m pytest tests/health passes",
+        )
+        self.sw(
+            "goal",
+            "task",
+            "GL",
+            "H-api",
+            "Add the endpoint",
+            "--serves",
+            "1",
+            "--done-when",
+            "the endpoint returns 200 locally",
+        )
+        self.sw(
+            "goal",
+            "task",
+            "GL",
+            "H-tests",
+            "Test the endpoint",
+            "--serves",
+            "2",
+            "--needs",
+            "H-api",
+            "--done-when",
+            "the endpoint tests pass on this machine",
+        )
+        extra = ["--caps", caps_docs] if caps_docs else []
+        self.sw(
+            "goal",
+            "task",
+            "GL",
+            "H-docs",
+            "Document the endpoint",
+            "--serves",
+            "1",
+            "--done-when",
+            "the API guide lists /health and its answer",
+            *extra,
+        )
+
+    def test_ec159_no_breakdown_before_the_hard_questions(self):
+        self.sw("goal", "new", "GQ", "Make sign-in faster")
+        self.assertIn("unanswered questions", self.sw("goal", "review", "GQ", ok=False))
+        self.assertIn("too thin", self.sw("goal", "answer", "GQ", "--set", "done_looks_like=faster", ok=False))
+        self.answer_all("GQ", skip=("riskiest_assumption",))
+        self.sw("goal", "answer", "GQ", "--set", "riskiest_assumption=unknown")
+        self.sw(
+            "goal",
+            "outcome",
+            "GQ",
+            "sign-in completes in under one second",
+            "--check",
+            "the sign-in timing test reports under 1000 ms",
+        )
+        self.sw(
+            "goal",
+            "task",
+            "GQ",
+            "Q-cache",
+            "Cache the discovery document",
+            "--serves",
+            "1",
+            "--done-when",
+            "the timing test passes twice in a row",
+        )
+        out = self.sw("goal", "review", "GQ", ok=False)
+        self.assertIn("is open", out)
+        self.assertIn("review first", self.sw("goal", "commit", "GQ", ok=False))
+        self.sw("answer", "1", "the provider's response time; measure it before caching anything")
+        self.sw("goal", "review", "GQ")
+
+    def test_backward_and_forward_views_then_commit(self):
+        self.join("ann")
+        self.build()
+        out = self.sw("goal", "review", "GL")
+        self.assertIn("wave 1 (now): H-api, H-docs", out)
+        self.assertIn("wave 2 (after wave 1): H-tests", out)
+        self.assertIn("<- H-tests", out)
+        self.assertIn("review passed", out)
+        self.assertIn("is draft", self.sw("--as", "ann", "claim", "H-api", ok=False))  # drafts are not work yet
+        self.sw("goal", "commit", "GL")
+        self.assertIn("claimed H-api", self.sw("--as", "ann", "claim", "H-api"))
+
+    def test_ec160_work_that_serves_no_outcome_is_refused(self):
+        self.build()
+        out = self.sw(
+            "goal",
+            "task",
+            "GL",
+            "H-extra",
+            "Refactor the router",
+            "--serves",
+            "9",
+            "--done-when",
+            "the router is tidier than before",
+            ok=False,
+        )
+        self.assertIn("serves no outcome", out)
+
+    def test_ec161_an_outcome_nobody_works_toward(self):
+        self.build()
+        self.sw(
+            "goal",
+            "outcome",
+            "GL",
+            "operators are alerted when health fails",
+            "--check",
+            "stopping the service raises an alert within a minute",
+        )
+        self.assertIn("outcome 3 has no task", self.sw("goal", "review", "GL", ok=False))
+
+    def test_ec162_a_task_without_a_done_check(self):
+        self.build()
+        self.assertIn(
+            "--done-when",
+            self.sw("goal", "task", "GL", "H-x", "Something", "--serves", "1", "--done-when", "ok", ok=False),
+        )
+
+    def test_ec163_large_tasks_must_be_split(self):
+        self.build()
+        self.sw(
+            "goal",
+            "task",
+            "GL",
+            "H-big",
+            "Rewrite monitoring",
+            "--serves",
+            "1",
+            "--size",
+            "L",
+            "--done-when",
+            "every monitor reports through the new pipeline",
+        )
+        self.assertIn("split it", self.sw("goal", "review", "GL", ok=False))
+
+    def test_ec164_a_task_needing_something_that_does_not_exist(self):
+        self.build()
+        self.assertIn(
+            "not a task",
+            self.sw(
+                "goal",
+                "task",
+                "GL",
+                "H-y",
+                "Wire it",
+                "--serves",
+                "1",
+                "--needs",
+                "H-nowhere",
+                "--done-when",
+                "the wiring test passes",
+                ok=False,
+            ),
+        )
+
+    def test_ec165_ec166_previous_and_next(self):
+        self.build()
+        self.sw("goal", "commit", "GL")
+        con = self.db()
+        con.execute(
+            "UPDATE tasks SET state='done', merged_sha='abc1234567890', submit=? WHERE id='H-api'",
+            (
+                json.dumps(
+                    {"changelog": "added GET /health", "evidence": "curl returned 200", "files": ["src/api/health.py"]}
+                ),
+            ),
+        )
+        con.commit()
+        con.close()
+        prev = self.sw("context", "--task", "H-tests")
+        for text in (
+            "serves outcome 2",
+            "<- H-api",
+            "produced: added GET /health",
+            "proved by: curl returned 200",
+            "src/api/health.py",
+        ):
+            self.assertIn(text, prev)
+        nxt = self.sw("context", "--task", "H-api")
+        self.assertIn("-> H-tests", nxt)
+        self.assertIn("it must then be able to: the endpoint tests pass", nxt)
+        self.join("ann")
+        self.assertIn("builds on (previous):", self.sw("--as", "ann", "claim", "H-tests"))
+
+    def test_ec167_the_first_wave_goes_to_machines_that_can_verify_it(self):
+        self.join("ann")
+        self.join("bob", caps="gpu-x")
+        self.build(caps_docs="gpu-x")
+        out = self.sw("--as", "ann", "goal", "commit", "GL", "--assign")
+        self.assertIn("H-docs -> bob", out)
+        self.assertIn("H-api -> ann", out)
+        self.assertNotIn("H-tests ->", out)  # it waits for H-api
+
+    def test_ec169_closing_needs_evidence_for_every_outcome(self):
+        self.build()
+        self.sw("goal", "commit", "GL")
+        con = self.db()
+        con.execute("UPDATE tasks SET state='done' WHERE goal='GL'")
+        con.commit()
+        con.close()
+        out = self.sw("goal", "close", "GL", "--evidence", "1=curl returned 200 with v0.3.0", ok=False)
+        self.assertIn("Run each outcome's check", out)
+        self.sw(
+            "goal",
+            "close",
+            "GL",
+            "--evidence",
+            "1=curl returned 200 with v0.3.0",
+            "--evidence",
+            "2=pytest tests/health: 4 passed",
+        )
+        self.assertIn("closed", self.sw("goal", "list"))
+
+
 class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")

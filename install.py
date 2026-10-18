@@ -19,8 +19,10 @@ What it does, and nothing else:
   2. writes them to <repo>/.agents/skills/agents-collaboration/ (or, with --user,
      ~/.agents/skills/agents-collaboration/), refusing to overwrite files you
      edited since the last install unless --force;
-  3. in a repository: creates .agents/swarm/config.toml and backlog.md from the
-     examples, only if they do not exist;
+  3. with --scaffold, in a repository: creates .agents/swarm/config.toml and
+     backlog.md from the examples, only if they do not exist. Nothing about the
+     project is assumed otherwise: the tool runs on defaults, and work is broken
+     down with `swarm goal` rather than a pre-written backlog;
   4. --agents-md: adds a short marked section to AGENTS.md, read by opencode,
      Codex, Qoder, DeepSeek-TUI and others;
   5. --claude: adds .claude/skills/agents-collaboration/SKILL.md, a pointer that
@@ -45,7 +47,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.2.0"
+DEFAULT_REF = "v0.3.0"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"
@@ -195,7 +197,7 @@ def install(args: argparse.Namespace) -> None:
         skill_ref = f".agents/skills/{SKILL}/SKILL.md"
         tool_ref = f".agents/skills/{SKILL}/swarm.py"
 
-    if root is not None:
+    if root is not None and args.scaffold:
         swarm_dir = root / ".agents" / "swarm"
         for example, target in (("examples/config.toml", "config.toml"), ("examples/backlog.md", "backlog.md")):
             path = swarm_dir / target
@@ -241,10 +243,8 @@ def install(args: argparse.Namespace) -> None:
     print("\nVerify, then start:")
     print(f"  {tool} version")
     print(f"  {tool} environment          # what this machine is, and the rules for it")
-    if root is not None:
-        print("  edit .agents/swarm/config.toml and .agents/swarm/backlog.md for this project")
-    print(f"  {tool} init                 # in a repository: import its backlog")
     print(f"  {tool} join --as <name> --kind <cli>")
+    print(f'  {tool} goal new <id> "what you want to achieve"   # break a piece of work down')
 
 
 def main() -> None:
@@ -256,6 +256,7 @@ def main() -> None:
     parser.add_argument("--agents-md", action="store_true", help="add a pointer section to AGENTS.md")
     parser.add_argument("--claude", action="store_true", help="add a Claude Code skill pointer in .claude/skills/")
     parser.add_argument("--all", action="store_true", help="--agents-md and --claude (in a repository)")
+    parser.add_argument("--scaffold", action="store_true", help="create .agents/swarm/config.toml and backlog.md")
     parser.add_argument("--force", action="store_true", help="overwrite local edits to installed files")
     parser.add_argument("--dry-run", action="store_true", help="show what would change")
     args = parser.parse_args()

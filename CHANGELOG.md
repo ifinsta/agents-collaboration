@@ -1,5 +1,34 @@
 # Changelog
 
+## v0.3.0 - 2026-10-18
+
+Nothing about a project is assumed any more. A piece of work becomes tasks
+through hard questions, backward and forward reasoning, and a review that attacks
+the plan.
+
+### Added
+
+- **`swarm goal`:** `new`, `answer`, `ask`, `outcome`, `task`, `review`,
+  `commit [--assign]`, `show`, `list` and `close`.
+  - Questions come in four stages: understand, backward, forward, challenge. Thin
+    answers are refused, and `unknown` becomes a blocking question (EC-159).
+  - Every task serves an outcome (EC-160) and carries a done-check (EC-162).
+  - Review refuses outcomes without work (EC-161), oversized tasks (EC-163) and
+    dependencies on work that does not exist (EC-164).
+  - Review shows the backward chain and the forward waves.
+  - `commit --assign` gives the first wave to machines that can verify it
+    (EC-167).
+  - `close` needs evidence for every outcome (EC-169).
+- **`swarm context`:** previous and next for a task. It shows what the tasks it
+  builds on produced (evidence, files, commit, owed checks), and what each task
+  waiting on it must achieve (EC-165, EC-166). The claim output and spawned
+  agents' briefs include it.
+
+### Changed
+
+- The installer creates `.agents/swarm/config.toml` and `backlog.md` only with
+  `--scaffold`. The tool runs on defaults; a backlog file is optional (EC-168).
+
 ## v0.2.0 - 2026-10-18
 
 See the pool, and drive it, from a terminal. Agents can install the skill

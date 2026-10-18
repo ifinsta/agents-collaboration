@@ -122,6 +122,31 @@ there, detached. The prompt on the command line is one safe sentence that points
 at the brief. On Windows, npm-installed CLIs are `.cmd` shims that pass arguments
 through `cmd.exe`, so nothing else may travel there.
 
+## Goals: from a piece of work to tasks
+
+A goal holds three things:
+
+- the answers to the hard questions, in four stages: understand, backward,
+  forward, challenge;
+- its outcomes, each with the check that proves it;
+- draft tasks, each serving outcomes, needing other tasks, carrying a done-check
+  and a size.
+
+`goal_problems` is the gate. It finds:
+
+- unanswered or open questions;
+- outcomes without work;
+- tasks that serve nothing;
+- oversized tasks;
+- tasks no wave reaches.
+
+`goal_waves` computes the forward view (topological layers within the goal, with
+outside dependencies listed as waits). `print_goal_views` prints both directions.
+`commit --assign` turns drafts into open tasks and reserves the first wave for
+free agents whose capabilities match. Every task then carries its place in the
+work: `task_context` reads backward (what its inputs produced) and forward (what
+its consumers need), and the claim output and the brief include it.
+
 ## The console
 
 `swarm console` turns the pool into something a person can watch and steer:

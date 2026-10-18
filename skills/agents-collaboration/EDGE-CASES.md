@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 158 cases. 75 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 169 cases. 86 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -248,6 +248,22 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-156 | Claude Code does not look in `.agents/skills/`. | `install.py --claude` adds a pointer skill in `.claude/skills/`; it never overwrites a file it did not write. | Tested |
 | EC-157 | Every repository needs its own install. | `install.py --user` installs once into the home folder; the tool works in any repository. | Tested |
 | EC-158 | An installed copy falls behind the releases. | `swarm version` and `swarm update`, which reinstalls and keeps the pointers already present. | Tested |
+
+## P. Turning a piece of work into tasks (v0.3.0)
+
+| Id | Situation | Handling | Status |
+|---|---|---|---|
+| EC-159 | Work is broken down before anyone knows what "done" means, who uses it, or what is risky. | A goal must answer hard questions in four stages (understand, backward, forward, challenge) before review or commit; thin answers are refused; "unknown" becomes a critical question that blocks commit. | Tested |
+| EC-160 | Tasks appear that serve nothing the goal needs (scope creep). | Every task names the outcome(s) it serves; one that serves none is refused. | Tested |
+| EC-161 | An outcome is promised but no task works toward it. | Review lists every outcome without work and refuses to pass. | Tested |
+| EC-162 | A task has no way to tell when it is finished. | Every task needs a done-check. | Tested |
+| EC-163 | A task is too large for one agent to finish, verify and merge. | Size L fails review until it is split. | Tested |
+| EC-164 | A task depends on work that does not exist. | Refused when the task is drafted. | Tested |
+| EC-165 | An agent starts a task blind to what its inputs actually produced. | `swarm context`, the claim output and the brief show each task it builds on: what it produced, how it was proved, its files and commit, anything still owed. | Tested |
+| EC-166 | An agent does not know who consumes its result or what they need. | The same context shows every task waiting on it, with that task's done-check and scope. | Tested |
+| EC-167 | Work is assigned to an agent whose machine cannot verify it. | `goal commit --assign` gives the first wave to free agents whose detected and declared capabilities match. | Tested |
+| EC-168 | The tool assumes a project layout, settings or a pre-written backlog. | Config and backlog are optional; the installer creates them only with `--scaffold`; goals produce the tasks. | Tested |
+| EC-169 | A goal is declared done because its tasks merged, though its outcomes were never checked. | Closing needs evidence for every outcome's own check. | Tested |
 
 ## What would close the open ones
 
