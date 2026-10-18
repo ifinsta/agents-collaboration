@@ -1,5 +1,32 @@
 # Changelog
 
+## v0.4.0 - 2026-10-18
+
+A console people can read, shaped by using the v0.2.0 console for real.
+
+### Changed
+
+- **Layout:** the board takes the left half at full height, and the event monitor
+  and the launcher share the right. Agent panes asked for with `--agents` get
+  their own tab (EC-180).
+- **Fit:** every console view fits its pane. The board shows the most important
+  lines first and fills the rest with recent events; lines are clipped or
+  wrapped to the width (EC-174).
+- **Readable events:** events read as sentences in local time, coloured by kind
+  ("opencode joined: opencode / DeepSeek V4.1 Flash Free; caps bash, windows"),
+  with no UTC stamps or Python lists. `NO_COLOR` turns colour off (EC-175).
+- **The launcher:**
+  - it starts each agent in a new tab of the same terminal (Windows Terminal or
+    tmux) instead of inside its own small pane;
+  - it offers the next open task, a chosen task (EC-179), or no task yet (EC-178);
+  - leaving it explains how to reopen it (EC-177).
+
+### Added
+
+- `swarm launch <cli> --no-task`: join in the main checkout and ask for work.
+- The monitor and the board restart themselves when `swarm.py` is updated
+  (EC-176).
+
 ## v0.3.3 - 2026-10-18
 
 ### Added

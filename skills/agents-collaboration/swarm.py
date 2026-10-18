@@ -19,9 +19,7 @@ Run ``swarm.py -h`` for commands. Agent identity is ``--as NAME`` or ``SWARM_AS`
 from __future__ import annotations
 
 import argparse
-import contextlib
 import copy
-import io
 import fnmatch
 import json
 import locale
@@ -34,12 +32,13 @@ import sqlite3
 import subprocess
 import sys
 import time
+import textwrap
 import tomllib
 import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.3.3"
+__version__ = "0.4.0"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -985,7 +984,9 @@ def cmd_join(sw: Swarm, a) -> None:
                 "VALUES(?,?,?,?,?,'ready',?,?,?,?,(SELECT COALESCE(MAX(id),0) FROM messages))",
                 (name, a.kind, a.model, json.dumps(caps), slot, iso(), iso(), a.pid, json.dumps(env)),
             )
-            sw.event("agent_joined", name, None, f"{a.kind} {a.model or ''} caps={caps}")
+            sw.event(
+                "agent_joined", name, None, f"{a.kind}{' / ' + a.model if a.model else ''}; caps {', '.join(caps)}"
+            )
         if sw.config["swarm"]["coordinator"] == "auto" and not sw.coordinator():
             sw.set_meta("coordinator", name)
             sw.event("coordinator", name, None, "first live agent")
@@ -2263,7 +2264,10 @@ def cmd_monitor(sw: Swarm, a) -> None:
                 raise SwarmError(f"A monitor is already running ({info['who']}).")
         sw.set_meta("monitor", json.dumps({"who": me, "at": iso()}))
     last = int(sw.db.execute("SELECT COALESCE(MAX(id),0) FROM events").fetchone()[0]) if not a.replay else 0
-    print(f"monitor running ({me}); events follow", flush=True)
+    if os.name == "nt":
+        os.system("")
+    monitor_header()
+    restart = False
     try:
         while True:
             with sw.tx():
@@ -2287,20 +2291,24 @@ def cmd_monitor(sw: Swarm, a) -> None:
                             "swarm", t["assignee"], f"{t['id']} is ready: `swarm merge`.", kind="nudge", task=t["id"]
                         )
                         sw.update_task(t["id"])
+            width, _ = term_size()
             for e in sw.db.execute("SELECT * FROM events WHERE id>? ORDER BY id", (last,)).fetchall():
-                print(
-                    f"[{e['at']}] {e['kind']} {e['agent'] or ''} {e['task'] or ''} {e['detail'] or ''}".rstrip(),
-                    flush=True,
-                )
+                for line in event_lines(e, width):
+                    print(line, flush=True)
                 last = e["id"]
             if a.once:
                 break
             time.sleep(a.interval)
+            if code_changed():
+                restart = True
+                break
     except KeyboardInterrupt:
         pass
     finally:
         with sw.tx():
             sw.set_meta("monitor", None)
+    if restart:
+        restart_self()
 
 
 def cmd_probe(sw: Swarm, a) -> None:
@@ -2490,8 +2498,141 @@ def interactive_kinds(sw: Swarm) -> list[str]:
     return [k for k in sw.config["adapters"] if (argv := interactive_argv(sw, k)) and shutil.which(argv[0])]
 
 
+# --------------------------------------------------------------------------- views for people
+
+STARTED_MTIME = Path(__file__).stat().st_mtime
+COLORS = {"green": "32", "red": "31", "yellow": "33", "cyan": "36", "dim": "2", "bold": "1"}
+
+
+def use_color() -> bool:
+    return sys.stdout.isatty() and not os.environ.get("NO_COLOR")
+
+
+def paint(text: str, color: str) -> str:
+    if not color or not use_color():
+        return text
+    return f"\x1b[{COLORS[color]}m{text}\x1b[0m"
+
+
+def term_size() -> tuple[int, int]:
+    size = shutil.get_terminal_size((100, 30))
+    return max(size.columns, 30), max(size.lines, 8)
+
+
+def clip(text: str, width: int) -> str:
+    return text if len(text) <= width else text[: max(width - 3, 1)] + "..."
+
+
+def local_time(ts: str | None) -> str:
+    dt = parse(ts)
+    return dt.astimezone().strftime("%H:%M:%S") if dt else "--:--:--"
+
+
+def ago(ts: str | None) -> str:
+    minutes = minutes_since(ts)
+    if minutes == float("inf"):
+        return "-"
+    if minutes < 1:
+        return "now"
+    return f"{int(minutes)}m" if minutes < 120 else f"{int(minutes // 60)}h"
+
+
+EVENT_TEXT = {
+    "agent_joined": ("cyan", "{agent} joined: {detail}"),
+    "agent_rejoined": ("cyan", "{agent} came back ({detail})"),
+    "agent_left": ("dim", "{agent} left"),
+    "agent_offline": ("yellow", "{agent} went offline: {detail}"),
+    "coordinator": ("cyan", "{agent} is the coordinator ({detail})"),
+    "assigned": ("cyan", "{task} assigned to {agent} ({detail})"),
+    "assignment_expired": ("yellow", "{agent} did not claim {task} in time"),
+    "claimed": ("cyan", "{agent} claimed {task} ({detail})"),
+    "planned": ("", "{agent} planned {task}: {detail}"),
+    "started": ("", "{agent} started {task}"),
+    "step_done": ("", "{agent} finished step {detail} of {task}"),
+    "submitted": ("", "{agent} submitted {task}: {detail}"),
+    "merge_started": ("dim", "{agent} is merging {task}"),
+    "merged": ("green", "{agent} merged {task}: {detail}"),
+    "gates_failed": ("red", "{task}: the gate failed for {agent}: {detail}"),
+    "gate_flaky": ("yellow", "{task}: a gate passed only on retry ({detail})"),
+    "needs_rebase": ("yellow", "{task} conflicts with the target in {detail}; {agent} must rebase"),
+    "merge_blocked": ("red", "{task} cannot join the target: {detail}"),
+    "target_moved": ("dim", "{task}: the target moved during the merge; retrying"),
+    "task_orphaned": ("yellow", "{task} is orphaned: {detail}"),
+    "released": ("yellow", "{agent} released {task}: {detail}"),
+    "blocked": ("yellow", "{agent} is blocked on {task}: {detail}"),
+    "asked": ("yellow", "{agent} asked {detail}"),
+    "answered": ("green", "{agent} answered {detail}"),
+    "question_escalated": ("yellow", "a question on {task} waits too long ({detail})"),
+    "rapid_completion": ("yellow", "{agent} finished {task} suspiciously fast ({detail})"),
+    "budget_exceeded": ("yellow", "{task} is over its time budget ({detail})"),
+    "paused": ("red", "PAUSED by {agent}: {detail}"),
+    "resumed": ("green", "resumed by {agent}"),
+    "locked": ("dim", "{agent} locked {detail} for {task}"),
+    "unlocked": ("dim", "{agent} unlocked {detail}"),
+    "goal_created": ("cyan", "{agent} started goal {detail}"),
+    "goal_task": ("dim", "{agent} drafted {task} ({detail})"),
+    "goal_committed": ("green", "goal committed by {agent}: {detail}"),
+    "goal_closed": ("green", "goal {detail} closed by {agent}"),
+    "recorded_done": ("green", "{task} recorded as done: {detail}"),
+    "launched": ("cyan", "{agent} launched on {task} ({detail})"),
+    "spawned": ("cyan", "{agent} spawned on {task} ({detail})"),
+    "console_opened": ("dim", "console opened: {detail}"),
+    "console_declined": ("dim", "{agent} declined the console"),
+    "message": ("dim", "{agent} sent a message {detail}"),
+    "ping": ("cyan", "{agent} asked {detail} whether they are ready"),
+    "ack": ("dim", "{agent} answered a ping: {detail}"),
+    "note": ("dim", "{agent} noted on {task}: {detail}"),
+    "task_added": ("dim", "{agent} added {task} ({detail})"),
+    "task_approved": ("dim", "{agent} approved {task}"),
+}
+
+
+def describe_event(e) -> tuple[str, str]:
+    color, template = EVENT_TEXT.get(e["kind"], ("", "{kind} {agent} {task} {detail}"))
+    detail = re.sub(r"caps=\[(.*?)\]", lambda m: "caps " + m.group(1).replace("'", ""), e["detail"] or "")
+    detail = detail.replace("-> *", "to everyone").replace("-> ", "to ")
+    text = template.format(kind=e["kind"], agent=e["agent"] or "someone", task=e["task"] or "-", detail=detail)
+    return color, re.sub(r"\s+", " ", text).replace(" ()", "").replace(": -", "").strip()
+
+
+def event_lines(e, width: int, wrap: bool = True) -> list[str]:
+    color, text = describe_event(e)
+    stamp = local_time(e["at"])
+    if not wrap:
+        return [paint(clip(f"{stamp} {text}", width), color)]
+    lines = textwrap.wrap(text, width=max(width - 9, 20)) or [""]
+    return [paint(f"{stamp if i == 0 else ' ' * 8} {line}", color) for i, line in enumerate(lines)]
+
+
+def code_changed() -> bool:
+    try:
+        return Path(__file__).stat().st_mtime != STARTED_MTIME
+    except OSError:
+        return False
+
+
+def restart_self() -> None:
+    """A long-running pane picks up an updated swarm.py by running the new code in its place."""
+    print(paint("swarm.py was updated; restarting this view on the new code.", "dim"), flush=True)
+    sys.exit(subprocess.call([sys.executable, str(Path(__file__).resolve()), *sys.argv[1:]]))
+
+
+def self_argv() -> list[str]:
+    python = "python" if os.name == "nt" and _which("python") else sys.executable
+    return [short_path(python), short_path(str(Path(__file__).resolve()))]
+
+
+def skill_ref(sw: Swarm) -> str:
+    skill = (Path(__file__).parent / "SKILL.md").resolve()
+    try:
+        return Path(os.path.relpath(skill, sw.main_root)).as_posix()
+    except ValueError:  # another drive on Windows
+        return skill.as_posix()
+
+
 def cmd_launch(sw: Swarm, a) -> None:
-    """Start an agent CLI interactively in this terminal, already joined and holding a task in its worktree."""
+    """Start an agent CLI interactively in this terminal: joined, and holding a task in its worktree
+    (or, with --no-task, joined in the main checkout and waiting for an assignment)."""
     template = interactive_argv(sw, a.kind)
     if not template:
         raise SwarmError(f"No interactive command for {a.kind}; set [adapters.{a.kind}] interactive = [...].")
@@ -2500,94 +2641,281 @@ def cmd_launch(sw: Swarm, a) -> None:
     name = a.name or free_name(sw, a.kind)
     if not NAME_RE.match(name):
         raise SwarmError("Agent names are 2-32 chars of a-z, 0-9 and '-'.")
-    prompt = brief_prompt(name)
     takes_prompt = any("{prompt}" in part for part in template)
+    if a.no_task:
+        prompt = (
+            f"You are swarm agent {name}. Read the file {skill_ref(sw)} and follow it. You have already "
+            "joined. Ask for work with swarm next."
+        )
+        if not SAFE_PROMPT_RE.match(prompt):
+            raise SwarmError("The skill path makes an unsafe prompt; start this agent with a task instead.")
+        where = sw.main_root
+    else:
+        prompt = brief_prompt(name)
+        where = sw.worktree_path(a.task) if a.task else None
     if a.dry_run:
-        where = str(sw.worktree_path(a.task)) if a.task else "<worktree of the task `next` would choose>"
-        argv = render(template, {"prompt": prompt, "cwd": where})
-        print(f"would run {name} interactively in {where}: " + " ".join(argv))
+        shown = str(where) if where else "<worktree of the task `next` would choose>"
+        argv = render(template, {"prompt": prompt, "cwd": shown})
+        mode = "without a task, in the main checkout" if a.no_task else "on a task, in its worktree"
+        print(f"would run {name} interactively {mode} ({shown}): " + " ".join(argv))
         if not takes_prompt:
             print(f"{a.kind} takes no first message on its command line; paste this one: {prompt}")
         print("nothing was changed: no agent joined, no task claimed")
         return
-    t = prepare_agent(sw, a.kind, name, a.model, a.caps, a.task)
-    argv = render(template, {"prompt": prompt, "cwd": t["worktree"]})
-    print(f"\n{name} ({a.kind}) takes {t['id']}: {t['title']}\n  worktree {t['worktree']}\n")
+    if a.no_task:
+        cmd_join(sw, argparse.Namespace(as_=name, kind=a.kind, model=a.model, caps=a.caps, resume=False, pid=None))
+        cwd, task_id = sw.main_root, None
+        print(f"\n{name} ({a.kind}) joined without a task; it will ask for work.\n")
+    else:
+        t = prepare_agent(sw, a.kind, name, a.model, a.caps, a.task)
+        cwd, task_id = Path(t["worktree"]), t["id"]
+        print(f"\n{name} ({a.kind}) takes {t['id']}: {t['title']}\n  worktree {t['worktree']}\n")
+    argv = render(template, {"prompt": prompt, "cwd": str(cwd)})
     if not takes_prompt:
         print(f"{a.kind} takes no first message on its command line. Paste this as your first message:\n  {prompt}\n")
-    proc = subprocess.Popen(resolve_bin(argv), cwd=t["worktree"], env=sw.env_for(sw.agent(name), t["id"]))
+    proc = subprocess.Popen(resolve_bin(argv), cwd=cwd, env=sw.env_for(sw.agent(name), task_id))
     with sw.tx():
         sw.update_agent(name, pid=proc.pid)
-        sw.event("launched", name, t["id"], f"{a.kind} interactive, pid {proc.pid}")
+        sw.event("launched", name, task_id, f"{a.kind} interactive, pid {proc.pid}")
     code = proc.wait()
     print(f"\n{a.kind} exited ({code}). Anything {name} still held is orphaned for another agent to continue.")
 
 
+def open_in_new_tab(cwd: Path, title: str, argv: list[str]) -> bool:
+    """Give an agent's TUI a whole tab of the current terminal, instead of a corner of the launcher pane."""
+    if os.name == "nt" and os.environ.get("WT_SESSION") and shutil.which("wt"):
+        flags = {"creationflags": 0x00000200 | 0x00000008}
+        subprocess.Popen(
+            resolve_bin(["wt", "-w", "0", "new-tab", "-d", str(cwd), "--title", title, "cmd", "/k", *argv]),
+            stdin=subprocess.DEVNULL,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+            **flags,
+        )
+        return True
+    if os.environ.get("TMUX") and shutil.which("tmux"):
+        subprocess.run(
+            ["tmux", "new-window", "-c", str(cwd), "-n", title, shlex.join(argv) + '; exec "${SHELL:-sh}"'], check=False
+        )
+        return True
+    return False
+
+
+def ask(prompt: str) -> str | None:
+    try:
+        return input(prompt).strip()
+    except EOFError:
+        return None
+
+
 def cmd_launcher(sw: Swarm, a) -> None:
-    """A menu, for a console pane: pick an installed agent CLI and start it on the next task."""
+    """A menu, for a console pane: start agents one after another, each in its own tab when the terminal allows."""
+    if os.name == "nt":
+        os.system("")
     taken: set[str] = set()
     while True:
+        width, _ = term_size()
         kinds = interactive_kinds(sw)
-        print("\nStart an agent here. It joins the swarm, takes the next task, and opens in that task's worktree.")
+        print("\n" + paint("START AGENTS", "bold") + f"  in {sw.main_root.name}")
+        for line in textwrap.wrap(
+            "Each agent joins the swarm with a brief that tells it the protocol, and opens in "
+            "its own tab when this terminal can make one.",
+            width,
+        ):
+            print(paint(line, "dim"))
         if not kinds:
             print("No agent CLI is installed (`swarm probe`).")
             return
-        for i, kind in enumerate(kinds, 1):
-            print(f"  {i}. {kind}")
-        print("  q. close the launcher")
-        try:
-            choice = input("agent> ").strip().lower()
-        except EOFError:
+        menu = "   ".join(f"{i}. {kind}" for i, kind in enumerate(kinds, 1))
+        for line in textwrap.wrap(menu, width - 2):
+            print("  " + line)
+        choice = ask("agent (number or name, q to close): ")
+        if choice is None or choice.lower() in ("q", "quit", "exit"):
+            for line in textwrap.wrap(
+                f"Launcher closed. This pane is now a plain shell in {sw.main_root.name}. Reopen the menu with: "
+                f"{' '.join(self_argv())} launcher. A CLI you start here by hand reads AGENTS.md and joins the swarm "
+                "itself, but in the main checkout and without a brief; the menu is the safer way.",
+                width,
+            ):
+                print(line)
             return
-        if choice in ("q", "quit", "exit"):
-            return
-        kind = kinds[int(choice) - 1] if choice.isdigit() and 0 < int(choice) <= len(kinds) else choice
+        kind = kinds[int(choice) - 1] if choice.isdigit() and 0 < int(choice) <= len(kinds) else choice.lower()
         if kind not in kinds:
+            print(f"{choice!r} is not one of the installed agents.")
             continue
-        default = free_name(sw, kind, taken)
-        try:
-            name = input(f"name [{default}]: ").strip() or default
-        except EOFError:
+        env = detect_environment(sw.main_root)
+        me_like = {"name": "?", "caps": json.dumps(sorted(environment_caps(env)))}
+        options = eligible(sw, me_like)
+        nxt = options[0]["id"] if options else None
+        print(
+            f"  n. next open task{f' ({nxt})' if nxt else ' (none open now)'}   t. choose a task   "
+            "w. no task: join and wait"
+        )
+        mode = (ask("on what? [n]: ") or "n").lower()
+        if mode is None:
             return
+        task, no_task = "", False
+        if mode == "t":
+            if not options:
+                print("No open task this machine can take now.")
+                continue
+            for i, t in enumerate(options[:15], 1):
+                print(clip(f"  {i:>2}. {t['id']}  {t['title']}", width))
+            pick = ask("task number: ")
+            if not pick or not pick.isdigit() or not 0 < int(pick) <= min(len(options), 15):
+                continue
+            task = options[int(pick) - 1]["id"]
+        elif mode == "w":
+            no_task = True
+        elif not nxt:
+            print("Nothing open that this machine can take; starting it without a task.")
+            no_task = True
+        default = free_name(sw, kind, taken)
+        name = ask(f"name [{default}]: ")
+        if name is None:
+            return
+        name = name or default
         taken.add(name)
+        argv = [
+            *self_argv(),
+            "launch",
+            kind,
+            "--name",
+            name,
+            *(["--task", task] if task else []),
+            *(["--no-task"] if no_task else []),
+        ]
+        if open_in_new_tab(sw.main_root, f"{name} ({kind})", argv):
+            print(paint(f"opened {name} in a new tab", "green"))
+            continue
         try:
-            cmd_launch(sw, argparse.Namespace(kind=kind, name=name, task="", model="", caps="", dry_run=False))
+            cmd_launch(
+                sw,
+                argparse.Namespace(kind=kind, name=name, task=task, model="", caps="", dry_run=False, no_task=no_task),
+            )
         except SwarmError as exc:
             print(f"swarm: {exc}")
 
 
+def board_lines(sw: Swarm, width: int, height: int) -> list[str]:
+    """The live board, sized to the pane: the most important lines first, events fill what is left."""
+    lines = []
+    s_ = sw.config["swarm"]
+    live = sw.live_agents()
+    coord = sw.coordinator()
+    lines.append(paint(clip(f"SWARM BOARD  {sw.main_root.name}  {local_time(iso())}", width), "bold"))
+    if sw.paused():
+        lines.append(paint(clip(f"PAUSED by {sw.meta('paused')}: no claims or merges", width), "red"))
+    lock = sw.meta("merge_lock")
+    if lock:
+        info = json.loads(lock)
+        lines.append(paint(clip(f"merging now: {info['task']} by {info['agent']}", width), "cyan"))
+    lines.append(clip(f"agents {len(live)} of {s_['max_agents']}   coordinator {coord or 'none'}", width))
+    holders = sw.db.execute("SELECT * FROM agents WHERE state='offline' AND task IS NOT NULL").fetchall()
+    for r in [*live, *holders]:
+        color = {"busy": "", "ready": "green", "offline": "yellow"}.get(r["state"], "")
+        model = f"{r['kind'] or ''}{' / ' + r['model'] if r['model'] else ''}"
+        lines.append(
+            paint(
+                clip(
+                    f"  {r['name']:<12} {r['state']:<8} {r['task'] or '-':<16} {ago(r['heartbeat_at']):>4}  {model}",
+                    width,
+                ),
+                color,
+            )
+        )
+    tasks = sw.db.execute("SELECT * FROM tasks WHERE removed=0 ORDER BY ord, created_at").fetchall()
+    done = {t["id"] for t in tasks if t["state"] == "done"}
+    flight = [t for t in tasks if t["state"] in HELD]
+    open_now = [t for t in tasks if t["state"] == "open" and all(n in done for n in json.loads(t["needs"]))]
+    waiting = [t for t in tasks if t["state"] == "open" and t not in open_now]
+    lines.append(
+        clip(
+            f"tasks  {len(flight)} in flight   {len(open_now)} open now   {len(waiting)} waiting   {len(done)} done",
+            width,
+        )
+    )
+    tone = {
+        "needs_rebase": "yellow",
+        "gates_failed": "red",
+        "merge_blocked": "red",
+        "orphaned": "yellow",
+        "ready_to_merge": "green",
+        "awaiting_answers": "yellow",
+    }
+    for t in flight:
+        steps = json.loads(t["steps"])
+        progress = f"step {t['step_idx']}/{len(steps)}" if steps else ""
+        lines.append(
+            paint(
+                clip(f"  {t['id']:<16} {t['state']:<16} {t['assignee'] or '-':<12} {progress}", width),
+                tone.get(t["state"], ""),
+            )
+        )
+    if open_now:
+        lines.append(clip("  next up: " + ", ".join(t["id"] for t in open_now), width))
+    for g in sw.db.execute("SELECT * FROM goals WHERE state IN ('interrogating','drafting','active')"):
+        gt = [t for t in tasks if t["goal"] == g["id"]]
+        lines.append(
+            clip(
+                f"goal {g['id']} [{g['state']}] {sum(t['state'] == 'done' for t in gt)}/{len(gt)}: {g['title']}", width
+            )
+        )
+    questions = sw.db.execute("SELECT * FROM questions WHERE answer IS NULL AND waived=0 ORDER BY id").fetchall()
+    if questions:
+        lines.append(paint(clip(f"questions waiting: {len(questions)}", width), "yellow"))
+        for q in questions[:2]:
+            lines.append(clip(f"  Q{q['id']} -> {q['to_whom']}: {q['text']}", width))
+    room = height - len(lines) - 2
+    if room > 0:
+        lines.append(paint("recent", "dim"))
+        recent = sw.db.execute("SELECT * FROM events ORDER BY id DESC LIMIT ?", (room,)).fetchall()
+        for e in reversed(recent):
+            lines += event_lines(e, width, wrap=False)
+    return lines[: max(height - 1, 1)]
+
+
 def cmd_dashboard(sw: Swarm, a) -> None:
-    """The live board for a console pane: agents, tasks, locks, questions and the last events."""
+    """The live board for a console pane, redrawn to fit the pane."""
     if os.name == "nt":
         os.system("")  # turns on ANSI escapes in a classic Windows console
     while True:
-        buf = io.StringIO()
-        with contextlib.redirect_stdout(buf):
-            cmd_agents(sw, a)
-            print()
-            cmd_status(sw, argparse.Namespace(all=False))
-            print("\nrecent events:")
-            cmd_log(sw, argparse.Namespace(task="", limit=8))
-        head = f"swarm board  {iso()}  (every {a.interval}s, Ctrl+C to stop)\n\n"
-        sys.stdout.write(("" if a.once else "\x1b[2J\x1b[H") + head + buf.getvalue())
+        with sw.tx():
+            sw.sweep()
+        width, height = term_size()
+        text = "\n".join(board_lines(sw, width, height))
+        sys.stdout.write(("" if a.once else "\x1b[H\x1b[2J") + text + "\n")
         sys.stdout.flush()
         if a.once:
             return
         time.sleep(a.interval)
+        if code_changed():
+            restart_self()
+
+
+def monitor_header() -> None:
+    width, _ = term_size()
+    print(
+        paint("SWARM MONITOR", "bold") + paint(clip("  events as they happen, local time", width - 13), "dim"),
+        flush=True,
+    )
 
 
 def observe_events(sw: Swarm, a) -> None:
     last = 0 if a.replay else int(sw.db.execute("SELECT COALESCE(MAX(id),0) FROM events").fetchone()[0])
-    print("observing events (another monitor does the sweeps)", flush=True)
+    monitor_header()
+    print(paint("(observing: another monitor does the sweeps)", "dim"), flush=True)
     while True:
+        width, _ = term_size()
         for e in sw.db.execute("SELECT * FROM events WHERE id>? ORDER BY id", (last,)).fetchall():
-            print(
-                f"[{e['at']}] {e['kind']} {e['agent'] or ''} {e['task'] or ''} {e['detail'] or ''}".rstrip(), flush=True
-            )
+            for line in event_lines(e, width):
+                print(line, flush=True)
             last = e["id"]
         if a.once:
             return
         time.sleep(a.interval)
+        if code_changed():
+            restart_self()
 
 
 def console_question(sw: Swarm, name: str) -> str | None:
@@ -2613,14 +2941,13 @@ def short_path(path: str) -> str:
 
 
 def console_panes(sw: Swarm, agents: list[str]) -> list[dict]:
-    python = "python" if os.name == "nt" and _which("python") else sys.executable
-    me = [short_path(python), short_path(str(Path(__file__).resolve()))]
+    me = self_argv()
     holder = sw.meta("monitor")
     running = bool(holder) and minutes_since(json.loads(holder)["at"]) < 2
     panes = [
-        {"title": "swarm monitor", "argv": [*me, "monitor", *(["--observe"] if running else [])]},
-        {"title": "swarm board", "argv": [*me, "dashboard"]},
-        {"title": "start agents", "argv": [*me, "launcher"]},
+        {"title": "swarm board", "argv": [*me, "dashboard"], "tab": "swarm"},
+        {"title": "swarm monitor", "argv": [*me, "monitor", *(["--observe"] if running else [])], "tab": "swarm"},
+        {"title": "start agents", "argv": [*me, "launcher"], "tab": "swarm"},
     ]
     taken: set[str] = set()
     for kind in agents:
@@ -2629,7 +2956,7 @@ def console_panes(sw: Swarm, agents: list[str]) -> list[dict]:
             raise SwarmError(f"{kind} cannot start interactively here (`swarm probe`; or set its interactive command).")
         name = free_name(sw, kind, taken)
         taken.add(name)
-        panes.append({"title": f"{name} ({kind})", "argv": [*me, "launch", kind, "--name", name]})
+        panes.append({"title": f"{name} ({kind})", "argv": [*me, "launch", kind, "--name", name], "tab": "agents"})
     limit = int(sw.config["console"]["max_panes"])
     if len(panes) > limit:
         raise SwarmError(
@@ -2674,18 +3001,24 @@ def terminal_window(os_name: str, has, command: list[str], display: bool) -> lis
 
 def plan_console(panes: list[dict], cwd: str, os_name: str, has, display: bool = True, session: str = "swarm") -> dict:
     """How to show the panes on this machine. Pure: `has(tool)` says what is installed."""
+    groups = [(tab, [p for p in panes if p.get("tab", "swarm") == tab]) for tab in ("swarm", "agents")]
+    groups = [(tab, group) for tab, group in groups if group]
     if os_name == "windows":
         if has("wt"):
+            # Tab 1: the board on the left, at full height; monitor and launcher on the right.
+            # Tab 2: one pane per agent, because agent TUIs need room.
             args = ["wt", "-w", "new"]
-            for i, pane in enumerate(panes):
-                if i == 0:
-                    args += ["new-tab"]
-                else:
-                    args += [";"]
-                    if i == 3:
-                        args += ["move-focus", "left", ";"]
-                    args += ["split-pane", "-V" if i == 1 else "-H"]
-                args += ["-d", cwd, "--title", pane["title"], "cmd", "/k", *pane["argv"]]
+            for n, (tab, group) in enumerate(groups):
+                for i, pane in enumerate(group):
+                    if i == 0:
+                        args += ([";"] if n else []) + ["new-tab"]
+                    elif tab == "swarm":
+                        args += [";", "split-pane", *(["-V", "-s", "0.45"] if i == 1 else ["-H"])]
+                    else:
+                        args += [";", "split-pane", "-V" if i % 2 else "-H"]
+                    args += ["-d", cwd, "--title", pane["title"], "cmd", "/k", *pane["argv"]]
+            if len(groups) > 1:
+                args += [";", "focus-tab", "-t", "0"]
             return {"kind": "windows-terminal", "steps": [args], "detach": True, "attach": None}
         steps = [["cmd", "/c", "start", pane["title"], "/d", cwd, "cmd", "/k", *pane["argv"]] for pane in panes]
         return {"kind": "separate-windows", "steps": steps, "detach": True, "attach": None}
@@ -2694,16 +3027,19 @@ def plan_console(panes: list[dict], cwd: str, os_name: str, has, display: bool =
         def keep(pane: dict) -> str:
             return shlex.join(pane["argv"]) + '; exec "${SHELL:-sh}"'
 
-        steps = [
-            ["tmux", "new-session", "-d", "-s", session, "-c", cwd, "-n", "swarm", keep(panes[0])],
-            ["tmux", "select-pane", "-t", session, "-T", panes[0]["title"]],
-        ]
-        for pane in panes[1:]:
-            steps += [
-                ["tmux", "split-window", "-t", session, "-c", cwd, keep(pane)],
-                ["tmux", "select-pane", "-t", session, "-T", pane["title"]],
-                ["tmux", "select-layout", "-t", session, "tiled"],
-            ]
+        steps = []
+        for tab, group in groups:
+            for i, pane in enumerate(group):
+                if i == 0 and tab == "swarm":
+                    steps.append(["tmux", "new-session", "-d", "-s", session, "-c", cwd, "-n", tab, keep(pane)])
+                elif i == 0:
+                    steps.append(["tmux", "new-window", "-t", session, "-n", tab, "-c", cwd, keep(pane)])
+                else:
+                    steps.append(["tmux", "split-window", "-t", f"{session}:{tab}", "-c", cwd, keep(pane)])
+                steps.append(["tmux", "select-pane", "-t", f"{session}:{tab}", "-T", pane["title"]])
+            layout = "main-vertical" if tab == "swarm" else "tiled"
+            steps.append(["tmux", "select-layout", "-t", f"{session}:{tab}", layout])
+        steps.append(["tmux", "select-window", "-t", f"{session}:swarm"])
         steps.append(["tmux", "set-option", "-t", session, "pane-border-status", "top"])
         attach = ["tmux", "attach", "-t", session]
         window = terminal_window(os_name, has, attach, display)
@@ -3608,6 +3944,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--model", default="")
     sp.add_argument("--caps", default="")
     sp.add_argument("--dry-run", action="store_true")
+    sp.add_argument(
+        "--no-task", action="store_true", help="join and wait in the main checkout instead of taking a task"
+    )
     add("launcher", cmd_launcher, "a menu that starts agents one after another (for a console pane)")
     sp = add("dashboard", cmd_dashboard, "the live board, refreshed (for a console pane)")
     sp.add_argument("--interval", type=int, default=5)

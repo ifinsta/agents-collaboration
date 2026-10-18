@@ -70,9 +70,18 @@ your question tool (in Claude Code, `AskUserQuestion`; elsewhere, in the chat):
 - **No:** `swarm console --decline`, so nobody asks again. The human can still run
   `swarm console` at any time.
 
-Each agent pane runs `swarm launch <cli>`: it joins the pool, takes the next task,
-writes the brief, and opens the CLI inside that task's worktree. The launcher pane
-does the same from a menu, one agent after another.
+The console has two parts:
+
+- **The first tab:** the board on the left at full height, with the event monitor
+  and the launcher on the right.
+- **Agents asked for with `--agents`:** these open in a second tab, because agent
+  interfaces need room.
+
+From the launcher, the human picks a CLI and what it should do: the next open
+task, a chosen task, or no task yet (it joins and waits). Each agent opens in its
+own tab. `swarm launch <cli>` does the same from any terminal: it joins, claims,
+writes the brief, and starts the CLI in the task's worktree. With `--no-task`, it
+starts in the main checkout and asks for work.
 
 ## 1.5 Turning a piece of work into tasks: goals
 

@@ -26,7 +26,7 @@ The installer adds the skill, a pointer in `AGENTS.md` for most agent CLIs, and 
 
 ```console
 $ curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
-agents-collaboration 0.3.3 from github.com/ifinsta/agents-collaboration@v0.3.3 into ~/demo/shop
+agents-collaboration 0.4.0 from github.com/ifinsta/agents-collaboration@v0.4.0 into ~/demo/shop
   write ./.agents/skills/agents-collaboration/SKILL.md
   write ./.agents/skills/agents-collaboration/swarm.py
   write ./.agents/skills/agents-collaboration/EDGE-CASES.md
@@ -625,7 +625,7 @@ AssertionError: {'status': 'ok', 'version': '1.4.0'} != {'status': 'fine', 'vers
 
 
 ----------------------------------------------------------------------
-Ran 2 tests in 0.002s
+Ran 2 tests in 0.001s
 
 FAILED (failures=1)
 

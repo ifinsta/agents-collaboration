@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 173 cases. 90 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 180 cases. 96 Tested, 60 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -268,6 +268,20 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-172 | The config names a backlog file that does not exist. | Reported as a warning; the board stays as it is. | Tested |
 | EC-173 | An agent answers a goal question with "unknown" and is told every question is answered, so it believes the interrogation is finished. | An unknown is not counted: the output says which questions wait, and which question each became and who it went to. Found by the published simulation. | Tested |
 | EC-170 | On Windows, the tool's output through a pipe (how agents read it) is cp1252: "§" arrives garbled and "→" in a note crashes the command. | Output is UTF-8 on every OS, whatever the console or pipe. | Tested |
+
+## Q. A console people can read (v0.4.0)
+
+Found by using the v0.2.0 console for real.
+
+| Id | Situation | Handling | Status |
+|---|---|---|---|
+| EC-174 | Views wider or taller than their pane wrap into noise, and the board scrolls past the part that matters. | Every view reads its pane's size: the board fits its height (most important lines first, events fill the rest), and lines are clipped or wrapped to the width. | Tested |
+| EC-175 | Events print as raw records: UTC timestamps, internal kinds, Python lists. | Events read as sentences in local time, with colour by kind when the pane is a terminal (`NO_COLOR` turns it off). | Tested |
+| EC-176 | Long-running panes keep running old code after `swarm update`. | The monitor and the board notice a changed `swarm.py` and restart themselves on it. | Enforced |
+| EC-177 | Leaving the launcher silently drops the pane to a bare shell, and the person starts an agent by hand, in the main checkout, without a brief. | Leaving says what the pane now is, how to reopen the menu, and why the menu is the safer way. | Tested |
+| EC-178 | The person wants an agent present without handing it a task yet. | The launcher's "no task" choice and `launch --no-task` join it in the main checkout, told to ask for work. | Tested |
+| EC-179 | The person wants an agent on a particular task, not whatever is next. | The launcher lists the open tasks this machine can take and starts the agent on the chosen one. | Tested |
+| EC-180 | The board gets a quarter of the screen, and agent TUIs are squeezed into small panes. | The board takes the left half at full height; agents open in their own tab (the launcher opens each new agent in a new tab of the same terminal). | Tested |
 
 ## What would close the open ones
 

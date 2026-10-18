@@ -132,7 +132,7 @@ class SwarmCase(unittest.TestCase):
     def git(self, *args, cwd=None):
         return subprocess.run(["git", *args], cwd=cwd or self.root, capture_output=True, text=True, check=True).stdout
 
-    def sw(self, *args, cwd=None, ok=True, env=None):
+    def sw(self, *args, cwd=None, ok=True, env=None, input_text=None):
         done = subprocess.run(
             [sys.executable, str(SWARM), *args],
             cwd=cwd or self.root,
@@ -140,6 +140,7 @@ class SwarmCase(unittest.TestCase):
             text=True,
             encoding="utf-8",
             check=False,
+            input=input_text,
             env={**os.environ, **(env or {})},
         )
         out = done.stdout + done.stderr
@@ -567,7 +568,7 @@ class Liveness(SwarmCase):
 
     def test_ec118_one_monitor(self):
         self.join("ann")
-        self.assertIn("monitor running", self.sw("monitor", "--once"))
+        self.assertIn("SWARM MONITOR", self.sw("monitor", "--once"))
         con = self.db()
         con.execute(
             "INSERT OR REPLACE INTO meta(key,value) VALUES('monitor', ?)",
@@ -831,8 +832,9 @@ class Console(SwarmCase):
     def test_dashboard_renders_once(self):
         self.join("ann")
         out = self.sw("dashboard", "--once")
-        self.assertIn("swarm board", out)
-        self.assertIn("recent events", out)
+        self.assertIn("SWARM BOARD", out)
+        self.assertIn("recent", out)
+        self.assertIn("next up: T1", out)
 
     def test_ec158_version_and_update(self):
         self.assertIn(swarm_module.__version__, self.sw("version"))
@@ -1128,6 +1130,70 @@ class ExampleContent(SwarmCase):
     def test_ec172_a_missing_backlog_file_is_reported_not_fatal(self):
         (self.root / "backlog.md").unlink()
         self.assertIn("does not exist", self.sw("status"))
+
+
+class ReadableConsole(SwarmCase):
+    """v0.4.0: what a person sees in the console."""
+
+    NARROW = {"COLUMNS": "60", "LINES": "18"}
+
+    def test_ec174_views_fit_their_pane(self):
+        self.join("ann")
+        self.join("bob")
+        self.sw("--as", "ann", "claim", "T1")
+        board = self.sw("dashboard", "--once", env=self.NARROW).rstrip("\n").split("\n")
+        self.assertLessEqual(len(board), 18)
+        self.assertTrue(all(len(line) <= 60 for line in board), board)
+        self.assertIn("SWARM BOARD", board[0])
+        events = self.sw("monitor", "--observe", "--once", "--replay", env=self.NARROW).splitlines()
+        self.assertTrue(all(len(line) <= 60 for line in events), events)
+
+    def test_ec175_events_read_as_sentences_in_local_time(self):
+        self.join("ann")
+        self.sw("--as", "ann", "claim", "T1")
+        out = self.sw("monitor", "--observe", "--once", "--replay")
+        self.assertIn("ann joined: claude; caps", out)
+        self.assertIn("ann claimed T1", out)
+        self.assertNotIn("+00:00", out)
+        self.assertNotIn("['", out)
+        old = {
+            "kind": "agent_joined",
+            "agent": "x",
+            "task": None,
+            "at": swarm_module.iso(),
+            "detail": "claude sonnet caps=['bash', 'windows']",
+        }
+        self.assertEqual(swarm_module.describe_event(old)[1], "x joined: claude sonnet caps bash, windows")
+
+    def test_ec177_leaving_the_launcher_says_how_to_come_back(self):
+        out = self.sw("launcher", input_text="q\n")
+        self.assertIn("Launcher closed", out)
+        self.assertIn("launcher", out.split("Launcher closed", 1)[1])
+
+    def test_ec178_an_agent_can_start_without_a_task(self):
+        out = self.sw("launch", "fake", "--name", "fay", "--no-task", "--dry-run")
+        self.assertIn("without a task, in the main checkout", out)
+        self.assertNotIn("fay", self.sw("agents"))
+
+    def test_ec179_the_launcher_offers_a_chosen_task(self):
+        out = self.sw("launcher", input_text="fake\nt\n1\n\n", env={"WT_SESSION": "", "TMUX": ""})
+        self.assertIn("1. T1", out)
+        self.assertIn("fake-1 (fake) takes T1", out)
+
+    def test_ec180_the_board_gets_the_big_pane_and_agents_their_own_tab(self):
+        panes = [
+            {"title": "swarm board", "argv": ["python", "s.py", "dashboard"], "tab": "swarm"},
+            {"title": "swarm monitor", "argv": ["python", "s.py", "monitor"], "tab": "swarm"},
+            {"title": "start agents", "argv": ["python", "s.py", "launcher"], "tab": "swarm"},
+            {"title": "a-1", "argv": ["python", "s.py", "launch", "a"], "tab": "agents"},
+        ]
+        wt = swarm_module.plan_console(panes, "C:/repo", "windows", lambda t: t == "wt")["steps"][0]
+        self.assertEqual(wt[wt.index("--title") + 1], "swarm board")
+        self.assertEqual(wt.count("new-tab"), 2)
+        self.assertIn("focus-tab", wt)
+        tmux = swarm_module.plan_console(panes, "/repo", "linux", lambda t: t == "tmux", display=False)["steps"]
+        self.assertTrue(any("main-vertical" in step for step in tmux))
+        self.assertTrue(any(step[1] == "new-window" for step in tmux))
 
 
 class Messages(SwarmCase):

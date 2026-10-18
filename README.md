@@ -39,8 +39,8 @@ going silent, and a failing gate. CI replays it on every change.
   tasks become orphaned with branch and worktree intact, ready for
   `claim --take-over`.
 
-[173 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 90 are proved by tests on Linux, Windows and macOS, and the few
+[180 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
+each is handled. 96 are proved by tests on Linux, Windows and macOS, and the few
 that are not handled are stated.
 
 ## Install
@@ -118,8 +118,11 @@ $S console                                       # monitor, live board, agent la
 $S console --agents opencode,claude              # plus one interactive pane per agent, each on its own task
 ```
 
-On Windows this opens Windows Terminal split panes; on Linux and macOS, tmux in a
-new terminal window. The coordinating agent asks you once whether you want it.
+The board takes the left half; the event monitor and the agent launcher share the
+right. The launcher starts each agent in its own tab, on the next task, a task you
+choose, or no task yet. On Windows this is Windows Terminal; on Linux and macOS,
+tmux in a new terminal window. The coordinating agent asks you once whether you
+want it.
 
 Running agents headless:
 
@@ -137,7 +140,7 @@ How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
 
 ## Status
 
-**0.3.3, experimental.** The protocol and the service are tested. Headless
+**0.4.0, experimental.** The protocol and the service are tested. Headless
 command lines come from each CLI's own help, for the versions listed in
 [docs/agents.md](docs/agents.md). One machine per pool; agent names are not
 authenticated (see [SECURITY.md](SECURITY.md)).
