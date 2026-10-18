@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ruff_cache/
+.pytest_cache/
+*.sqlite3
+*.log
+.DS_Store
+Thumbs.db
+# a local install of the skill into this repository, if someone runs the installer here
+.agents/

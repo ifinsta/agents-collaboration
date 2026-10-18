@@ -1,0 +1,103 @@
+"""Tests for install.py and the release manifest."""
+
+from __future__ import annotations
+
+import json
+import subprocess
+import sys
+import tempfile
+import unittest
+from pathlib import Path
+
+ROOT = Path(__file__).resolve().parents[1]
+INSTALL = ROOT / "install.py"
+
+
+class Installer(unittest.TestCase):
+    def setUp(self):
+        self.tmp = tempfile.TemporaryDirectory()
+        self.repo = Path(self.tmp.name) / "proj"
+        self.repo.mkdir()
+        subprocess.run(["git", "init", "-q"], cwd=self.repo, check=True)
+
+    def tearDown(self):
+        self.tmp.cleanup()
+
+    def install(self, *args, ok=True):
+        done = subprocess.run(
+            [sys.executable, str(INSTALL), "--source", str(ROOT), "--project", str(self.repo), *args],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        out = done.stdout + done.stderr
+        self.assertEqual(done.returncode == 0, ok, out)
+        return out
+
+    def test_installs_skill_config_and_agents_pointer(self):
+        self.install("--agents-md")
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        for name in ("SKILL.md", "swarm.py", "EDGE-CASES.md", "INSTALLED.json"):
+            self.assertTrue((skill / name).exists(), name)
+        self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
+        self.assertIn("agents-collaboration:start", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
+
+    def test_rerun_is_idempotent_and_keeps_project_config(self):
+        self.install("--agents-md")
+        cfg = self.repo / ".agents" / "swarm" / "config.toml"
+        cfg.write_text("# mine\n", encoding="utf-8")
+        self.install("--agents-md")
+        self.assertEqual(cfg.read_text(encoding="utf-8"), "# mine\n")
+        self.assertEqual((self.repo / "AGENTS.md").read_text(encoding="utf-8").count("agents-collaboration:start"), 1)
+
+    def test_local_edits_are_not_overwritten(self):
+        self.install()
+        skill_md = self.repo / ".agents" / "skills" / "agents-collaboration" / "SKILL.md"
+        skill_md.write_text("edited", encoding="utf-8")
+        self.assertIn("edited locally", self.install(ok=False))
+        self.install("--force")
+        self.assertNotEqual(skill_md.read_text(encoding="utf-8"), "edited")
+
+    def test_existing_agents_md_is_kept(self):
+        (self.repo / "AGENTS.md").write_text("# Rules\n\nKeep me.\n", encoding="utf-8")
+        self.install("--agents-md")
+        text = (self.repo / "AGENTS.md").read_text(encoding="utf-8")
+        self.assertTrue(text.startswith("# Rules\n\nKeep me.\n"))
+
+    def test_installed_tool_runs(self):
+        self.install()
+        done = subprocess.run(
+            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "environment", "--json"],
+            cwd=self.repo,
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+        self.assertIn("rules", json.loads(done.stdout))
+
+
+class Release(unittest.TestCase):
+    def test_installer_is_ascii_for_powershell_pipes(self):
+        INSTALL.read_bytes().decode("ascii")
+
+    def test_manifest_is_current(self):
+        done = subprocess.run(
+            [sys.executable, str(ROOT / "scripts" / "make_manifest.py"), "--check"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        self.assertEqual(done.returncode, 0, done.stderr)
+
+    def test_installer_default_ref_matches_version(self):
+        version = next(
+            line.split("=", 1)[1].strip().strip('"')
+            for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
+            if line.startswith("version")
+        )
+        self.assertIn(f'DEFAULT_REF = "v{version}"', INSTALL.read_text(encoding="utf-8"))
+
+
+if __name__ == "__main__":
+    unittest.main()

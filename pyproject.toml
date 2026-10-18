@@ -1,0 +1,23 @@
+[project]
+name = "agents-collaboration"
+version = "0.1.0"
+description = "A skill and a coordination service that let up to five coding agents work on one repository without stepping on each other."
+readme = "README.md"
+license = { file = "LICENSE" }
+requires-python = ">=3.11"
+dependencies = []
+
+[project.urls]
+Homepage = "https://github.com/ifinsta/agents-collaboration"
+Issues = "https://github.com/ifinsta/agents-collaboration/issues"
+
+[tool.ruff]
+line-length = 120
+target-version = "py311"
+
+[tool.ruff.format]
+line-ending = "lf"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "UP", "B", "PLW1510"]
+ignore = ["B904", "E501"]  # the formatter owns line length; long messages stay on one line

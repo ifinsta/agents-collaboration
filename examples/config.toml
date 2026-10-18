@@ -1,0 +1,74 @@
+# agents-collaboration: project configuration.
+# Every key is optional; the values shown are the defaults unless marked "example".
+# Docs: https://github.com/ifinsta/agents-collaboration/blob/main/docs/design.md
+
+[project]
+target = "main"                       # the branch work is merged into
+branch_prefix = "swarm/"              # each task's branch is <prefix><task id>
+worktree_root = "../{repo}-wt"        # worktrees live beside the repository, one per task
+backlog = ".agents/swarm/backlog.md"  # the task table imported by `swarm init` / `swarm sync`
+remote = "origin"
+check_remote = true                   # refuse a task whose branch already exists on the remote
+
+[swarm]
+max_agents = 5
+coordinator = "auto"                  # "auto": the longest-present live agent; "human": a person
+agent_timeout_min = 20                # silent this long: offline
+reclaim_after_min = 120               # offline this long: the task is orphaned (at once if its process exited)
+question_escalate_min = 30
+assign_ttl_min = 60
+merge_lock_timeout_min = 45
+task_budget_min = 0                   # 0 = no budget
+
+[planning]
+max_steps = 15
+# Add project-specific critical questions (example):
+# extra = { migrations = "Does this change the database schema? Which migration?" }
+
+# Gates run on the rebased branch before it may join the target. Argument lists,
+# never shell strings, so they behave the same in bash, PowerShell and cmd.
+[gates]
+timeout_min = 30
+retries = 0
+commands = [
+  # example: ["python", "-m", "pytest", "-q"],
+]
+
+# Per-OS gates replace [gates] commands on that OS (example):
+# [gates.windows]
+# commands = [["python", "-m", "pytest", "-q", "-p", "no:cacheprovider"]]
+
+[merge]
+strategy = "squash"                   # squash | rebase
+message = "{task}: {title}"           # {task} {title} {agent}
+message_command = []                  # example: ["python", "scripts/next_version.py"]; its last stdout line is the message
+push = false                          # push the target after each merge
+fetch = false
+cleanup = true                        # remove the worktree and branch after merge
+
+# Files many tasks touch. Appending is free; rewriting needs `swarm lock <name>`.
+# always = true means any change needs the lock (migrations, for example).
+[hotspots]
+# config = { paths = ["config/**", "settings/**"] }
+# migrations = { paths = ["**/migrations/**"], always = true }
+# requirements = { paths = ["requirements*.txt", "pyproject.toml", "package.json"] }
+
+# Per-agent environment, from the agent's slot (1..max_agents). {slot} {agent} {task}
+[env]
+# PORT = "80{slot}0"
+# TEST_DATABASE_NAME = "test_db_s{slot}.sqlite3"
+# COMPOSE_PROJECT_NAME = "myproject-s{slot}"
+
+[spawn]
+allow_unattended = false              # a human decision: lets spawned agents bypass their own permission prompts
+max_turns = 80
+
+# Adapters for `swarm probe` and `swarm spawn` come built in for claude, opencode,
+# qodercli, codex, gemini and deepseek. Override or add one (example):
+# [adapters.mycli]
+# version = ["mycli", "--version"]
+# auth = ["mycli", "whoami"]
+# run = ["mycli", "--print", "{prompt}", "--cwd", "{cwd}"]
+# model = ["--model", "{model}"]
+# unattended = ["--yes"]
+# verified = true

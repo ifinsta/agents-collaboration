@@ -1,0 +1,4 @@
+# One line ending everywhere. The installer verifies files by SHA-256, so a
+# checkout that converted line endings would no longer match its own manifest.
+* text=auto eol=lf
+*.png binary
