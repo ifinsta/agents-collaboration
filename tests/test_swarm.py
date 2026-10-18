@@ -138,6 +138,7 @@ class SwarmCase(unittest.TestCase):
             cwd=cwd or self.root,
             capture_output=True,
             text=True,
+            encoding="utf-8",
             check=False,
             env={**os.environ, **(env or {})},
         )
@@ -1079,6 +1080,18 @@ class Goals(SwarmCase):
             "2=pytest tests/health: 4 passed",
         )
         self.assertIn("closed", self.sw("goal", "list"))
+
+
+class Output(SwarmCase):
+    def test_ec170_text_outside_the_legacy_code_page_survives_a_pipe(self):
+        self.join("ann")
+        self.sw("--as", "ann", "add", "T-utf", "Map the flow \u2192 extraction \u00a72 \u2713")
+        out = self.sw("status", "--all")
+        self.assertIn("Map the flow \u2192 extraction \u00a72 \u2713", out)
+        self.sw("--as", "ann", "send", "*", "done \u2192 next")
+        self.join("bob")
+        self.sw("--as", "ann", "send", "bob", "rebase \u2192 now")
+        self.assertIn("rebase \u2192 now", self.sw("--as", "bob", "inbox"))
 
 
 class Messages(SwarmCase):

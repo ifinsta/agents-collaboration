@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 169 cases. 86 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
+Totals: 170 cases. 87 Tested, 59 Enforced, 12 Partial, 9 Rule, 3 Open.
 
 ## A. Joining, identity and liveness
 
@@ -264,6 +264,7 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-167 | Work is assigned to an agent whose machine cannot verify it. | `goal commit --assign` gives the first wave to free agents whose detected and declared capabilities match. | Tested |
 | EC-168 | The tool assumes a project layout, settings or a pre-written backlog. | Config and backlog are optional; the installer creates them only with `--scaffold`; goals produce the tasks. | Tested |
 | EC-169 | A goal is declared done because its tasks merged, though its outcomes were never checked. | Closing needs evidence for every outcome's own check. | Tested |
+| EC-170 | On Windows, the tool's output through a pipe (how agents read it) is cp1252: "§" arrives garbled and "→" in a note crashes the command. | Output is UTF-8 on every OS, whatever the console or pipe. | Tested |
 
 ## What would close the open ones
 

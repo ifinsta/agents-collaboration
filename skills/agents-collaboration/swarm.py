@@ -39,7 +39,7 @@ import urllib.request
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
-__version__ = "0.3.0"
+__version__ = "0.3.1"
 REPO = "ifinsta/agents-collaboration"
 SCHEMA_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -3593,6 +3593,11 @@ def build_parser() -> argparse.ArgumentParser:
 
 
 def main(argv: list[str] | None = None) -> int:
+    # Agents read this tool through pipes. On Windows a pipe defaults to the legacy code page (cp1252), which
+    # garbles text and raises on anything outside it (an arrow in a note): always speak UTF-8.
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            stream.reconfigure(encoding="utf-8", errors="replace")
     args = build_parser().parse_args(argv)
     if args.as_ == HUMAN and os.environ.get("SWARM_AS") not in (None, "", HUMAN):
         print("swarm: an agent may not act as the human. Relay a human's answer with --from-human.", file=sys.stderr)

@@ -1,5 +1,11 @@
 # Changelog
 
+## v0.3.1 - 2026-10-18
+
+- The tool's output is UTF-8 on every OS. Through a pipe, which is how agents
+  read it, Windows had used cp1252: "§" arrived garbled and a note containing
+  "→" crashed the command (EC-170). Found by running v0.3.0 in a real project.
+
 ## v0.3.0 - 2026-10-18
 
 Nothing about a project is assumed any more. A piece of work becomes tasks
