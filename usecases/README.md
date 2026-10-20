@@ -5,8 +5,8 @@ establish the result. They assume the [current source contracts](../docs/README.
 an installed release may differ. For a complete executable session, see the
 [generated simulation](../docs/simulation.md).
 
-`swarm` stands for the verified Python executable followed by the **absolute** path
-to the installed `swarm.py`. Use that path from task worktrees too. Replace all
+`hivewire` stands for the verified Python executable followed by the **absolute** path
+to the installed `hivewire.py`. Use that path from task worktrees too. Replace all
 uppercase placeholders, `<...>` and `...` with actual IDs, epochs, evidence and
 completed template fields. These outlines omit repository-specific implementation
 commands; they are not scripts to paste and run without those steps.

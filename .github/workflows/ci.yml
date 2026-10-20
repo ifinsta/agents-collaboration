@@ -49,7 +49,7 @@ jobs:
           name: candidate-${{ matrix.os }}-py${{ matrix.python }}
           path: candidate-validation/
       - name: The detected environment (for the log)
-        run: python skills/agents-collaboration/swarm.py environment
+        run: python skills/agents-collaboration/hivewire.py environment
 
   acceptance:
     name: all-platform acceptance

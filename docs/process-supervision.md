@@ -1,7 +1,7 @@
 # Owned execution supervision
 
-For one terminal with tabs over owned headless workers, use `swarm sessions` or
-`swarm console --managed`. Closing the viewer does not close its independently
+For one terminal with tabs over owned headless workers, use `hivewire sessions` or
+`hivewire console --managed`. Closing the viewer does not close its independently
 supervised workers. `execution logs ID` exposes bounded retained worker/supervisor
 output after exit. See [managed sessions](managed-sessions.md) for controls,
 finite JSON inspection and the distinction from interactive foreground terminals.
@@ -70,8 +70,8 @@ includes execution records. `doctor` reports stopping and unknown supervision
 with safe next actions. Reading a record or message does not grant authority.
 
 ```text
-swarm execution stop ID --reason "Checkpoint before recovering this assignment" --dry-run
-swarm execution stop ID --reason "Checkpoint before recovering this assignment"
+hivewire execution stop ID --reason "Checkpoint before recovering this assignment" --dry-run
+hivewire execution stop ID --reason "Checkpoint before recovering this assignment"
 ```
 
 Only the coordinator or a human can request that stop. The preview does not
@@ -152,7 +152,7 @@ worktree and dirty changes. After independently confirming all owned processes
 have stopped, a human can record an explicit attestation:
 
 ```text
-swarm execution reconcile ID --confirm-stopped --reason "Confirmed the fixture group is no longer running"
+hivewire execution reconcile ID --confirm-stopped --reason "Confirmed the fixture group is no longer running"
 ```
 
 This is labeled human attestation, not engine termination proof. Then use the

@@ -36,15 +36,15 @@ Views open each board through read-only SQLite connections, and only paths that 
 The page can also act **as the human**: answer or waive a question, reply to or acknowledge a message addressed
 to the human, approve a brief, run the inbox steward, start a reviewer agent. Actions are one `POST /api/act`
 that requires the token header and the dashboard's own `Origin`, takes a fixed list of actions with checked
-inputs, and runs the real `swarm` command with an argument list (free text after `--`), so the engine's rules
+inputs, and runs the real `hivewire` command with an argument list (free text after `--`), so the engine's rules
 apply. **Anyone holding the link can therefore act as the human** on every listed board: keep it private,
 `--reset-link` if it leaked, and `--read-only` to turn actions off. The inbox steward never acknowledges a
 message on anyone's behalf. Board text is written by agents and is untrusted: the page sets only text content and
 its Content-Security-Policy restricts scripts/styles to per-run nonces and
 connections to the same origin. It adds no way to
 authenticate agents. The server itself performs normal recovery/liveness sweeps
-unless `--observe` is supplied; read-only HTTP views do not make the entire default
-process observational. See [web dashboard](docs/web-dashboard.md).
+unless `--observe` is supplied, and its actions run `swarm` commands as the human unless
+`--read-only` is supplied; reading the board does not make the default process observational. See [web dashboard](docs/web-dashboard.md).
 
 ## Reporting a vulnerability
 

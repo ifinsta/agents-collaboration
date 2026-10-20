@@ -1,15 +1,15 @@
-"""swarm_web: the browser dashboard behind `swarm dashboard --web`.
+"""swarm_web: the browser dashboard behind `hivewire dashboard --web`.
 
 A small local web server for the person running the pool: standard library only, one machine. Every view reads
 the board through read-only SQLite connections. The few actions a person takes from the page (answer or waive a
 question, reply to or acknowledge a message, approve a brief, run the inbox steward, start a reviewer agent) run
-the real `swarm` command as the human, in that board's repository, so the engine's own checks and events apply.
+the real `hivewire` command as the human, in that board's repository, so the engine's own checks and events apply.
 `--read-only` turns actions off.
 
 The inbox steward lives here too: a system participant that reviews every inbox, reminds late recipients and
 escalates, and never acknowledges a message on anyone's behalf.
 
-One dashboard serves every board on this machine, at a fixed address. The first `swarm dashboard --web` starts it
+One dashboard serves every board on this machine, at a fixed address. The first `hivewire dashboard --web` starts it
 (port 8787 when free); later runs, from any repository or session, add their board to it and print the same link.
 The link's token is stored in ~/.agents/swarm-web/ and reused, so a bookmark keeps working after a restart.
 
@@ -923,7 +923,7 @@ class Handler(BaseHTTPRequestHandler):
     def token_ok(self) -> bool:
         given = self.headers.get("X-Swarm-Token") or ""
         if not given or not secrets.compare_digest(given.encode("utf-8"), self.server.token.encode("utf-8")):
-            self.refuse(403, "missing or wrong token: run `swarm dashboard --web` in your repository to print the current link")
+            self.refuse(403, "missing or wrong token: run `hivewire dashboard --web` in your repository to print the current link")
             return False
         return True
 
@@ -936,12 +936,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             nonce = secrets.token_urlsafe(16)
             csp = (
-                f"default-src 'none'; script-src 'nonce-{nonce}'; style-src 'nonce-{nonce}'; connect-src 'self'; "
+                f"default-src 'none'; script-src 'nonce-{nonce}'; style-src 'nonce-{nonce}'; font-src data:; connect-src 'self'; "
                 "base-uri 'none'; form-action 'none'; frame-ancestors 'none'"
             )
             import swarm_sessions
 
-            page = swarm_sessions.dashboard_page(PAGE).replace("__NONCE__", nonce).encode("utf-8")
+            fonts = Path(__file__).with_name("swarm_fonts.css").read_text(encoding="utf-8")
+            page = swarm_sessions.dashboard_page(PAGE).replace("/*__FONT_FACES__*/", fonts).replace("__NONCE__", nonce).encode("utf-8")
             self.send_bytes(200, page, "text/html; charset=utf-8", {"Content-Security-Policy": csp})
         elif url.path.startswith("/api/"):
             if self.origin_ok() and self.token_ok():
@@ -962,7 +963,7 @@ class Handler(BaseHTTPRequestHandler):
         wanted = (query.get("b") or [""])[0] or self.server.default_board
         entry = boards.get(wanted) if BOARD_ID.match(wanted or "") else None
         if not entry:
-            return self.refuse(404, "that board is not registered with this dashboard: run `swarm dashboard --web` in its repository")
+            return self.refuse(404, "that board is not registered with this dashboard: run `hivewire dashboard --web` in its repository")
         if not Path(entry["path"]).is_file():
             return self.refuse(404, "that board's database is no longer there")
         ctx = board_ctx(entry, self.server.describe)
@@ -1043,14 +1044,14 @@ class Handler(BaseHTTPRequestHandler):
         wanted = (parse_qs(url.query).get("b") or [""])[0] or self.server.default_board
         entry = known_boards().get(wanted) if BOARD_ID.match(wanted or "") else None
         if not entry:
-            return self.refuse(404, "that board is not registered with this dashboard: run `swarm dashboard --web` in its repository")
+            return self.refuse(404, "that board is not registered with this dashboard: run `hivewire dashboard --web` in its repository")
         if not launcher_ok(entry):
-            return self.refuse(409, "this board was listed by a swarm without actions: run `swarm dashboard --web` in its repository again")
+            return self.refuse(409, "this board was listed by a hivewire without actions: run `hivewire dashboard --web` in its repository again")
         try:
             result = perform(entry, body)
         except ActionError as exc:
             return self.refuse(400, str(exc))
-        print(f"swarm dashboard: {entry['name']}: you ran {body.get('action')}: {'done' if result.get('ok') else 'refused'}", flush=True)
+        print(f"Hivewire dashboard: {entry['name']}: you ran {body.get('action')}: {'done' if result.get('ok') else 'refused'}", flush=True)
         self.send_json(200, result)
 
 
@@ -1124,7 +1125,7 @@ def known_boards() -> dict:
     for f in sorted((state_dir() / "boards").glob("*.json")):
         e = _read(f)
         path = Path(str(e.get("path", "")))
-        # only a real swarm board database: the registry is a file a person can edit, so it never names arbitrary files
+        # only a real hivewire board database: the registry is a file a person can edit, so it never names arbitrary files
         if BOARD_ID.match(str(e.get("id", ""))) and path.name == "swarm.db" and path.parent.name == "swarm":
             out[e["id"]] = e
     return out
@@ -1144,7 +1145,7 @@ def board_ctx(entry: dict, describe) -> dict:
         },
         "project": entry["name"],
         "describe": describe,
-        "command": entry.get("command", "swarm"),
+        "command": entry.get("command", "hivewire"),
     }
 
 
@@ -1239,8 +1240,8 @@ def serve(
         if port is not None and port != there["port"]:
             raise ValueError(f"A dashboard is already running on port {there['port']}. Stop it first to use another port.")
         url = link(there["port"], there["token"], entry["id"])
-        print(f"swarm dashboard: already running; {entry['name']} is now listed in it.\n  {url}", flush=True)
-        print("Run `swarm monitor` for this board's sweeps: only the terminal that started the dashboard sweeps its own board.", flush=True)
+        print(f"Hivewire dashboard: already running; {entry['name']} is now listed in it.\n  {url}", flush=True)
+        print("Run `hivewire monitor` for this board's sweeps: only the terminal that started the dashboard sweeps its own board.", flush=True)
         _open(url, open_browser)
         return
     try:
@@ -1249,13 +1250,13 @@ def serve(
         there = running()  # another run started it a moment ago
         if there and port is None:
             url = link(there["port"], there["token"], entry["id"])
-            print(f"swarm dashboard: already running.\n  {url}", flush=True)
+            print(f"Hivewire dashboard: already running.\n  {url}", flush=True)
             _open(url, open_browser)
             return
         raise
     url = link(server.server_address[1], server.token, entry["id"])
     threading.Thread(target=server.serve_forever, daemon=True).start()
-    print(f"swarm dashboard: {url}", flush=True)
+    print(f"Hivewire dashboard: {url}", flush=True)
     print(
         "One dashboard serves every board on this machine, and this link stays the same each time you start it. "
         + ("Read-only. " if read_only else "Anyone with the link can act as you on the boards it lists: keep it private. ")
@@ -1272,7 +1273,7 @@ def serve(
                         sw.sweep()
                 except Exception as exc:  # keep serving; say so once
                     if not warned:
-                        print(f"swarm dashboard: the sweep failed ({exc.__class__.__name__}); still serving.", flush=True)
+                        print(f"Hivewire dashboard: the sweep failed ({exc.__class__.__name__}); still serving.", flush=True)
                         warned = True
             time.sleep(max(1, interval))
     except KeyboardInterrupt:
@@ -1295,7 +1296,7 @@ def launcher_ok(entry: dict) -> bool:
     if not isinstance(launcher, str) or not isinstance(root, str):
         return False
     path = Path(launcher)
-    return path.name == "swarm.py" and path.is_file() and (path.parent / "swarm_core.py").is_file() and Path(root).is_dir()
+    return path.name == "hivewire.py" and path.is_file() and (path.parent / "swarm_core.py").is_file() and Path(root).is_dir()
 
 
 def _text(value, what: str) -> str:
@@ -1311,7 +1312,7 @@ def _id(value, what: str) -> str:
 
 
 def run_cli(entry: dict, argv: list, timeout: int = 90) -> dict:
-    """Run `swarm --json ...` as the human in the board's repository. Argument lists only: nothing goes through a shell."""
+    """Run `hivewire --json ...` as the human in the board's repository. Argument lists only: nothing goes through a shell."""
     env = {k: v for k, v in os.environ.items() if k not in ("SWARM_AS", "SWARM_EPOCH")}
     env["PYTHONUTF8"] = "1"
     try:
@@ -1330,11 +1331,11 @@ def run_cli(entry: dict, argv: list, timeout: int = 90) -> dict:
     except subprocess.TimeoutExpired:
         return {"ok": False, "error": "The command took too long. Check the board before trying again."}
     except OSError as exc:
-        return {"ok": False, "error": f"Could not run swarm: {exc.strerror or exc}"}
+        return {"ok": False, "error": f"Could not run Hivewire: {exc.strerror or exc}"}
     try:
         data = json.loads(done.stdout)
     except ValueError:
-        return {"ok": False, "error": _clip((done.stderr or done.stdout).strip() or "swarm returned no result.", 600)}
+        return {"ok": False, "error": _clip((done.stderr or done.stdout).strip() or "hivewire returned no result.", 600)}
     ok = bool(data.get("ok"))
     err = data.get("error") or {}
     return {
@@ -1466,7 +1467,7 @@ def steward_pass(sw, *, remind_after_min: int = 10) -> dict:
             critical = any(r["priority"] == "critical" for r in rows)
             body = (
                 f"{len(ids)} message(s) to you are still unacknowledged ({listing}); the oldest is {minutes} min old. "
-                "Read them with `swarm bus receive`, act on them, then acknowledge each one with `swarm bus ack`. "
+                "Read them with `hivewire bus receive`, act on them, then acknowledge each one with `hivewire bus ack`. "
                 "Nobody else can acknowledge them for you."
             )
             if _send_once(sw, name, body, "status", "high" if critical else "normal", f"steward:remind:{name}:{ids[-1]}:{minutes // (period * 3)}", expires):
@@ -1496,35 +1497,36 @@ PAGE = r"""<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>swarm</title>
+<title>Hivewire</title>
 <style nonce="__NONCE__">
-:root{color-scheme:light;--bg:#F5F6F8;--line:#DCE0E6;--line2:#E8EBEF;--text:#111827;--mute:#566070;--dim:#66717F;--accent:#2F5BD0;--accentbg:#EEF3FD;--accentink:#1F3F9E;--good:#1B7F4B;--warn:#8A5A00;--warnbg:#FFF8E6;--warnline:#EBD9A8;--bad:#B3261E;--badbg:#FDF4F3;--info:#3A4A66;--tile:#EEF1F5}
+/*__FONT_FACES__*/
+:root{color-scheme:light;--font-body:"Archivo","Helvetica Neue",Arial,sans-serif;--font-mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;--bg:#F4F1E9;--surface:#FBF9F3;--surface-soft:#EBE6DA;--grid-ink:rgba(21,33,31,.055);--workspace-grid:linear-gradient(var(--grid-ink) 1px,transparent 1px),linear-gradient(90deg,var(--grid-ink) 1px,transparent 1px);--line:#D8D2C4;--line2:#E4DFD3;--line-strong:#B9B1A0;--text:#15211F;--ink-soft:#1F302C;--mute:#4C5A55;--dim:#5F6B64;--accent:#0D6B5E;--accentbg:#DFECE7;--accentink:#084C43;--signal:#B93D0A;--signalbg:#F7E4D8;--good:#0D6B5E;--warn:#B93D0A;--warnbg:#F7E4D8;--warnline:#D6A48A;--bad:#B93D0A;--badbg:#F7E4D8;--info:#1F302C;--tile:#EBE6DA}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text)}
-body{font:13px/18px ui-sans-serif,system-ui,"Segoe UI",Inter,Roboto,sans-serif}
+body{font:400 13px/18px var(--font-body);min-height:100vh;min-height:100dvh;background-image:var(--workspace-grid);background-size:32px 32px}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
 :focus-visible{outline:1px solid var(--accent);outline-offset:1px}
-h1{margin:0;font-size:14px;line-height:20px;font-weight:600;letter-spacing:-.005em}
-h2{margin:0;font-size:12px;line-height:16px;font-weight:600;color:var(--mute)}
-.mono{font-family:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;font-size:12px}
+h1{margin:0;font-size:14px;line-height:20px;font-weight:700;letter-spacing:-.02em}
+h2{margin:0;font-size:12px;line-height:16px;font-weight:700;color:var(--text);letter-spacing:-.01em}
+.mono{font-family:var(--font-mono);font-size:12px}
 .muted{color:var(--mute)}.dim{color:var(--dim)}.small{font-size:12px;line-height:16px}.b{font-weight:600}.m{font-weight:500}.err{color:var(--bad)}.ok{color:var(--good)}
-.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 12px;flex-wrap:wrap;position:sticky;top:0;z-index:5;min-height:33px}
+.top{background:var(--surface);border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 12px;flex-wrap:wrap;position:sticky;top:0;z-index:5;min-height:33px}
 .brand{display:flex;align-items:center;gap:6px}
-.brand b{font-size:13px;font-weight:600}
+.brand b{font-size:13px;font-weight:700;letter-spacing:-.02em}
 .tabs{display:flex;gap:2px;height:32px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tabs a{display:flex;align-items:center;gap:4px;padding:0 8px;color:var(--mute);font-weight:500;white-space:nowrap}
+.tabs a{display:flex;align-items:center;gap:4px;padding:0 8px;color:var(--mute);font-weight:400;white-space:nowrap;font-family:var(--font-mono);font-size:11.5px;letter-spacing:.04em;text-transform:uppercase}
 .tabs a:hover{color:var(--text);text-decoration:none}
-.tabs a.on{color:var(--text);box-shadow:inset 0 -1px 0 var(--accent)}
+.tabs a.on{color:var(--text);box-shadow:inset 0 -1px 0 var(--signal)}
 .grow{flex:1}
 .meta{display:flex;align-items:center;gap:8px}
-.tag{border:1px solid var(--line);border-radius:2px;padding:0 6px;font-size:11px;line-height:18px;color:var(--mute)}
-.tag.live{border-color:#C9D7F7;color:var(--accentink);background:var(--accentbg)}
-.switch{height:26px;max-width:180px;border:1px solid #CDD3DB;border-radius:2px;background:#fff;color:var(--text);font:inherit;padding:0 8px}
+.tag{border:1px solid var(--line);border-radius:2px;padding:0 6px;font-size:10px;line-height:18px;color:var(--mute);font-family:var(--font-mono);font-weight:400}
+.tag.live{border-color:var(--signal);color:var(--signal);background:var(--signalbg)}
+.switch{height:26px;max-width:180px;border:1px solid var(--line-strong);border-radius:2px;background:var(--surface);color:var(--text);font:inherit;padding:0 8px}
 .page p{margin:0}
 .page{max-width:1440px;margin:0 auto;padding:8px 12px 16px;display:flex;flex-direction:column;gap:8px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:4px}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:4px}
 .row{display:flex;align-items:center;gap:6px}
 .wrap{flex-wrap:wrap}
 .col{display:flex;flex-direction:column;gap:4px}
@@ -1532,14 +1534,14 @@ h2{margin:0;font-size:12px;line-height:16px;font-weight:600;color:var(--mute)}
 .cols{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .cols>.c2{flex:2 1 680px;min-width:0}
 .cols>.c1{flex:1 1 320px;min-width:0}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0 8px;border:1px solid #CDD3DB;background:#fff;border-radius:2px;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;text-decoration:none;white-space:nowrap}
-.btn:hover{background:#F6F7F9;text-decoration:none}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0 8px;border:1px solid var(--line-strong);background:var(--surface);border-radius:2px;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn:hover{background:var(--surface-soft);text-decoration:none}
 .btn:disabled{opacity:.55;cursor:default}
-.btn.on{background:var(--accentbg);border-color:#9FB6EC;color:var(--accentink)}
-.btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
-.btn.pri:hover{background:#2850BC}
+.btn.on{background:var(--accentbg);border-color:var(--accent);color:var(--accentink)}
+.btn.pri{background:var(--text);border-color:var(--text);color:var(--bg)}
+.btn.pri:hover{background:var(--accentink)}
 .btn.sm{height:24px;padding:0 8px;font-size:12px}
-.field{width:100%;font:inherit;color:var(--text);border:1px solid #CDD3DB;border-radius:2px;padding:4px 8px;background:#fff;resize:vertical;min-height:28px}
+.field{width:100%;font:inherit;color:var(--text);border:1px solid var(--line-strong);border-radius:2px;padding:4px 8px;background:var(--surface);resize:vertical;min-height:28px}
 .field:focus,.canvas-find input:focus{outline:1px solid var(--accent);outline-offset:-1px;border-color:var(--accent);box-shadow:none}
 select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-size:12px}
 .stats{display:flex;flex-wrap:wrap}
@@ -1550,66 +1552,66 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .tbl{overflow-x:auto}
 .tbl>div{min-width:760px}
 .tr{display:grid;gap:8px;align-items:center;padding:4px 10px;border-top:1px solid var(--line2)}
-.tr.head{border-top:0;padding:4px 10px;color:var(--mute);font-size:12px;font-weight:600}
+.tr.head{border-top:0;padding:4px 10px;color:var(--accentink);font-size:10.5px;font-weight:600;font-family:var(--font-mono);letter-spacing:.04em;text-transform:uppercase;background:var(--accentbg)}
 .tr.alert{background:var(--badbg)}
-.tile{position:relative;flex:none;border-radius:3px;background:var(--tile);color:#1F2937;display:flex;align-items:center;justify-content:center}
-.tile.bad{background:#FBE7E5;color:var(--bad)}
-.tile .badge{position:absolute;right:-4px;bottom:-4px;background:#fff;border:1px solid #CDD3DB;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#374151}
+.tile{position:relative;flex:none;border-radius:3px;background:var(--tile);color:var(--ink-soft);display:flex;align-items:center;justify-content:center}
+.tile.bad{background:var(--badbg);color:var(--bad)}
+.tile .badge{position:absolute;right:-4px;bottom:-4px;background:var(--surface);border:1px solid var(--line-strong);border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--ink-soft)}
 .shape{display:inline-block;width:7px;height:7px;margin-right:6px;flex:none;border-radius:50%}
 .shape.sq{border-radius:2px}.shape.di{border-radius:1px;transform:rotate(45deg)}.shape.ring{border:1.5px solid}
-.bar{height:3px;border-radius:1px;background:#E3E7ED;overflow:hidden;width:72px;display:inline-block;vertical-align:middle;margin-left:6px}
+.bar{height:3px;border-radius:1px;background:var(--surface-soft);overflow:hidden;width:72px;display:inline-block;vertical-align:middle;margin-left:6px}
 .bar>i{display:block;height:100%;background:var(--accent)}
 .item{padding:6px 10px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:4px}
 .item:first-child{border-top:0}
-.cmd{display:flex;align-items:center;gap:6px;background:#F5F6F8;border:1px solid var(--line2);border-radius:2px;padding:3px 3px 3px 8px}
-.cmd code{flex:1;min-width:0;overflow-wrap:anywhere;color:#374151}
-.note{border:1px solid var(--warnline);background:var(--warnbg);border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;color:#6B4400}
-.note.bad{border-color:#F0C6C2;background:var(--badbg);color:#7A1F18}
+.cmd{display:flex;align-items:center;gap:6px;background:var(--surface-soft);border:1px solid var(--line2);border-radius:2px;padding:3px 3px 3px 8px}
+.cmd code{flex:1;min-width:0;overflow-wrap:anywhere;color:var(--ink-soft)}
+.note{border:1px solid var(--warnline);background:var(--warnbg);border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;color:var(--warn)}
+.note.bad{border-color:var(--warnline);background:var(--badbg);color:var(--bad)}
 .filters{display:flex;gap:2px;flex-wrap:wrap}
 .filters a{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:2px;color:var(--mute);font-weight:500;border:1px solid transparent;font-size:12.5px}
-.filters a:hover{text-decoration:none;background:#ECEEF2}
-.filters a.on{background:var(--accentbg);border-color:#C9D7F7;color:var(--accentink)}
+.filters a:hover{text-decoration:none;background:var(--surface-soft)}
+.filters a.on{background:var(--accentbg);border-color:var(--line-strong);color:var(--accentink)}
 .msg{display:block;padding:6px 10px;border-top:1px solid var(--line2);color:inherit}
 .msg:first-child{border-top:0}
-.msg:hover{background:#F8F9FB;text-decoration:none}
-.msg.sel{background:#EEF3FD}
+.msg:hover{background:var(--surface-soft);text-decoration:none}
+.msg.sel{background:var(--accentbg)}
 .drow{display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(90px,1fr) minmax(80px,.8fr) minmax(90px,.8fr);gap:8px;padding:4px 0;border-top:1px solid var(--line2)}
 .step{display:flex;gap:8px}
 .step .rail{display:flex;flex-direction:column;align-items:center}
 .step .rail i{flex:1;width:1.5px;background:var(--line);margin:3px 0}
-.step .no{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:1.5px solid #B8C0CC;color:var(--dim);background:#fff}
-.step.done .no{background:var(--good);border-color:var(--good);color:#fff}
+.step .no{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:1.5px solid var(--line-strong);color:var(--dim);background:var(--surface)}
+.step.done .no{background:var(--good);border-color:var(--good);color:var(--bg)}
 .step.cur .no{border-color:var(--accent);color:var(--accent)}
 .empty{padding:10px;text-align:center;color:var(--dim)}
 .kv{display:grid;grid-template-columns:92px 1fr;gap:3px 10px}
 .kv>span:nth-child(odd){color:var(--mute)}
 .break{overflow-wrap:anywhere}.pre{white-space:pre-wrap;overflow-wrap:anywhere}
-.board{position:relative;overflow:auto;border:1px solid #E4E8EF;border-radius:4px;background-color:#F8FAFC;background-image:radial-gradient(circle,#CDD5E1 .8px,transparent 1px);background-size:20px 20px;overscroll-behavior:contain;cursor:grab;touch-action:pan-x pan-y}
+.board{position:relative;overflow:auto;border:1px solid var(--line);border-radius:4px;background-color:var(--bg);background-image:radial-gradient(circle,var(--line-strong) .8px,transparent 1px);background-size:20px 20px;overscroll-behavior:contain;cursor:grab;touch-action:pan-x pan-y}
 .board.panning{cursor:grabbing;user-select:none}.board:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
 .canvas-plane{position:absolute;left:0;top:0;transform-origin:0 0}
 .canvas-plane>svg{position:absolute;left:0;top:0;pointer-events:none}
 .canvas-stage{position:relative;min-width:100%;min-height:100%}
-.lane{position:absolute;font-size:12px;line-height:16px;font-weight:600;color:var(--dim)}
-.node{position:absolute;display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:#fff;border:1px solid #D9DFE8;border-radius:4px;color:var(--text);box-shadow:0 1px 3px rgba(17,24,39,.04);cursor:pointer}
-.node:hover{text-decoration:none;border-color:#8CA6D8;box-shadow:0 2px 5px rgba(17,24,39,.06)}
+.lane{position:absolute;font-size:10.5px;line-height:16px;font-weight:500;color:var(--dim);font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.node{position:absolute;display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:var(--surface);border:1px solid var(--line);border-radius:4px;color:var(--text);box-shadow:0 1px 3px rgba(21,33,31,.04);cursor:pointer}
+.node:hover{text-decoration:none;border-color:var(--accent);box-shadow:0 2px 5px rgba(21,33,31,.06)}
 .node:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
-.node.quiet{opacity:.28}.node.match{border-color:#7297E6;background:#F8FAFF;box-shadow:none}
+.node.quiet{opacity:.28}.node.match{border-color:var(--accent);background:var(--accentbg);box-shadow:none}
 .node-head{display:flex;align-items:center;gap:6px;width:100%;min-width:0}
-.node-progress{height:4px;background:#EDF0F5;border-radius:1px;overflow:hidden;width:100%}
+.node-progress{height:4px;background:var(--surface-soft);border-radius:1px;overflow:hidden;width:100%}
 .node-progress>span{display:block;height:100%;background:var(--accent);border-radius:1px}
 .node.sel{border-color:var(--accent);box-shadow:none}
-.node.alert{border-color:#E8B4AF}
+.node.alert{border-color:var(--warnline)}
 .node .nm{display:block;font-size:13px;line-height:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node .ln{display:block;font-size:12px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node.flow{position:static;height:auto}
 .node.flow .ln{white-space:normal}
-.elabel{position:absolute;font-size:11.5px;line-height:14px;color:var(--mute);white-space:nowrap;background:rgba(248,250,252,.95);padding:2px 4px;border-radius:2px;pointer-events:none}
-.canvas-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:3px 12px;background:#fff;border-bottom:1px solid var(--line);flex-shrink:0}
+.elabel{position:absolute;font-size:11.5px;line-height:14px;color:var(--mute);white-space:nowrap;background:var(--bg);padding:2px 4px;border-radius:2px;pointer-events:none}
+.canvas-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:3px 12px;background:var(--surface);border-bottom:1px solid var(--line);flex-shrink:0}
 .canvas-head h1{font-size:14px;line-height:20px}.canvas-find{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.canvas-find input{appearance:none;width:210px;max-width:100%;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:12px;background:#fff}
-.canvas-count{font-size:12px;color:var(--mute);min-width:60px}
-.canvas-controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:3px;padding:4px 5px;background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 8px #1F293710;white-space:nowrap}
-.canvas-controls button{height:28px;min-width:28px;border:0;border-radius:2px;background:#fff;color:var(--text);font:inherit;font-size:12px;font-weight:500;cursor:pointer;padding:0 7px}
+.canvas-find input{appearance:none;width:210px;max-width:100%;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:12px;background:var(--surface)}
+.canvas-count{font-size:10.5px;color:var(--mute);min-width:60px;font-family:var(--font-mono)}
+.canvas-controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:3px;padding:4px 5px;background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 8px rgba(21,33,31,.06);white-space:nowrap}
+.canvas-controls button{height:28px;min-width:28px;border:0;border-radius:2px;background:var(--surface);color:var(--text);font:inherit;font-size:12px;font-weight:500;cursor:pointer;padding:0 7px}
 .canvas-controls button:hover{background:var(--accentbg)}.canvas-controls button:disabled{opacity:.35;cursor:default}
 .canvas-controls output{font-size:12px;color:var(--mute);width:44px;text-align:center}
 .canvas-controls .sep{height:20px;width:1px;background:var(--line);margin:0 4px}
@@ -1631,23 +1633,23 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .team-shell>.top{height:auto;min-height:33px;flex-shrink:0}
 #app.team-shell>.page{flex:1;min-height:0;width:100%;height:auto;margin:0;padding:0;overflow:hidden}
 @media (min-width:761px){#app.inbox-shell{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}.inbox-shell>.top{flex-shrink:0}.inbox-shell>.page.fill{height:auto;min-height:0;flex:1;width:100%;margin:0}}
-.toolrail{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 6px rgba(17,24,39,.05)}
-.rbtn{width:32px;height:32px;border-radius:2px;border:0;background:transparent;color:#1F2937;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
-.rbtn:hover{background:#EEF0F3}
-.rbtn.filter[aria-pressed="false"]{color:#A0A7B2}
+.toolrail{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;background:var(--surface);border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 6px rgba(21,33,31,.05)}
+.rbtn{width:32px;height:32px;border-radius:2px;border:0;background:transparent;color:var(--ink-soft);display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.rbtn:hover{background:var(--surface-soft)}
+.rbtn.filter[aria-pressed="false"]{color:var(--line-strong)}
 .rbtn.filter[aria-pressed="true"]{color:var(--accentink)}
 .inboxfill{flex:1;min-height:0;display:flex;gap:8px}
 .inboxfill>.list{flex:0 1 420px !important;align-self:stretch;overflow:auto !important}
 .inboxfill>.thread{flex:1 1 auto !important;align-self:stretch;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .thread>.tbody{flex:1;min-height:0;overflow:auto}
-.boardlegend{position:absolute;right:10px;top:10px;z-index:2;gap:6px;background:#FFFFFFF2;border:1px solid var(--line);border-radius:4px;padding:8px 10px;box-shadow:0 1px 4px rgba(17,24,39,.03);flex-direction:column;align-items:flex-start}
+.boardlegend{position:absolute;right:10px;top:10px;z-index:2;gap:6px;background:var(--surface);border:1px solid var(--line);border-radius:4px;padding:8px 10px;box-shadow:0 1px 4px rgba(21,33,31,.03);flex-direction:column;align-items:flex-start}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
-.seg{display:inline-flex;border:1px solid #CDD3DB;border-radius:2px;overflow:hidden;background:#fff}
-.seg button{border:0;background:#fff;height:26px;padding:0 10px;font:inherit;font-size:12.5px;font-weight:500;color:var(--mute);cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line-strong);border-radius:2px;overflow:hidden;background:var(--surface)}
+.seg button{border:0;background:var(--surface);height:26px;padding:0 10px;font:inherit;font-size:12.5px;font-weight:500;color:var(--mute);cursor:pointer}
 .seg button.on{background:var(--accentbg);color:var(--accentink)}
 .conn{display:flex;flex-direction:column;gap:1px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line2);color:var(--mute);font-size:12px;line-height:16px}
-.toast{position:fixed;right:16px;bottom:16px;z-index:9;background:#111827;color:#fff;border-radius:4px;padding:8px 12px;font-size:12.5px;box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .15s,transform .15s;pointer-events:none;max-width:420px}
+.toast{position:fixed;right:16px;bottom:16px;z-index:9;background:var(--text);color:var(--bg);border-radius:4px;padding:8px 12px;font-size:12.5px;box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .15s,transform .15s;pointer-events:none;max-width:420px}
 .toast.show{opacity:1;transform:none}
 .toast.bad{background:var(--bad)}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
@@ -1664,7 +1666,7 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .top{height:auto;padding:4px 12px;gap:2px 10px}
 .brand{order:1}.top .grow{display:none}.meta{order:2;margin-left:auto}
 .tabs{order:3;flex:1 1 100%;height:40px;margin:0 -12px;padding:0 2px;border-top:1px solid var(--line2);justify-content:space-between}
-.tabs a{padding:0 6px;gap:3px;font-size:12.5px}
+.tabs a{padding:0 5px;gap:3px;font-size:10px;letter-spacing:.02em}
 .page{padding:8px 10px 16px;gap:8px}
 .stat{flex:1 1 45%;border-bottom:1px solid var(--line2);flex-wrap:wrap;gap:0 8px}.stat .n{white-space:normal;flex-basis:100%}
 .btn{min-height:44px}.btn.sm{min-height:40px}
@@ -1691,7 +1693,7 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 </head>
 <body>
 <div id="app"></div>
-<noscript>The swarm dashboard needs JavaScript.</noscript>
+<noscript>The Hivewire dashboard needs JavaScript.</noscript>
 <script nonce="__NONCE__">
 (() => {
 'use strict';
@@ -1807,15 +1809,15 @@ function shape(tone) {
 function status(s) {
   return h('span', { style: { color: COLOR[s.tone], 'font-weight': '500', display: 'inline-flex', 'align-items': 'center' } }, shape(s.tone), s.label);
 }
-let swarmCmd = 'swarm', canAct = false;
+let hivewireCmd = 'hivewire', canAct = false;
 function cmd(rest, note) {
   const btn = h('button', { class: 'btn sm', type: 'button' }, 'Copy');
   btn.addEventListener('click', async () => {
-    try { await navigator.clipboard.writeText(swarmCmd + ' ' + rest); btn.textContent = 'Copied'; }
+    try { await navigator.clipboard.writeText(hivewireCmd + ' ' + rest); btn.textContent = 'Copied'; }
     catch (e) { btn.textContent = 'Select it'; }
     setTimeout(() => { btn.textContent = 'Copy'; }, 1600);
   });
-  return h('div', { class: 'col', style: { gap: '2px' } }, h('div', { class: 'cmd' }, h('code', { class: 'mono' }, 'swarm ' + rest), btn), note ? h('span', { class: 'small dim' }, note) : null);
+  return h('div', { class: 'col', style: { gap: '2px' } }, h('div', { class: 'cmd' }, h('code', { class: 'mono' }, 'hivewire ' + rest), btn), note ? h('span', { class: 'small dim' }, note) : null);
 }
 const panel = (...kids) => h('div', { class: 'panel' }, ...kids);
 const section = (title, right, body) => h('section', { class: 'col' }, h('div', { class: 'row between' }, h('h2', null, title), right || null), body);
@@ -1893,9 +1895,9 @@ function topBar(active, data) {
   const counts = data.counts || {}, pool = data.pool || {};
   const tabs = h('nav', { class: 'tabs', 'aria-label': 'Primary' }, TABS.map(([route, label, key]) => link('#/' + route, { class: route === active ? 'on' : '', 'aria-current': route === active ? 'page' : null },
     label, key && counts[key] ? h('span', { class: 'b small', style: { color: BADGE_COLOR[key] } }, counts[key]) : null)));
-  return h('header', { class: 'top' }, h('div', { class: 'brand' }, h('b', null, 'swarm'), data.boards && data.boards.length > 1 ? boardSwitch(data) : h('span', { class: 'muted' }, pool.project || ''), pool.target ? h('span', { class: 'mono dim' }, pool.target) : null),
+  return h('header', { class: 'top' }, h('div', { class: 'brand' }, h('b', null, 'Hivewire'), data.boards && data.boards.length > 1 ? boardSwitch(data) : h('span', { class: 'muted' }, pool.project || ''), pool.target ? h('span', { class: 'mono dim' }, pool.target) : null),
       tabs, h('span', { class: 'grow' }), h('span', { class: 'meta' }, h('span', { class: 'small dim' }, data.now ? 'Updated ' + new Date(data.now).toLocaleTimeString([], { hour12: false }) : ''),
-        canAct ? h('span', { class: 'tag live', title: 'Actions on this page run swarm commands as you' }, 'Acting as you') : h('span', { class: 'tag' }, 'Read-only')));
+        canAct ? h('span', { class: 'tag live', title: 'Actions on this page run hivewire commands as you' }, 'Acting as you') : h('span', { class: 'tag' }, 'Read-only')));
 }
 function shell(active, data, content) {
   saveScroll();
@@ -1916,7 +1918,7 @@ function needItem(n) {
     command = 'answer ' + n.id + ' "your answer"'; note = 'Answering unblocks the plan.';
     if (canAct) form = questionForm(n);
   } else if (n.type === 'approval') {
-    kind = 'Approval'; color = '#3F3A9E'; text = 'Architecture brief for “' + n.title + '”, revision ' + (n.revision || '?') + ', risk ' + (n.risk || '?'); meta = 'Goal ' + n.goal;
+    kind = 'Approval'; color = 'var(--accentink)'; text = 'Architecture brief for “' + n.title + '”, revision ' + (n.revision || '?') + ', risk ' + (n.risk || '?'); meta = 'Goal ' + n.goal;
     command = 'goal architecture ' + n.goal + ' --approve';
     if (canAct) form = approveForm(n);
   } else { kind = 'Dead letter'; color = 'var(--bad)'; meta = nameRole(n.from) + ' to ' + nameText(n.to); command = 'messages resolve ' + n.id + ' --reason "reviewed outcome"'; note = 'A critical message expired unacknowledged.'; }
@@ -1944,7 +1946,7 @@ function teamTable(d) {
   });
   return h('div', { class: 'panel tbl' }, h('div', null,
     h('div', { class: 'tr head', style: grid }, h('span', null, 'Agent'), h('span', null, 'Status'), h('span', null, 'Work'), h('span', null, 'Progress'), h('span', null, 'Contract'), h('span', null, 'Seen')),
-    rows.length ? rows : empty('No agents have joined. Start one with `swarm join`.')));
+    rows.length ? rows : empty('No agents have joined. Start one with `hivewire join`.')));
 }
 const WORK_COLS = '92px minmax(170px,2fr) minmax(150px,1.4fr) minmax(130px,1fr) minmax(90px,.8fr)';
 function workTable(d, limit) {
@@ -2043,7 +2045,7 @@ function layout(nodes, edges, avail) {
   }
   const right = Math.max(...Object.values(box).map((b) => b.x + b.w)) + 24;
   const mid = (b) => ({ x: b.x + b.w / 2, y: b.y + b.h / 2 });
-  const lines = [], labels = [];
+  const lines = [], labels = [], fanLabelled = new Set(); // a fan-out (assignments, reminders) is labelled once, not once per connector
   const reviewers = new Set(rest(3).map((n) => box[n.id].x));
   for (const e of edges) {
     const a = box[e.from], b = box[e.to];
@@ -2083,7 +2085,8 @@ function layout(nodes, edges, avail) {
       labelX = (sx + tx) / 2 + 8; labelY = (sy + ty) / 2 - 9;
     }
     lines.push({ key, g, style, path, arrow: e.kind !== 'collab' });
-    labels.push({ key, g, text: e.label, x: labelX, y: labelY, color: g === 'reviews' ? 'var(--accentink)' : '' });
+    if (e.kind !== 'assigns' && e.kind !== 'steward') labels.push({ key, g, text: e.label, x: labelX, y: labelY, color: g === 'reviews' ? 'var(--accentink)' : '' });
+    else if (!fanLabelled.has(e.kind)) { fanLabelled.add(e.kind); labels.push({ key, g, text: e.label, x: labelX, y: labelY, color: '' }); }
   }
   const height = TOP + lanes.length * step - gap + 44;
   return { box, lines, labels, lanes, totalW: Math.max(totalW, right), height, top, narrow, step, TOP, cx };
@@ -2143,8 +2146,8 @@ function patchCanvasChildren(parent, nodes, key) {
 }
 function drawBoard(boardEl, d, selected) {
   const state = canvasState(d), L = layout(d.nodes, d.edges, Math.max(640, (boardEl.clientWidth || 1000) - 64));
-  const dash = { dots: '1 5', review: '5 4' }, color = { solid: '#6B7585', dots: '#7C8696', review: '#2F5BD0' }, width = { solid: 1.5, dots: 2, review: 1.5 };
-  const defs = svgEl('defs', null, ...[['h0', '#6B7585'], ['h1', '#2F5BD0'], ['h2', '#7C8696']].map(([id, c]) => svgEl('marker', { id, markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: 'auto', markerUnits: 'userSpaceOnUse' }, svgEl('path', { d: 'M0 0L8 4L0 8z', fill: c }))));
+  const dash = { dots: '1 5', review: '5 4' }, color = { solid: 'var(--mute)', dots: 'var(--dim)', review: 'var(--accent)' }, width = { solid: 1.5, dots: 2, review: 1.5 };
+  const defs = svgEl('defs', null, ...[['h0', 'var(--mute)'], ['h1', 'var(--accent)'], ['h2', 'var(--dim)']].map(([id, c]) => svgEl('marker', { id, markerWidth: 8, markerHeight: 8, refX: 7, refY: 4, orient: 'auto', markerUnits: 'userSpaceOnUse' }, svgEl('path', { d: 'M0 0L8 4L0 8z', fill: c }))));
   const svg = svgEl('svg', { width: L.totalW, height: L.height, 'aria-hidden': 'true' }, defs,
     L.lines.filter((l) => filterState[l.g]).map((l) => svgEl('path', { 'data-edge': l.key, d: l.path, fill: 'none', stroke: color[l.style], 'stroke-width': width[l.style], 'stroke-linecap': 'round', 'stroke-linejoin': 'round',
       'stroke-dasharray': dash[l.style] || '', 'marker-end': l.arrow ? 'url(#' + ({ solid: 'h0', review: 'h1', dots: 'h2' })[l.style] + ')' : '' })));
@@ -2405,7 +2408,7 @@ VIEWS.team = {
       control('Fit', 'Fit team to screen (F)', () => { state.fit = true; drawBoard(boardEl, d, sel.id); }),
       control('Reset', 'Reset zoom to 100% (0)', () => { zoomCanvas(boardEl, 1); centerCanvasNode(boardEl, sel.id); }),
       h('span', { class: 'sep', 'aria-hidden': 'true' }), focus);
-    const legendLine = (style) => svgEl('svg', { width: 28, height: 8, 'aria-hidden': 'true' }, svgEl('line', { x1: 1, y1: 4, x2: 27, y2: 4, stroke: { solid: '#6B7585', dots: '#7C8696', review: '#2F5BD0' }[style], 'stroke-width': style === 'dots' ? 2 : 1.5, 'stroke-linecap': 'round', 'stroke-dasharray': { dots: '1 5', review: '5 4' }[style] || '' }));
+    const legendLine = (style) => svgEl('svg', { width: 28, height: 8, 'aria-hidden': 'true' }, svgEl('line', { x1: 1, y1: 4, x2: 27, y2: 4, stroke: { solid: 'var(--mute)', dots: 'var(--dim)', review: 'var(--accent)' }[style], 'stroke-width': style === 'dots' ? 2 : 1.5, 'stroke-linecap': 'round', 'stroke-dasharray': { dots: '1 5', review: '5 4' }[style] || '' }));
     return [h('div', { class: 'teamfill', id: 'team-workspace' },
       h('section', { class: 'canvas-section', 'aria-label': 'Team workspace' },
       h('div', { class: 'canvas-head' },
@@ -2505,7 +2508,7 @@ VIEWS.decisions = {
     const settled = [
       ...d.questions.filter((q) => !q.open).slice(0, 6).map((q) => h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small muted' }, (q.waived ? 'Waived' : 'Answered') + ' · Q' + q.id), h('span', { class: 'dim small' }, ago(q.age_s))),
         h('div', { class: 'break' }, q.text), q.answer ? h('div', { class: 'muted break small' }, nameText(q.answered_by || 'human') + ': ' + q.answer) : null)),
-      ...d.decisions.map((m) => h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small', style: { color: '#3F3A9E' } }, 'Decision'), h('span', { class: 'dim small' }, ago(m.age_s))), h('div', { class: 'break' }, m.text), h('div', { class: 'muted small' }, nameText(m.sender) + ' to ' + nameText(m.recipient)))),
+      ...d.decisions.map((m) => h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small', style: { color: 'var(--accentink)' } }, 'Decision'), h('span', { class: 'dim small' }, ago(m.age_s))), h('div', { class: 'break' }, m.text), h('div', { class: 'muted small' }, nameText(m.sender) + ' to ' + nameText(m.recipient)))),
       ...d.incidents.filter((i) => i.resolved).map(incidentItem)];
     return [h('div', { class: 'row wrap', style: { gap: '10px', 'align-items': 'baseline' } }, h('h1', null, 'Decisions'), h('span', { class: 'muted small' }, 'Bounded: one counter per contract, timed decision windows, reviews that cite evidence.')),
       h('div', { class: 'cols workfill' },
@@ -2584,7 +2587,7 @@ async function get(path, retry = true) {
   const data = await r.json();
   if (data.active && data.active.id !== boardId) rememberBoard(data.active.id);
   if (data.directory) DIR = { human: DIR.human, ...data.directory };
-  if (data.command) swarmCmd = data.command;
+  if (data.command) hivewireCmd = data.command;
   if ('actions' in data) canAct = !!data.actions;
   return data;
 }
@@ -2620,9 +2623,9 @@ async function tick() {
   } catch (e) {
     if (pageLeaving || requestedBoard !== boardId || JSON.stringify(p) !== JSON.stringify(parts())) return;
     failures++;
-    if (!['forbidden', 'no board', 'not found'].includes(e.message)) console.error('swarm dashboard:', e);
-    const msg = e.message === 'forbidden' ? 'This page needs its link. Run `swarm dashboard --web` in your repository to print it. The link stays the same each time, so a bookmark of it keeps working.'
-      : e.message === 'no board' ? 'This board is not listed in the dashboard. Run `swarm dashboard --web` in its repository to add it.'
+    if (!['forbidden', 'no board', 'not found'].includes(e.message)) console.error('Hivewire dashboard:', e);
+    const msg = e.message === 'forbidden' ? 'This page needs its link. Run `hivewire dashboard --web` in your repository to print it. The link stays the same each time, so a bookmark of it keeps working.'
+      : e.message === 'no board' ? 'This board is not listed in the dashboard. Run `hivewire dashboard --web` in its repository to add it.'
       : e.message === 'not found' ? 'Not found on this board.' : /^HTTP |fetch|network/i.test(e.message) ? 'Lost contact with the dashboard server. Retrying…' : 'This page could not be drawn. Details are in the browser console; it retries every few seconds.';
     if (failures > 1 || ['forbidden', 'no board', 'not found'].includes(e.message)) {
       lastSig = '';

@@ -33,17 +33,17 @@ remain outstanding proposal work. Local role names are not authenticated users.
 For an open backlog task, a human can offer explicit allowances:
 
 ```text
-swarm contract offer T1 ann --token-limit 10000 --cost-limit 0.50 --currency USD --tool-time-min 5
-swarm contract accept T1 --as ann
-swarm claim T1 --as ann
-swarm usage reserve T1 --as ann --tokens 2000 --cost 0.10 --key window-1
+hivewire contract offer T1 ann --token-limit 10000 --cost-limit 0.50 --currency USD --tool-time-min 5
+hivewire contract accept T1 --as ann
+hivewire claim T1 --as ann
+hivewire usage reserve T1 --as ann --tokens 2000 --cost 0.10 --key window-1
 ```
 
 The reservation authorizes the next bounded external-usage window. Plan/start
 as usual, then run an owned command with a JSON argument array:
 
 ```text
-swarm tool run --as ann --command '["python","check.py"]' --timeout-seconds 60 --key check-1
+hivewire tool run --as ann --command '["python","check.py"]' --timeout-seconds 60 --key check-1
 ```
 
 Use the current shell's rules when quoting JSON. `--purpose check` also permits
@@ -59,9 +59,9 @@ External usage is reported from a UTF-8 JSON file, at most 64 KiB:
 ```
 
 ```text
-swarm usage report RUN_ID --as ann --source usage.json
-swarm usage show T1 --json
-swarm usage inspect RUN_ID --json
+hivewire usage report RUN_ID --as ann --source usage.json
+hivewire usage show T1 --json
+hivewire usage inspect RUN_ID --json
 ```
 
 Only normalized numeric fields and the SHA-256 source hash are retained; prompt
@@ -78,7 +78,7 @@ unknown; the engine does not assume the process stopped or usage was free.
 After confirming cessation, a human can conservatively settle it:
 
 ```text
-swarm usage reconcile RUN_ID --confirm-stopped --charge-reserved --reason "Evidence establishing cessation and why exact usage is unavailable."
+hivewire usage reconcile RUN_ID --confirm-stopped --charge-reserved --reason "Evidence establishing cessation and why exact usage is unavailable."
 ```
 
 This retains unknown actuals and charges at least the reservation against policy.

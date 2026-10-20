@@ -1,0 +1,198 @@
+{
+  "url": "https://deepinfer.net/architecture/",
+  "inspected_on": "2026-10-20",
+  "root_properties": {
+    "--paper-raised": "#fbf9f3",
+    "--orange-tint": "#f7e4d8",
+    "--muted": "#4c5a55",
+    "--line-strong": "#b9b1a0",
+    "--paper-deep": "#ebe6da",
+    "--teal-tint": "#dfece7",
+    "--faint": "#5f6b64",
+    "--font-mono": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+    "--shadow": "0 18px 50px -30px rgba(21, 33, 31, 0.45)",
+    "--teal-deep": "#084c43",
+    "--teal": "#0d6b5e",
+    "--grid": "rgba(21, 33, 31, 0.055)",
+    "--paper": "#f4f1e9",
+    "--font-body": "\"Archivo\", \"Helvetica Neue\", Arial, sans-serif",
+    "--ink-soft": "#1f302c",
+    "--line": "#d8d2c4",
+    "--ink": "#15211f",
+    "--orange": "#b93d0a"
+  },
+  "typography": [
+    {
+      "selector": "body",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "16.5px",
+      "weight": "400",
+      "line": "27.72px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(21, 33, 31)",
+      "background": "linear-gradient(rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px) repeat scroll 0% 0% / 32px 32px padding-box border-box, linear-gradient(90deg, rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px) repeat scroll 0% 0% / 32px 32px padding-box border-box, rgb(244, 241, 233) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(21, 33, 31)"
+    },
+    {
+      "selector": "h1",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "48px",
+      "weight": "700",
+      "line": "53.76px",
+      "spacing": "-0.96px",
+      "transform": "none",
+      "color": "rgb(21, 33, 31)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(21, 33, 31)"
+    },
+    {
+      "selector": "h2",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "27.52px",
+      "weight": "700",
+      "line": "30.8224px",
+      "spacing": "-0.688px",
+      "transform": "none",
+      "color": "rgb(21, 33, 31)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(216, 210, 196) rgb(21, 33, 31) rgb(21, 33, 31)"
+    },
+    {
+      "selector": "h3",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "9.92px",
+      "weight": "700",
+      "line": "11.1104px",
+      "spacing": "1.1904px",
+      "transform": "uppercase",
+      "color": "rgb(185, 177, 160)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(185, 177, 160)"
+    },
+    {
+      "selector": "p",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "16.96px",
+      "weight": "400",
+      "line": "29.1712px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(76, 90, 85)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(76, 90, 85)"
+    },
+    {
+      "selector": "a",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "16.5px",
+      "weight": "600",
+      "line": "27.72px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(244, 241, 233)",
+      "background": "rgb(21, 33, 31) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(244, 241, 233)"
+    },
+    {
+      "selector": ".topbar",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "16.5px",
+      "weight": "400",
+      "line": "27.72px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(21, 33, 31)",
+      "background": "rgba(244, 241, 233, 0.94) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(21, 33, 31)"
+    },
+    {
+      "selector": ".topnav a",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "11.52px",
+      "weight": "400",
+      "line": "19.3536px",
+      "spacing": "0.4608px",
+      "transform": "uppercase",
+      "color": "rgb(76, 90, 85)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(76, 90, 85) rgb(76, 90, 85) rgba(0, 0, 0, 0)"
+    },
+    {
+      "selector": ".sheet",
+      "missing": true
+    },
+    {
+      "selector": ".fig",
+      "missing": true
+    },
+    {
+      "selector": ".k",
+      "missing": true
+    },
+    {
+      "selector": ".v",
+      "missing": true
+    },
+    {
+      "selector": ".brand-name",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "size": "16.32px",
+      "weight": "700",
+      "line": "17.952px",
+      "spacing": "-0.3264px",
+      "transform": "none",
+      "color": "rgb(21, 33, 31)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(21, 33, 31)"
+    },
+    {
+      "selector": "code",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "9.0816px",
+      "weight": "600",
+      "line": "14.0765px",
+      "spacing": "0.4224px",
+      "transform": "uppercase",
+      "color": "rgb(8, 76, 67)",
+      "background": "rgb(235, 230, 218) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(216, 210, 196)"
+    },
+    {
+      "selector": "pre",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "13.12px",
+      "weight": "400",
+      "line": "22.304px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(236, 231, 218)",
+      "background": "rgb(21, 33, 31) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(236, 231, 218) rgb(236, 231, 218) rgb(236, 231, 218) rgb(185, 61, 10)"
+    },
+    {
+      "selector": "th",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "10.56px",
+      "weight": "600",
+      "line": "16.368px",
+      "spacing": "0.4224px",
+      "transform": "uppercase",
+      "color": "rgb(8, 76, 67)",
+      "background": "rgb(223, 236, 231) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(216, 210, 196)"
+    },
+    {
+      "selector": "td",
+      "font": "\"IBM Plex Mono\", ui-monospace, Menlo, monospace",
+      "size": "11.84px",
+      "weight": "400",
+      "line": "18.352px",
+      "spacing": "normal",
+      "transform": "none",
+      "color": "rgb(76, 90, 85)",
+      "background": "rgba(0, 0, 0, 0) none repeat scroll 0% 0% / auto padding-box border-box",
+      "border": "rgb(216, 210, 196)"
+    }
+  ]
+}

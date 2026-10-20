@@ -1,7 +1,7 @@
 [project]
-name = "agents-collaboration"
+name = "hivewire"
 version = "0.4.4"
-description = "A skill and a coordination service that let up to five coding agents work on one repository without stepping on each other."
+description = "Hivewire: independent coding agents, accountable teamwork through a shared local Git workflow."
 readme = "README.md"
 license = { file = "LICENSE" }
 requires-python = ">=3.11"

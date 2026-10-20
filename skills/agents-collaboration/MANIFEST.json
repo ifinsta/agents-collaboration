@@ -1,13 +1,15 @@
 {
   "version": "0.4.4",
   "files": {
-    "SKILL.md": "82f26785812306c413d8fd56a9832c84459c15ccd64e45614be782a7bb3b15e8",
-    "swarm.py": "4894c9228b412c30c9e41bb6d1a4d556ed8c99f707da978062ea05ff97edd36b",
-    "swarm_core.py": "9ba06301160b3344d99ca462423283986359d5382c317664f65db4d12dfb326f",
-    "EDGE-CASES.md": "3f42d07d45313c2c969865ffddaea26a0e9e4c8d65d44ccfea8aa3370067c20c",
-    "BUS.md": "664976ac4f03a100e24b6d32f416166590afb00912403886ce51e398ff5bb010",
+    "SKILL.md": "c69686c4787cafa0b229dfbec12761a1ed27baf2465d81bb9d9e556074db18ae",
+    "hivewire.py": "5dd4939a2d9935ff50f3775245983fb8f5e0e7a471d749b749081b70cc906cd9",
+    "swarm_core.py": "2427104b0ee52bc8608e34370fc89cdf63ad8b6aa7d603e917099969ed3d8288",
+    "EDGE-CASES.md": "f6addfc08ddbc8c9479140f6d89b33eeb8bc37b41edf697d3d95c7da773e3d65",
+    "BUS.md": "5a6a1ce6dfa0e79e556ff9945e41223835504e053d3a31a59182d202779e3fc7",
     "BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
-    "swarm_web.py": "b692cb51acd4c2579a92c441cd99bc7c65ec7b034cdffca37f8594f2befd0520",
-    "swarm_sessions.py": "b457b6145d153b119be3f1ad7de142a4756e443879f971ff981fddbe6c7715de"
+    "swarm_web.py": "ca589e26ce3a0387263fb75c6b0e7e4b034a4cb3b8bd8942df208307d6d27e9c",
+    "swarm_sessions.py": "b457b6145d153b119be3f1ad7de142a4756e443879f971ff981fddbe6c7715de",
+    "swarm_workspace.py": "ae0fda61cfbb72f99447f9247e177778ca5dc689ae67d65e649b6a2f7865e2be",
+    "swarm_fonts.css": "aa54f1b78f6e332e3bc8708dbcc046f12dd06861393a782a6d5da0a69157df77"
   }
 }

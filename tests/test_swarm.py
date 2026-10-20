@@ -1,4 +1,4 @@
-"""Tests for swarm.py, each against a real git repository in a temporary directory.
+"""Tests for hivewire.py, each against a real git repository in a temporary directory.
 
     python -m unittest discover -s tests -v
 
@@ -22,7 +22,7 @@ import unittest
 from unittest import mock
 from pathlib import Path
 
-SWARM = Path(__file__).resolve().parents[1] / "skills" / "agents-collaboration" / "swarm.py"
+SWARM = Path(__file__).resolve().parents[1] / "skills" / "agents-collaboration" / "hivewire.py"
 sys.path.insert(0, str(SWARM.parent))
 import swarm_core as swarm_module  # noqa: E402
 
@@ -350,7 +350,7 @@ class Planning(SwarmCase):
         # solo: the question goes to the human, and an agent may only relay the human's words
         self.assertIn("for the human", self.sw("--as", "ann", "answer", "1", "it is fine", ok=False))
         self.sw("--as", "ann", "answer", "1", "--from-human", "low risk, go ahead")
-        self.assertIn("re-run `swarm plan`", self.sw("--as", "ann", "start", cwd=self.wt, ok=False))
+        self.assertIn("re-run `hivewire plan`", self.sw("--as", "ann", "start", cwd=self.wt, ok=False))
         self.sw("--as", "ann", "plan", *PLAN, cwd=self.wt)
         self.sw("--as", "ann", "start", cwd=self.wt)
 
@@ -745,7 +745,7 @@ class Environment(SwarmCase):
         out = self.join("ann")
         here = swarm_module.detect_environment()["os"]
         self.assertIn(here, out)
-        self.assertIn("swarm environment", out)
+        self.assertIn("hivewire environment", out)
 
     def test_ec132_gates_can_differ_by_os(self):
         here = swarm_module.detect_environment()["os"]
@@ -837,7 +837,7 @@ class FirstRealRun(SwarmCase):
 class Console(SwarmCase):
     """v0.2.0: the console, interactive agents, worktree files, version and update."""
 
-    PANES = [{"title": f"p{i}", "argv": ["python", "swarm.py", f"cmd{i}"]} for i in range(4)]
+    PANES = [{"title": f"p{i}", "argv": ["python", "hivewire.py", f"cmd{i}"]} for i in range(4)]
 
     def test_ec148_git_ignored_local_files_follow_into_worktrees(self):
         cfg = self.root / ".agents" / "swarm" / "config.toml"
@@ -857,12 +857,12 @@ class Console(SwarmCase):
         self.assertFalse((wt / "local.txt").exists())
         self.assertEqual(self.git("status", "--porcelain", cwd=wt), "")
 
-    def test_ec149_the_coordinator_asks_once_about_the_console(self):
-        self.assertIn("ASK THE HUMAN", self.join("ann"))
+    def test_ec149_the_coordinator_opens_the_workspace_without_asking(self):
+        self.assertIn("OPEN WORKSPACE NOW", self.join("ann"))
         self.join("bob")
-        self.assertNotIn("ASK THE HUMAN", self.sw("--as", "bob", "whoami"))  # workers are not asked
+        self.assertNotIn("OPEN WORKSPACE NOW", self.sw("--as", "bob", "whoami"))
         self.sw("--as", "ann", "console", "--decline")
-        self.assertNotIn("ASK THE HUMAN", self.sw("--as", "ann", "whoami"))
+        self.assertNotIn("OPEN WORKSPACE NOW", self.sw("--as", "ann", "whoami"))
 
     def test_ec150_console_observes_when_a_monitor_runs(self):
         self.assertNotIn("--observe", self.sw("console", "--dry-run"))

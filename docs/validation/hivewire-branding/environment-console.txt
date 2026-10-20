@@ -1,0 +1,27 @@
+test_ec128_windows_is_never_described_as_linux (test_swarm.Environment.test_ec128_windows_is_never_described_as_linux) ... ok
+test_ec129_a_plain_linux_host_gets_no_windows_rules (test_swarm.Environment.test_ec129_a_plain_linux_host_gets_no_windows_rules) ... ok
+test_ec130_macos_and_wsl_rules (test_swarm.Environment.test_ec130_macos_and_wsl_rules) ... ok
+test_ec131_capabilities_come_from_the_machine (test_swarm.Environment.test_ec131_capabilities_come_from_the_machine) ... ok
+test_ec132_gates_can_differ_by_os (test_swarm.Environment.test_ec132_gates_can_differ_by_os) ... ok
+test_ec133_environment_command_and_json (test_swarm.Environment.test_ec133_environment_command_and_json) ... ok
+test_ec042_ec141_branch_from_outside_the_board_needs_adopt (test_swarm.FirstRealRun.test_ec042_ec141_branch_from_outside_the_board_needs_adopt) ... ok
+test_ec142_rubber_stamped_steps_are_flagged (test_swarm.FirstRealRun.test_ec142_rubber_stamped_steps_are_flagged) ... ok
+test_ec143_only_the_setter_or_a_human_lifts_a_pause (test_swarm.FirstRealRun.test_ec143_only_the_setter_or_a_human_lifts_a_pause) ... ok
+test_ec144_relative_gate_paths_resolve_from_the_worktree (test_swarm.FirstRealRun.test_ec144_relative_gate_paths_resolve_from_the_worktree) ... ok
+test_ec145_dry_run_spawn_changes_nothing (test_swarm.FirstRealRun.test_ec145_dry_run_spawn_changes_nothing) ... ok
+test_ec147_work_merged_outside_the_board_is_recorded (test_swarm.FirstRealRun.test_ec147_work_merged_outside_the_board_is_recorded) ... ok
+test_dashboard_renders_once (test_swarm.Console.test_dashboard_renders_once) ... ok
+test_ec148_git_ignored_local_files_follow_into_worktrees (test_swarm.Console.test_ec148_git_ignored_local_files_follow_into_worktrees) ... ok
+test_ec149_the_coordinator_asks_once_about_the_console (test_swarm.Console.test_ec149_the_coordinator_asks_once_about_the_console) ... ok
+test_ec150_console_observes_when_a_monitor_runs (test_swarm.Console.test_ec150_console_observes_when_a_monitor_runs) ... ok
+test_ec151_a_pane_command_with_a_separator_is_refused (test_swarm.Console.test_ec151_a_pane_command_with_a_separator_is_refused) ... ok
+test_ec152_every_platform_gets_a_layout (test_swarm.Console.test_ec152_every_platform_gets_a_layout) ... ok
+test_ec153_ec155_launch_prepares_nothing_on_a_dry_run (test_swarm.Console.test_ec153_ec155_launch_prepares_nothing_on_a_dry_run) ... ok
+test_ec154_agent_panes_get_distinct_names (test_swarm.Console.test_ec154_agent_panes_get_distinct_names) ... ok
+test_ec158_version_and_update (test_swarm.Console.test_ec158_version_and_update) ... ok
+test_ec170_text_outside_the_legacy_code_page_survives_a_pipe (test_swarm.Output.test_ec170_text_outside_the_legacy_code_page_survives_a_pipe) ... ok
+
+----------------------------------------------------------------------
+Ran 22 tests in 88.664s
+
+OK

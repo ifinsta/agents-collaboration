@@ -2,7 +2,7 @@
 
 This is the normative contract for adapters using the local engine. The installed
 `BUS.schema.json` defines canonical message envelopes and consumer receipts.
-`swarm bus schema --json` returns that schema in the CLI protocol's `result`.
+`hivewire bus schema --json` returns that schema in the CLI protocol's `result`.
 Envelope version 1, bus version 1 and outer CLI protocol version 2 are separate
 version identifiers. Unknown major versions must be refused. Existing envelope
 fields retain their meaning; undeclared fields or incompatible semantics require
@@ -35,12 +35,12 @@ documented exception: blocked status exits 2 and retains its diagnostic result. 
 A killed caller may return nothing; replay durable state rather than guessing.
 
 ```text
-swarm bus publish bob "Review the interface" --kind review_request --as ann --key review-1 --json
-swarm bus receive --as bob --consumer bob:boot-1 --limit 10 --lease-sec 60 --json
-swarm bus renew 42 --as bob --consumer bob:boot-1 --token TOKEN --lease-sec 60 --json
-swarm bus ack 42 --as bob --consumer bob:boot-1 --token TOKEN --json
+hivewire bus publish bob "Review the interface" --kind review_request --as ann --key review-1 --json
+hivewire bus receive --as bob --consumer bob:boot-1 --limit 10 --lease-sec 60 --json
+hivewire bus renew 42 --as bob --consumer bob:boot-1 --token TOKEN --lease-sec 60 --json
+hivewire bus ack 42 --as bob --consumer bob:boot-1 --token TOKEN --json
 # Alternative to ack for a transient handling failure (not after a successful ack):
-swarm bus retry 42 --as bob --consumer bob:boot-1 --token TOKEN --reason "The source evidence is temporarily unavailable" --json
+hivewire bus retry 42 --as bob --consumer bob:boot-1 --token TOKEN --reason "The source evidence is temporarily unavailable" --json
 ```
 
 IDs and tokens above are illustrative: use the values from the actual receive
@@ -173,7 +173,7 @@ remain active. A stop request caps supervision waits for timely configured
 escalation. Fallback is 1..60 seconds, relay leases 5..300 seconds, batch 1..1000
 and hook timeout 0.05..30 seconds. Set enabled=false to retain manual dispatch.
 Externally started CLIs can use the standalone
-`swarm bus listen --as NAME --json`; `--once` performs one inspection/notification
+`hivewire bus listen --as NAME --json`; `--once` performs one inspection/notification
 pass and releases receipts before returning the retained inbox path.
 
 Hooks are explicit argv arrays in `[bus]`, optionally overridden per adapter, for
@@ -191,7 +191,7 @@ their provider usage is not inferred.
 For native tool-boundary integration, invoke:
 
 ```text
-swarm bus hook --as NAME --stage before-tool --enforce --json
+hivewire bus hook --as NAME --stage before-tool --enforce --json
 ```
 
 The hook result contains messages plus current blocked/reason/task/epoch/controls.

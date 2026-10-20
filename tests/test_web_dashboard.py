@@ -30,7 +30,7 @@ class WebCase(HardeningCase):
         self.join("ann")
         self.join("bob")
         with self.board() as sw:
-            self.server = swarm_web.make_server(sw, port=0, describe=core.describe_event, command="python swarm.py")
+            self.server = swarm_web.make_server(sw, port=0, describe=core.describe_event, command="python hivewire.py")
         self.port = self.server.server_address[1]
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
 
@@ -95,9 +95,13 @@ class Guards(WebCase):
         policy = headers["Content-Security-Policy"]
         nonce = policy.split("'nonce-")[1].split("'")[0]
         self.assertIn("default-src 'none'", policy)
+        self.assertIn("font-src data:", policy, "bundled fonts need no external font hosts")
         self.assertNotIn("unsafe-inline", policy)
         self.assertNotIn("unsafe-eval", policy)
         self.assertEqual(body.decode().count(f'nonce="{nonce}"'), 2, "one style and one script, both nonced")
+        self.assertNotIn(b"/*__FONT_FACES__*/", body)
+        self.assertEqual(body.count(b"@font-face{"), 4, "Archivo and three IBM Plex Mono weights are bundled")
+        self.assertIn(b"data:font/woff2;base64,", body)
         self.assertEqual(headers["Cache-Control"], "no-store")
         for sink in ("innerHTML", "outerHTML", "insertAdjacentHTML", "document.write", "eval(", "new Function", "srcdoc"):
             self.assertNotIn(sink, swarm_web.PAGE, sink)
@@ -251,14 +255,14 @@ class Shared(WebCase):
         self.server.shutdown()
         self.server.server_close()
         with self.board() as sw:
-            self.server = swarm_web.make_server(sw, describe=core.describe_event, command="python swarm.py")
+            self.server = swarm_web.make_server(sw, describe=core.describe_event, command="python hivewire.py")
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.assertEqual(self.server.token, first_token)
         self.assertEqual(self.server.server_address[1], first_port, "the saved port is tried first")
         self.server.shutdown()
         self.server.server_close()
         with self.board() as sw:
-            self.server = swarm_web.make_server(sw, port=0, describe=core.describe_event, command="python swarm.py", reset=True)
+            self.server = swarm_web.make_server(sw, port=0, describe=core.describe_event, command="python hivewire.py", reset=True)
         threading.Thread(target=self.server.serve_forever, daemon=True).start()
         self.assertNotEqual(self.server.token, first_token)
         saved = json.loads((Path(self.home.name) / "server.json").read_text(encoding="utf-8"))
@@ -394,13 +398,13 @@ class Command(HardeningCase):
         threading.Thread(target=lambda: lines.put(proc.stdout.readline()), daemon=True).start()
         try:
             first = lines.get(timeout=30)
-            self.assertIn("swarm dashboard: http://127.0.0.1:", first, first + (proc.stderr.read() if proc.poll() else ""))
+            self.assertIn("Hivewire dashboard: http://127.0.0.1:", first, first + (proc.stderr.read() if proc.poll() else ""))
             url = urlparse(first.split(": ", 1)[1].strip())
             conn = http.client.HTTPConnection(url.hostname, url.port, timeout=10)
             conn.request("GET", f"{url.path}?{url.query}", headers={"Host": f"{url.hostname}:{url.port}"})
             response = conn.getresponse()
             self.assertEqual(response.status, 200)
-            self.assertIn(b"<title>swarm</title>", response.read())
+            self.assertIn(b"<title>Hivewire</title>", response.read())
             conn.close()
             second = subprocess.run(
                 [sys.executable, str(fixtures.SWARM), "dashboard", "--web", "--no-open", "--observe"],

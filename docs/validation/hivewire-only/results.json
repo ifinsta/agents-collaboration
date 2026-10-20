@@ -1,0 +1,46 @@
+{
+  "ok": true,
+  "selected_tests": 107,
+  "groups": [
+    {
+      "group": "installation",
+      "passed": 27,
+      "exit_code": 0
+    },
+    {
+      "group": "dashboard",
+      "passed": 38,
+      "exit_code": 0
+    },
+    {
+      "group": "workflow",
+      "passed": 20,
+      "exit_code": 0
+    },
+    {
+      "group": "environment-console",
+      "passed": 22,
+      "exit_code": 0
+    }
+  ],
+  "audit": {
+    "launcher": "hivewire.py",
+    "obsolete_launcher_present": false,
+    "obsolete_launcher_in_manifest": false,
+    "installer_default": "main",
+    "dashboard_launcher_allowlist": [
+      "hivewire.py"
+    ]
+  },
+  "browser_source_sha256": {
+    "skills/agents-collaboration/hivewire.py": "5dd4939a2d9935ff50f3775245983fb8f5e0e7a471d749b749081b70cc906cd9",
+    "skills/agents-collaboration/swarm_web.py": "ca589e26ce3a0387263fb75c6b0e7e4b034a4cb3b8bd8942df208307d6d27e9c",
+    "skills/agents-collaboration/swarm_fonts.css": "eb49bb9c0344818c2cf3480488d463c4db27726ea5f7f26326bd544ba5758a90",
+    "skills/agents-collaboration/swarm_sessions.py": "daebbb4505438f71f20a8d500586be18fde05d24e8e5bb2e76259115752a9c7f",
+    "skills/agents-collaboration/swarm_core.py": "1fbbefe093b41d9e6c569cf48a4dad58b28a9402c701b327588cbfa409f2dd4a",
+    "tests/test_web_dashboard.py": "00e2261fe646f064d3dc80b3157b722a03613675205a2a074da96b7cb640506f",
+    "tests/test_swarm.py": "f9fef9b1d668957aaf9cad6113df3fa2190b4fa69d43ff9abecb1d2dba32b515",
+    "tests/test_hardening.py": "6cfe876d118e6b314b712921c62fa126dc84372e6a712e3cf512ab8280cd903e",
+    "scripts/validate_canvas.py": "7e5d67eabd48d2cefe48d7ef2f9a91717750da4bd30becd260b96afd54e4b3ea"
+  }
+}

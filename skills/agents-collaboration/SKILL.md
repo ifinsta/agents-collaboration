@@ -1,9 +1,11 @@
 ---
 name: agents-collaboration
-description: Use whenever you work in a repository where other coding agents (Claude Code, opencode, Qoder, Codex, Gemini, Kilo Code, DeepSeek or others) may work at the same time, or when you are asked to pick up, split, assign, coordinate, plan, hand off or merge work from a shared backlog. A coordination service (swarm.py) tells you whether you are alone or in a pool of up to five, what machine you are on, which task is yours, and what you must do next. It forces critical questions and a sequential plan before any change, and makes you merge your finished work safely before you may take another task. Triggers on "other agents", "swarm", "pool", "parallel agents", "collaborate", "pick up a task", "next task", "claim", "hand off", "coordinate", "assign", "readiness", "spawn an agent", "backlog", "merge my work".
+description: Hivewire coordinates coding agents. Use whenever you work in a repository where other coding agents (Claude Code, opencode, Qoder, Codex, Gemini, Kilo Code, DeepSeek or others) may work at the same time, or when you are asked to pick up, split, assign, coordinate, plan, hand off or merge work from a shared backlog. A coordination service (hivewire.py) tells you whether you are alone or in a pool of up to five, what machine you are on, which task is yours, and what you must do next. It forces critical questions and a sequential plan before any change, and makes you merge your finished work safely before you may take another task. Triggers on "other agents", "swarm", "pool", "parallel agents", "collaborate", "pick up a task", "next task", "claim", "hand off", "coordinate", "assign", "readiness", "spawn an agent", "backlog", "merge my work".
 ---
 
-# Agents collaboration
+# Hivewire
+
+Independent agents. Accountable teamwork. Run commands through `hivewire.py` in the installed `agents-collaboration` skill directory.
 
 Several agents in one repository fail in predictable ways. They do the same work
 twice, edit the same lines, start coding before they understand the task, wait
@@ -20,15 +22,15 @@ Precedence: the user's words, then the project's own rules (`AGENTS.md`,
 ## 0. The tool
 
 ```bash
-python .agents/skills/agents-collaboration/swarm.py <subcommand> --as <your-name>
+python .agents/skills/agents-collaboration/hivewire.py <subcommand> --as <your-name>
 ```
 
-Below, `swarm` stands for that command. `join`, `claim` and `whoami` print the
+Below, `hivewire` stands for that command. `join`, `claim` and `whoami` print the
 exact absolute command to use. Use that one from inside worktrees, which may not
 contain `.agents/` yet. You can also set `SWARM_AS=<your-name>` instead of
-passing `--as` each time. Run `swarm.py` (a small launcher); state-changing code
+passing `--as` each time. Run `hivewire.py` (a small launcher); state-changing code
 is in `swarm_core.py`. The optional `swarm_web.py` module serves the browser
-dashboard; HTTP views are read-only, while its server sweeps unless `--observe`.
+dashboard. Its views read through read-only SQLite connections; its actions run as the human unless `--read-only`, and its server sweeps unless `--observe`.
 
 The unreleased source uses CLI protocol 2, schema 12, and bus/message/event
 versions 1. Read typed JSON under `result`.
@@ -39,9 +41,9 @@ the clone shares it, and nothing in it is ever committed.
 ## 1. Before anything else: where am I, and who else is here?
 
 ```bash
-swarm environment --as <name>         # the machine: OS, shell, Python, tools, encoding, and rules
-swarm join --as <name> --kind <cli> --model <model>
-swarm whoami --as <name>              # your role, peers, task, next action
+hivewire environment --as <name>         # the machine: OS, shell, Python, tools, encoding, and rules
+hivewire join --as <name> --kind <cli> --model <model>
+hivewire whoami --as <name>              # your role, peers, task, next action
 ```
 
 - **Read the environment rules and obey them.** If the machine is Windows, do not
@@ -59,21 +61,36 @@ swarm whoami --as <name>              # your role, peers, task, next action
 - If `join` says the name is live, you either chose a taken name or you are
   resuming after a restart. Use `--resume` only for the second case.
 
-### If you are the coordinator: offer one managed terminal, once
+### If you are the coordinator: open the assignment workspace
 
-When `join` or `whoami` prints **ASK THE HUMAN**, ask the human right away, with
-your question tool (in Claude Code, `AskUserQuestion`; elsewhere, in the chat):
+Unless the person has explicitly disabled viewers, at the beginning of every
+assignment, after joining or resuming, run:
 
-> Use one terminal with tabs to inspect and manage headless workers? Workers
-> keep running when the viewer closes, and their captured output stays available.
+```bash
+hivewire workspace --as <name>
+```
 
-- **Yes:** the person runs `swarm sessions` or `swarm console --managed` in their
-  existing terminal. This opens no extra windows. Use `sessions --agents
-  opencode,qodercli` to start requested kinds headlessly on eligible tasks, or
-  `spawn CLI --name NAME --task TASK` for explicit assignments. Active/unknown
-  executions are reused rather than restarted when the viewer rejoins.
-- **No:** `swarm console --decline`, so nobody asks again. The human can still run
-  `swarm console` at any time.
+Do this automatically; do not ask the person to open viewers themselves. When
+`join` or `whoami` prints **OPEN WORKSPACE NOW**, run the absolute command shown.
+One visible terminal contains the session manager and its dynamic agent tabs;
+the browser opens the selected board's dashboard. Existing views are reused.
+New `spawn` executions appear automatically, including their retained output,
+supervisor diagnostics and task evidence. Viewers do not start provider agents.
+
+Closing the terminal leaves owned workers running. The next `workspace` call
+reopens a closed manager. Use `workspace --reopen` to reopen the browser after
+closing its tab; ordinary repeated calls avoid duplicate tabs. `--dry-run` shows
+the plan. On SSH, CI or machines without a desktop, viewers are skipped and the
+hidden loopback dashboard remains available. `workspace --no-open` or
+`SWARM_HEADLESS=1` explicitly selects that mode. Report viewer failures and keep
+working; visibility failures never justify restarting workers.
+
+Use `hivewire sessions` or `hivewire console --managed` to attach in an existing
+terminal. Start workers with `spawn CLI --name NAME --task TASK`, or use
+`sessions --agents opencode,qodercli` for requested kinds on eligible tasks.
+Active/unknown executions are reused when the viewer rejoins. Respect an
+explicit request for no viewers (`console --decline`); do not reopen them unless
+the person asks to enable visibility again.
 
 In the managed terminal, Tab/Left/Right select a session; `v` switches output,
 supervisor diagnostics and task/evidence/events; Page Up/Down scroll; `s` starts
@@ -84,8 +101,8 @@ For finite machine inspection use `sessions --once --json`; it also accepts
 context, never acceptance proof. Headless sessions do not forward interactive input.
 
 Only when the person explicitly wants native interactive interfaces, use
-`swarm console --agents opencode,qodercli` for the visible multi-pane layout, or
-`swarm launch CLI --name NAME --task TASK` in an existing terminal. Foreground
+`hivewire console --agents opencode,qodercli` for the visible multi-pane layout, or
+`hivewire launch CLI --name NAME --task TASK` in an existing terminal. Foreground
 output is streamed without a retained transcript. Both paths still require task
 ownership and supervision. No-task launches and `--supervised` are removed.
 
@@ -96,14 +113,14 @@ work (a request, an issue, a section of a plan) rather than ready-made tasks,
 make it a **goal** and let the service make you think before you split it.
 
 ```bash
-swarm goal new <id> "what should be achieved"
-swarm goal answer <id> --set done_looks_like="..." --set who_uses_it="..." ...   # every question, with substance
-swarm goal outcome <id> "an observable result" --check "exactly how to observe it"
-swarm goal check <id> 1 --command '["python","checks/outcome.py"]'   # coordinator/human; repeat --command as needed
-swarm goal task <id> <task-id> "title" --serves 1 --done-when "the check" [--needs a,b] [--caps x] [--size S|M]
-swarm goal architecture <id> --template   # record the brief with --set and --evidence, inspect, then --approve
-swarm goal review <id>
-swarm goal commit <id> --assign        # coordinator or human
+hivewire goal new <id> "what should be achieved"
+hivewire goal answer <id> --set done_looks_like="..." --set who_uses_it="..." ...   # every question, with substance
+hivewire goal outcome <id> "an observable result" --check "exactly how to observe it"
+hivewire goal check <id> 1 --command '["python","checks/outcome.py"]'   # coordinator/human; repeat --command as needed
+hivewire goal task <id> <task-id> "title" --serves 1 --done-when "the check" [--needs a,b] [--caps x] [--size S|M]
+hivewire goal architecture <id> --template   # record the brief with --set and --evidence, inspect, then --approve
+hivewire goal review <id>
+hivewire goal commit <id> --assign        # coordinator or human
 ```
 
 1. **Ask yourself the hard questions first.** There are four stages:
@@ -181,7 +198,7 @@ historical closed goals retain their original evidence labels.
 Every fresh task claim accepts the configured contract: 30 minutes of
 accounted running time, absolute deadline after 45 minutes, five minutes of
 deliberation, five minutes reserved for review, checkpoint every five minutes.
-Claim output prints the deadline and epoch. Use `swarm explain <task>` to inspect
+Claim output prints the deadline and epoch. Use `hivewire explain <task>` to inspect
 terms and the safe next action. These defaults are configurable, not performance
 claims; time between `start` and `block`/`submit` is counted, not actual tool time.
 
@@ -248,18 +265,18 @@ retained worktree and partial files before repairing `[worktree] copy`.
 ## 2. Get exactly one task
 
 ```bash
-swarm next --as <name>                # the best task you may take, claimed for you
-swarm claim <task> --as <name>        # or a named one (assigned to you, or open)
+hivewire next --as <name>                # the best task you may take, claimed for you
+hivewire claim <task> --as <name>        # or a named one (assigned to you, or open)
 ```
 
 The claim creates your own git worktree and branch, and gives you a slot. The
-slot sets your own port, test database and container project, to help avoid resource collisions (`swarm env --as <name>` prints them).
+slot sets your own port, test database and container project, to help avoid resource collisions (`hivewire env --as <name>` prints them).
 Your tools must use those values; the engine does not reserve the OS resources.
 `cd` into the worktree. **Never work in the main checkout or in another agent's
 worktree**. Use the absolute tool command printed at claim. Engine state checks
 do not prevent arbitrary filesystem writes outside the task worktree.
 
-**Read your task's place in the work before planning:** `swarm context` (also
+**Read your task's place in the work before planning:** `hivewire context` (also
 printed at claim, and in a spawned agent's brief) shows two directions:
 
 - **previous:** each task yours builds on, what it produced, how it was proved,
@@ -274,8 +291,8 @@ You hold **one task at a time**. `next` and `claim` refuse while you hold one.
 ## 3. Ask the critical questions, then plan in order
 
 ```bash
-swarm plan --as <name> --template     # the questions you must answer
-swarm plan --as <name> --set outcome="..." --set acceptance="..." --set scope="src/x/,docs/y.md" \
+hivewire plan --as <name> --template     # the questions you must answer
+hivewire plan --as <name> --set outcome="..." --set acceptance="..." --set scope="src/x/,docs/y.md" \
      --set out_of_scope="..." --set dependencies="..." --set risks="..." --set rollback="..." \
      --set unknowns="none" --step "first concrete step" --step "second concrete step"
 ```
@@ -283,7 +300,7 @@ swarm plan --as <name> --set outcome="..." --set acceptance="..." --set scope="s
 - Every question needs an answer. Write `unknown` where you cannot answer: the
   service turns it into a **critical question** and `start` stays blocked until
   someone answers it.
-- If `unknowns` is not `none`, ask each one with `swarm ask "..." --critical`
+- If `unknowns` is not `none`, ask each one with `hivewire ask "..." --critical`
   before planning (`--unknowns-asked`).
 - `scope` is the list of paths you will change. It is compared with every other
   agent's scope. On an overlap, narrow your scope, take the hotspot lock, or talk
@@ -293,39 +310,39 @@ swarm plan --as <name> --set outcome="..." --set acceptance="..." --set scope="s
 Questions:
 
 ```bash
-swarm ask "Should refunds be async?" --critical --as <name>    # --to coordinator (default) | human | <agent>
-swarm questions --task <task>
+hivewire ask "Should refunds be async?" --critical --as <name>    # --to coordinator (default) | human | <agent>
+hivewire questions --task <task>
 ```
 
 - A critical question pauses your task until it is answered.
 - A question for the human is relayed by you. Ask in your own interface, then
   record their words exactly:
-  `swarm answer <id> --as <name> --from-human "<verbatim>"`.
+  `hivewire answer <id> --as <name> --from-human "<verbatim>"`.
   You may never answer as the human yourself.
 - When an answer arrives after your plan, the service requires you to re-run
-  `swarm plan` (unchanged is fine) to confirm the plan still holds.
+  `hivewire plan` (unchanged is fine) to confirm the plan still holds.
 
 ## 4. Work, step by step
 
 ```bash
-swarm start --as <name>
-swarm step 1 --as <name> --evidence "pytest tests/test_x.py: 12 passed"
-swarm step 2 --as <name> --evidence "..."
+hivewire start --as <name>
+hivewire step 1 --as <name> --evidence "pytest tests/test_x.py: 12 passed"
+hivewire step 2 --as <name> --evidence "..."
 ```
 
 - Steps are recorded in order, each with evidence: a command and its result, a
   file, a test.
 - Change only what your scope names. If you discover other work, propose it:
-  `swarm add <id> "title" --needs <ids>`.
+  `hivewire add <id> "title" --needs <ids>`.
 - **Hotspots**, the files everybody touches, are named in the project config.
   Appending to one needs nothing. Rewriting, reordering or deleting lines in one
-  needs `swarm lock <name>`, held until you merge. Some hotspots (migrations,
+  needs `hivewire lock <name>`, held until you merge. Some hotspots (migrations,
   for example) are always locked. Locks never wait: if one is taken, do another
   step or ask its holder.
 - Commit on your branch as often as you like.
 - Every command is a heartbeat. Before a long-running command, run
-  `swarm heartbeat`; after 20 silent minutes you are marked offline.
-- Read `swarm inbox` whenever a command shows unread messages. Ask readiness
+  `hivewire heartbeat`; after 20 silent minutes you are marked offline.
+- Read `hivewire inbox` whenever a command shows unread messages. Ask readiness
   questions with `send --kind question`; acknowledge deliveries with bus receipts
   and answer with `send --kind decision --reply-to ID`.
 
@@ -414,9 +431,9 @@ targeted pause. Retried committed requests, completions and handoffs are safe.
 ## 5. Submit, then merge: join your work before taking more
 
 ```bash
-swarm submit --as <name> --evidence "acceptance check and its result" \
+hivewire submit --as <name> --evidence "acceptance check and its result" \
      --owed "checks you could not run here, and why" --changelog "one line for the changelog"
-swarm merge --as <name>
+hivewire merge --as <name>
 ```
 
 `submit` refuses if any of these hold:
@@ -446,7 +463,7 @@ When it reports a conflict or a gate failure, fix it in your worktree, commit,
 `submit` again, then `merge` again. **Only after `merge` succeeds do you ask
 for the next task.** If you are inside your worktree when it is removed (on
 Windows a folder in use cannot be deleted), the removal is deferred and
-`swarm doctor --fix` finishes it later.
+`hivewire doctor --fix` finishes it later.
 Preserve ignored artifacts (including copied local settings) outside the worktree
 before retrying cleanup. Do not discard valuable files merely to make cleanup pass.
 If Git refuses removal, the task's ownership and recovery references stay intact.
@@ -537,23 +554,23 @@ unknown work, invent missing evidence or rebuild a corrupted board.
 
 ## 6. When you cannot continue
 
-- Blocked on something only others can fix: `swarm block "reason"`. Keep the
+- Blocked on something only others can fix: `hivewire block "reason"`. Keep the
   claim and keep heartbeating.
 - Out of time or unable to finish:
-  `swarm release "what is done, what is pushed, what is next"`.
+  `hivewire release "what is done, what is pushed, what is next"`.
   Never just stop.
-- Leaving the pool: `swarm leave` (with `--release "note"` if you hold a task).
+- Leaving the pool: `hivewire leave` (with `--release "note"` if you hold a task).
 
 If you crash, the service marks you offline. If you stay away long enough, your
 task becomes **orphaned**, keeping its branch and worktree, and another agent can
-claim it with `swarm claim <task> --take-over`. Read the retained plan and steps,
-resolve critical questions and replan if answers changed, then run `swarm start`
+claim it with `hivewire claim <task> --take-over`. Read the retained plan and steps,
+resolve critical questions and replan if answers changed, then run `hivewire start`
 before continuing. Completed steps and files stay retained. The same start gate
 applies to an original owner returning after being marked offline, even during
 reclaim grace. Observed owner loss or process exit settles accounted running time;
 resuming starts a running clock while preserving the deadline, remaining
 allowance and usage lineage. Coming back:
-`swarm join --resume`, then `swarm whoami`. If the task was taken over, you are
+`hivewire join --resume`, then `hivewire whoami`. If the task was taken over, you are
 told so and must not continue it.
 
 ## 7. The coordinator
@@ -562,20 +579,20 @@ One agent coordinates. It is the first to join, or the longest-present live agen
 when the coordinator goes silent. A project may also set `coordinator = "human"`.
 The coordinator:
 
-- plans rounds: `swarm status --all` shows what is open, waiting and why;
-- checks who is ready: `swarm agents`, and `swarm send <agent> "free?" --kind question`;
-- checks which CLIs exist on this machine: `swarm probe` (installed, version,
-  signed in); `swarm probe --live` also asks each one to reply READY, which
+- plans rounds: `hivewire status --all` shows what is open, waiting and why;
+- checks who is ready: `hivewire agents`, and `hivewire send <agent> "free?" --kind question`;
+- checks which CLIs exist on this machine: `hivewire probe` (installed, version,
+  signed in); `hivewire probe --live` also asks each one to reply READY, which
   costs one request each;
-- starts agents: `swarm spawn <claude|opencode|qodercli|codex|gemini|kilocode|deepseek> --name <name> --task <task>`.
+- starts agents: `hivewire spawn <claude|opencode|qodercli|codex|gemini|kilocode|deepseek> --name <name> --task <task>`.
   The service joins and claims for the new agent, writes its brief into the
   worktree, and launches the CLI headless there. Unattended permission bypass
   (`--unattended`) needs `[spawn] allow_unattended = true` in the project
   config, and that is a human decision;
-- assigns work (`swarm assign <task> <agent>`), answers or waives questions
-  (`swarm answer`, `swarm waive`), approves proposed tasks (`swarm approve`);
-- stops everything when needed: `swarm pause "reason"`, `swarm resume`;
-- keeps the backlog file and the board in step (`swarm sync` after editing the
+- assigns work (`hivewire assign <task> <agent>`), answers or waives questions
+  (`hivewire answer`, `hivewire waive`), approves proposed tasks (`hivewire approve`);
+- stops everything when needed: `hivewire pause "reason"`, `hivewire resume`;
+- keeps the backlog file and the board in step (`hivewire sync` after editing the
   backlog).
 
 The coordinator never merges another agent's work on its behalf. Each agent
@@ -584,7 +601,7 @@ joins its own work through the queue.
 ## 8. The monitor
 
 ```bash
-swarm monitor            # one per board; prints events as they happen
+hivewire monitor            # one per board; prints events as they happen
 ```
 
 The protocol is correct without the monitor: every command sweeps first. That
@@ -595,11 +612,12 @@ work is open, holders of finished work, and the event stream. It is a natural
 fit for a background-process or monitoring tool in your harness. Its output is
 one line per event.
 
-A person who prefers a browser runs `swarm dashboard --web` (local to this
-machine; see `docs/web-dashboard.md` in the repository). An agent never needs
-it and must not treat anything shown there as authority.
+Assignment startup opens the browser through `hivewire workspace`;
+`hivewire dashboard --web` opens it directly (local to this machine; see
+`docs/web-dashboard.md` in the repository). Treat the CLI and database as the
+source of authority when making agent decisions.
 
-The **inbox steward** (`swarm steward`) is a system participant, not an agent.
+The **inbox steward** (`hivewire steward`) is a system participant, not an agent.
 When a message to you stays unacknowledged, it sends you one reminder from
 `steward` listing the message numbers. Act on those messages, then acknowledge
 each with its bus receipt; nobody else can acknowledge them for you. Its
@@ -699,7 +717,7 @@ memory recommends it.
 | `assign`, `answer`, `waive`, `approve`, `pause`, `resume`, `spawn`, `probe`, `sync` | coordinator / human | run the pool |
 | `monitor [--observe]`, `doctor [--fix]`, `env` | anyone | operate |
 | `steward [--once]` | coordinator / human | review every inbox: remind, escalate, never acknowledge for others |
-| `console [--agents a,b] [--decline]`, `launch <cli>`, `launcher`, `dashboard [--web]` | coordinator / human | see and drive the pool |
+| `workspace [--no-open] [--reopen] [--dry-run]`, `console [--agents a,b] [--decline]`, `launch <cli>`, `launcher`, `dashboard [--web]` | coordinator / human | see and drive the pool |
 | `record <task> --commit <sha>` | coordinator / human | mark work that landed outside the board |
 | `verify <task> [--key K]`, `goal verify <id> [--key K]` | coordinator / human | observed checks against a pinned commit, with a retained receipt/checkout |
 | `goal check <id> N --command <JSON-argv>` | coordinator / human | executable outcome policy, requiring architecture reapproval |
@@ -723,15 +741,15 @@ memory recommends it.
 ### Interrupted allocation and supervised terminals
 
 If claim reports a pending/unknown Git writer, stop work and inspect
-`swarm allocation show TASK`. Release does not prove that writer stopped.
+`hivewire allocation show TASK`. Release does not prove that writer stopped.
 Preserve every worktree/branch; never remove a pending allocation or kill a
 stored registry PID. Only a human who independently confirmed cessation may use
-`swarm allocation reconcile TASK --confirm-stopped --reason "evidence"`.
+`hivewire allocation reconcile TASK --confirm-stopped --reason "evidence"`.
 After an interrupted claim with an uncreated path, its current holder can use
-`swarm allocation prepare TASK --as NAME` to prepare Git before checkpointing.
+`hivewire allocation prepare TASK --as NAME` to prepare Git before checkpointing.
 This recovery does not replace plan/start, change scope or copy local settings.
 
-Use `swarm launch CLI --name NAME --task TASK` for foreground owned
+Use `hivewire launch CLI --name NAME --task TASK` for foreground owned
 job/group supervision. The creating launcher honors captured stop policy, tracks
 descendants and retains uncertain startup/exit state. POSIX uses a controlling
 PTY; Windows inherits its console. Terminal output streams without retained

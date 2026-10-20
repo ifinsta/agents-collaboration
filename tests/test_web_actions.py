@@ -1,6 +1,6 @@
 """Acting from the dashboard as the human, and the inbox steward.
 
-Actions run the real `swarm` command in the board's repository, so these tests check both the HTTP guards and that
+Actions run the real `hivewire` command in the board's repository, so these tests check both the HTTP guards and that
 the board changed the way the CLI would change it. Nothing here starts a real agent CLI.
 """
 
@@ -23,7 +23,7 @@ class ActionCase(WebCase):
     def setUp(self):
         super().setUp()
         with self.board() as sw:
-            self.entry = swarm_web.register(sw, "python swarm.py", str(fixtures.SWARM))
+            self.entry = swarm_web.register(sw, "python hivewire.py", str(fixtures.SWARM.with_name("hivewire.py")))
 
     def act(self, body, *, origin=True, token=True, ctype="application/json", raw=None, board=None):
         conn = http.client.HTTPConnection("127.0.0.1", self.port, timeout=180)
@@ -80,7 +80,7 @@ class Guards(ActionCase):
         self.server.actions = True
         self.assertTrue(self.api("/api/overview")["actions"])
         with self.board() as sw:
-            swarm_web.register(sw, "python swarm.py", None)  # registered by a swarm that knew no launcher
+            swarm_web.register(sw, "python hivewire.py", None)  # registered by a swarm that knew no launcher
         self.assertEqual(self.act({"action": "steward"})[0], 409)
         self.assertFalse(self.api("/api/overview")["actions"])
 

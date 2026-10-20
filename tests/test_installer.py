@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import hashlib
 import os
 import subprocess
 import sys
@@ -38,10 +39,75 @@ class Installer(unittest.TestCase):
     def test_installs_skill_config_and_agents_pointer(self):
         self.install("--agents-md", "--scaffold")
         skill = self.repo / ".agents" / "skills" / "agents-collaboration"
-        for name in ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md", "BUS.md", "BUS.schema.json", "swarm_web.py", "swarm_sessions.py", "INSTALLED.json"):
+        for name in ("SKILL.md", "hivewire.py", "swarm_core.py", "EDGE-CASES.md", "BUS.md", "BUS.schema.json", "swarm_web.py", "swarm_sessions.py", "swarm_workspace.py", "swarm_fonts.css", "INSTALLED.json"):
             self.assertTrue((skill / name).exists(), name)
         self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
         self.assertIn("agents-collaboration:start", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertIn("hivewire.py", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
+        self.assertFalse((skill / "swarm.py").exists())
+
+    def test_non_hivewire_payloads_are_refused_before_installation(self):
+        for names in (("swarm.py",), ("hivewire.py", "swarm.py")):
+            source = Path(self.tmp.name) / ("source-" + str(len(names)))
+            payload = source / "skills" / "agents-collaboration"
+            payload.mkdir(parents=True)
+            (payload / "MANIFEST.json").write_text(json.dumps({"files": dict.fromkeys(names, "unused")}), encoding="utf-8")
+            self.assertIn("not Hivewire-only", self.install("--source", str(source), ok=False))
+        self.assertFalse((self.repo / ".agents" / "skills").exists())
+
+    def test_retired_managed_launchers_are_removed_without_touching_board_config(self):
+        self.install("--scaffold")
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        obsolete = skill / "swarm.py"
+        obsolete.write_bytes(b"obsolete launcher\n")
+        record_path = skill / "INSTALLED.json"
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["files"][obsolete.name] = hashlib.sha256(obsolete.read_bytes()).hexdigest()
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        config = self.repo / ".agents" / "swarm" / "config.toml"
+        before = config.read_bytes()
+        self.install("--dry-run")
+        self.assertTrue(obsolete.exists())
+        self.install()
+        self.assertFalse(obsolete.exists())
+        self.assertTrue((skill / "hivewire.py").exists())
+        self.assertEqual(config.read_bytes(), before)
+
+    def test_edited_obsolete_launchers_require_force_before_removal(self):
+        self.install()
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        obsolete = skill / "swarm.py"
+        obsolete.write_bytes(b"original\n")
+        record_path = skill / "INSTALLED.json"
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["files"][obsolete.name] = hashlib.sha256(obsolete.read_bytes()).hexdigest()
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        obsolete.write_bytes(b"edited\n")
+        self.install(ok=False)
+        self.assertEqual(obsolete.read_bytes(), b"edited\n")
+        self.install("--force")
+        self.assertFalse(obsolete.exists())
+
+    def test_unmanaged_obsolete_launchers_require_force_before_removal(self):
+        self.install()
+        obsolete = self.repo / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        obsolete.write_bytes(b"unmanaged\n")
+        self.install(ok=False)
+        self.assertEqual(obsolete.read_bytes(), b"unmanaged\n")
+        self.install("--force")
+        self.assertFalse(obsolete.exists())
+
+    def test_retired_file_records_cannot_delete_outside_the_install_directory(self):
+        self.install()
+        skill = self.repo / ".agents" / "skills" / "agents-collaboration"
+        outside = skill.parent / "keep.py"
+        outside.write_bytes(b"keep\n")
+        record_path = skill / "INSTALLED.json"
+        record = json.loads(record_path.read_text(encoding="utf-8"))
+        record["files"]["../keep.py"] = hashlib.sha256(outside.read_bytes()).hexdigest()
+        record_path.write_text(json.dumps(record), encoding="utf-8")
+        self.assertIn("unsafe retired path", self.install("--force", ok=False))
+        self.assertEqual(outside.read_bytes(), b"keep\n")
 
     def test_rerun_is_idempotent_and_keeps_project_config(self):
         self.install("--agents-md", "--scaffold")
@@ -101,7 +167,7 @@ class Installer(unittest.TestCase):
             check=False,
         )
         self.assertEqual(done.returncode, 0, done.stdout + done.stderr)
-        tool = home / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        tool = home / ".agents" / "skills" / "agents-collaboration" / "hivewire.py"
         self.assertTrue(tool.exists())
         stub = (home / ".claude" / "skills" / "agents-collaboration" / "SKILL.md").read_text(encoding="utf-8")
         self.assertIn(tool.parent.as_posix(), stub)
@@ -131,7 +197,7 @@ class Installer(unittest.TestCase):
             },
         )
         done = subprocess.run(
-            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "status", "--all"],
+            [sys.executable, ".agents/skills/agents-collaboration/hivewire.py", "status", "--all"],
             cwd=self.repo,
             capture_output=True,
             text=True,
@@ -169,7 +235,7 @@ class Installer(unittest.TestCase):
             "GIT_COMMITTER_EMAIL": "t@t",
         }
         subprocess.run(["git", "commit", "-q", "--allow-empty", "-m", "init"], cwd=self.repo, check=True, env=env)
-        tool = [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "doctor"]
+        tool = [sys.executable, ".agents/skills/agents-collaboration/hivewire.py", "doctor"]
         out = subprocess.run(tool, cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False).stdout
         self.assertIn("not committed", out)
         subprocess.run(["git", "add", ".agents"], cwd=self.repo, check=True)
@@ -178,7 +244,7 @@ class Installer(unittest.TestCase):
         self.assertNotIn("not committed", out)
 
     def run_tool(self, *args, folder=None):
-        tool = (folder or self.repo / ".agents" / "skills" / "agents-collaboration") / "swarm.py"
+        tool = (folder or self.repo / ".agents" / "skills" / "agents-collaboration") / "hivewire.py"
         return subprocess.run(
             [sys.executable, str(tool), *args],
             cwd=self.repo,
@@ -214,19 +280,19 @@ class Installer(unittest.TestCase):
         self.assertIn("install.py | python - --all", done.stderr)
 
     def test_the_launcher_stays_tiny_and_matches_the_release(self):
-        launcher = (ROOT / "skills" / "agents-collaboration" / "swarm.py").read_text(encoding="utf-8")
-        self.assertLess(len(launcher.splitlines()), 60)  # anything big would be recompiled on every command
         version = next(
             line.split("=", 1)[1].strip().strip('"')
             for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
             if line.startswith("version")
         )
+        launcher = (ROOT / "skills" / "agents-collaboration" / "hivewire.py").read_text(encoding="utf-8")
+        self.assertLess(len(launcher.splitlines()), 60)  # anything big would be recompiled on every command
         self.assertIn(f'EXPECTED = "{version}"', launcher)
 
     def test_installed_tool_runs(self):
         self.install()
         done = subprocess.run(
-            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "environment", "--json"],
+            [sys.executable, ".agents/skills/agents-collaboration/hivewire.py", "environment", "--json"],
             cwd=self.repo,
             capture_output=True,
             text=True,
@@ -235,7 +301,7 @@ class Installer(unittest.TestCase):
         self.assertEqual(done.returncode, 0, done.stderr)
         self.assertIn("rules", json.loads(done.stdout)["result"])
         sessions = subprocess.run(
-            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "sessions", "--once", "--json"],
+            [sys.executable, ".agents/skills/agents-collaboration/hivewire.py", "sessions", "--once", "--json"],
             cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False,
         )
         self.assertEqual(sessions.returncode, 0, sessions.stdout + sessions.stderr)
@@ -264,13 +330,8 @@ class Release(unittest.TestCase):
         )
         self.assertIn(f'__version__ = "{version}"', text)
 
-    def test_installer_default_ref_matches_version(self):
-        version = next(
-            line.split("=", 1)[1].strip().strip('"')
-            for line in (ROOT / "pyproject.toml").read_text(encoding="utf-8").splitlines()
-            if line.startswith("version")
-        )
-        self.assertIn(f'DEFAULT_REF = "v{version}"', INSTALL.read_text(encoding="utf-8"))
+    def test_installer_targets_current_hivewire_source(self):
+        self.assertIn('DEFAULT_REF = "main"', INSTALL.read_text(encoding="utf-8"))
 
 
 if __name__ == "__main__":

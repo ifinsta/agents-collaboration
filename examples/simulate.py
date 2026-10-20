@@ -10,7 +10,7 @@ expect before installing:
         # also writes docs/console.svg (animated) and docs/console-three-agents.svg (a still)
     python examples/simulate.py --check                 # run it and verify every milestone, quietly (CI)
 
-Agents are simulated by one script calling `swarm.py --as <name>`, which is exactly what each real agent's
+Agents are simulated by one script calling `hivewire.py --as <name>`, which is exactly what each real agent's
 shell does. The only things faked are time passing (an agent going silent for hours), the human typing,
 and the launcher pane in the pictures, which shows how a person would have started the three agents.
 Every step checks its own result; if the tool ever stops behaving as described, the script stops there.
@@ -55,7 +55,7 @@ class Sim:
         self.out: list[str] = []
         self.frames: list[dict] = []
         self.launcher: list[str] = []
-        self.tool = self.repo / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        self.tool = self.repo / ".agents" / "skills" / "agents-collaboration" / "hivewire.py"
         self._module = None
 
     # ---- recording
@@ -102,7 +102,7 @@ class Sim:
             argv, cwd=cwd or self.repo, capture_output=True, text=True, encoding="utf-8", env=env, check=False
         )
         output = (done.stdout + done.stderr).rstrip()
-        shown = "swarm " + " ".join(f'"{a}"' if " " in a else a for a in args) + (f" --as {who}" if who else "")
+        shown = "hivewire " + " ".join(f'"{a}"' if " " in a else a for a in args) + (f" --as {who}" if who else "")
         if (done.returncode == 0) != ok:
             raise Diverged(f"simulation diverged: `{shown}` exited {done.returncode}\n{output}")
         for text in expect:
@@ -182,7 +182,7 @@ class Sim:
             sw.db.close()
         menu = [
             mod.paint("START AGENTS", "bold") + "  in shop",
-            mod.paint("Each agent joins the swarm with a brief, in its own tab.", "dim"),
+            mod.paint("Each agent joins the hivewire with a brief, in its own tab.", "dim"),
             "  1. claude   2. opencode   3. qodercli   4. codex   5. gemini",
         ]
         tail = self.launcher[-(room - len(menu) - 1) :] if self.launcher else []
@@ -268,7 +268,7 @@ def run(sim: Sim) -> None:
         f"Generated with agents-collaboration v{VERSION} on {platform.system()}, Python {platform.python_version()}.",
         "Regenerate it with `python examples/simulate.py --write docs/simulation.md`.",
         "",
-        "`swarm` below abbreviates the verified Python executable and installed launcher.",
+        "`hivewire` below abbreviates the verified Python executable and installed launcher.",
         "Inside task worktrees, use the absolute launcher path printed by the tool.",
         "",
         "**The cast:**",
@@ -369,7 +369,7 @@ def run(sim: Sim) -> None:
         "--set=riskiest_assumption=unknown",
         who="claude-1",
         expect=("14 of 15", "Q1, asked of human"),
-        display='swarm goal answer health --set done_looks_like="..." --set who_uses_it="..." ... '
+        display='hivewire goal answer health --set done_looks_like="..." --set who_uses_it="..." ... '
         "--set riskiest_assumption=unknown --as claude-1",
     )
     sim.swarm("questions", expect=("Q1", "-> human"))

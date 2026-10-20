@@ -2,6 +2,16 @@
 
 ## Unreleased
 
+- Open assignment visibility through `hivewire workspace`: reuse a hidden local
+  dashboard, open its browser once, and manage agent tabs in one visible terminal.
+  Add retryable viewer leases, headless/dry-run modes and explicit browser reopen.
+  Coordinators now open the workspace at startup instead of asking people to do it.
+
+- Name the product Hivewire: independent agents, accountable teamwork. Add the
+  sole `hivewire.py` launcher, dashboard, installer pointers and current guides.
+  Remove the old command alias and payload fallback; retire obsolete managed
+  launcher files while preserving board/configuration data.
+
 - Drain every buffered POSIX terminal-output chunk after an owned worker exits,
   including short PTY reads, before closing the terminal bridge.
 
@@ -19,29 +29,33 @@
   Windows helper calls use CREATE_NO_WINDOW. Existing native interactive layouts
   remain explicit; uncaptured foreground output is never invented.
 
-- Make the web dashboard a compact tool that acts as the human: answer or waive a question,
-  reply to and acknowledge messages addressed to the human, approve a brief, all in place, by
-  running the real `swarm` command through one guarded `POST /api/act` (`--read-only` turns it
-  off). Add the inbox steward (`swarm steward`, `--once`): a system participant that reminds
-  agents of messages they leave unacknowledged, escalates offline recipients and critical
-  messages to the coordinator, reports dead letters, and never acknowledges on anyone's behalf.
-  Its reminders expire by themselves. From the page, "Review inboxes now" runs one review and an
-  LLM reviewer can be started on its own `INBOX-n` task. The team canvas drops lane backgrounds
-  and shows the steward and its reminders.
-
-- Add `swarm dashboard --web`: a read-only browser view of the board (an overview with a
-  team and work table and a "waiting on you" list, a team canvas that shows agents as
-  `Alex (claude) – Orchestrator` with agent icons and solid, dotted and dashed lines for
-  assignment, collaboration and review, an inbox with delivery and receipt state, a decisions
-  page, and a page per task with its plan, evidence, checkpoints and locks). Roles are derived
-  from the board, not configured. It is `swarm_web.py`, standard library only, bound to
-  127.0.0.1, GET-only over read-only SQLite connections, guarded by a stored token and a
-  Host check, with a nonce-only Content-Security-Policy and a page that never builds markup
-  from board text. Actions stay in the terminal: each item shows a command to copy. `--port`,
-  `--no-open` and `--observe` (no sweeps) are the options. There is one dashboard per user at a
-  fixed address (port 8787, else the next free one, saved) with a stable link: a later run from
-  any repository adds its board to the running dashboard, prints the same link and returns, and a
-  board switcher lists them. `--reset-link` makes a new token. See docs/web-dashboard.md.
+- Add `swarm dashboard --web`: a compact browser tool for the board, in `swarm_web.py`
+  (standard library only, bound to 127.0.0.1).
+  - Pages: an overview with a team and work table and a "waiting on you" list; a team canvas
+    that shows agents as `Alex (claude) – Orchestrator` with agent icons and solid, dotted and
+    dashed lines for approval and assignment, collaboration and independent review (pan, zoom,
+    search, fit; no lane backgrounds); an inbox with delivery and receipt state; a decisions
+    page; a Sessions page; and a page per task with its plan, evidence, checkpoints and locks.
+    Roles are derived from the board, not configured. Pages fit the window height and work
+    from 390 px wide.
+  - Acting as the human: answer or waive a question, reply to and acknowledge messages
+    addressed to the human, and approve an architecture brief, in place. Each runs the real
+    `swarm` command through one guarded `POST /api/act`; `--read-only` turns actions off.
+    Reads use read-only SQLite connections, a stored token and a Host check; the
+    Content-Security-Policy allows only per-run nonces and the page never builds markup from
+    board text.
+  - Inbox steward (`swarm steward`, `--once`): a system participant that reminds agents of
+    messages they leave unacknowledged, escalates offline recipients and critical messages to
+    the coordinator, reports dead letters, and never acknowledges on anyone's behalf. Its
+    reminders expire by themselves. From the page, "Review inboxes now" runs one review, and
+    an LLM reviewer can be started on its own `INBOX-n` task.
+  - One dashboard per user at a fixed address (port 8787, else the next free one, saved) with
+    a stable link: a later run from any repository adds its board to the running dashboard,
+    prints the same link and returns, and a board switcher lists them. `--reset-link` makes a
+    new token. `--port`, `--no-open` and `--observe` (no sweeps) are the other options.
+  - A seeded demo board (`examples/dashboard_demo.py`) and a screenshot script
+    (`scripts/dashboard_screenshots.py`) produce the pictures in the README and
+    `docs/images/`. They show seeded data, not live agents. See docs/web-dashboard.md.
 
 - Remove runtime compatibility defaults: all sends use canonical typed kinds,
   acknowledgement requires a bus receipt, replies/control acknowledgements do

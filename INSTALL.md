@@ -1,4 +1,4 @@
-# Installing agents-collaboration
+# Installing Hivewire
 
 Use a verified Python 3.11+ executable and Git. POSIX process supervision also
 uses `ps`. Provider CLIs and their authentication are separate prerequisites.
@@ -15,11 +15,11 @@ Check `python --version` or `py -3 --version`. A Windows `python3` command may b
 a Store stub; use the executable that actually reports 3.11 or newer. Read the
 shell's facts before choosing PowerShell or POSIX syntax.
 
-## Install the default published release
+## Install current Hivewire source
 
 Run from the destination repository root. These download the installer from
-`main`; its default payload ref is currently `v0.4.4`, not the working tree.
-Use `--ref REF` to select another reviewed tag/branch.
+`main`; the default payload ref is also `main`. A selected source must ship
+`hivewire.py` as its only launcher. Use `--ref REF` for a reviewed Hivewire ref.
 
 ```bash
 # bash, zsh, Git Bash
@@ -55,15 +55,19 @@ coverage or release readiness.
 
 ## Verify and start
 
+`hivewire.py` is the only supported launcher. The installer rejects payloads
+without it or with an obsolete command alias. It removes retired files recorded
+by a prior managed installation, using the same edited-file protection as other
+installed files. Board configuration and state are not removed.
+
 ```text
-PY .agents/skills/agents-collaboration/swarm.py version
-PY .agents/skills/agents-collaboration/swarm.py --json protocol
-PY .agents/skills/agents-collaboration/swarm.py environment
+PY .agents/skills/agents-collaboration/hivewire.py version
+PY .agents/skills/agents-collaboration/hivewire.py --json protocol
+PY .agents/skills/agents-collaboration/hivewire.py environment
 ```
 
 The reviewed current source uses CLI protocol **2**, database schema **12** and
-bus/message/event versions **1**. Inspect the installed protocol and skill rather
-than assuming an older published release has those contracts. Read `environment`
+bus/message/event versions **1**. Inspect the installed protocol and skill before using protocol-dependent automation. Read `environment`
 and the installed `SKILL.md`, then follow its join and goal workflow. Configure
 real executable project gates before integrating tasks, and approved executable
 outcome checks before verifying and closing a goal.
@@ -86,7 +90,7 @@ still owns its own `.agents/swarm/config.toml` and board.
 ## Updating
 
 ```text
-PY .agents/skills/agents-collaboration/swarm.py update
+PY .agents/skills/agents-collaboration/hivewire.py update
 ```
 
 `update` downloads the installer and uses its default release ref, or the explicit

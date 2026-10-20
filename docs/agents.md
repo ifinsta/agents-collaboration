@@ -2,7 +2,7 @@
 
 Which coding agents can join a pool, how readiness is checked, and how they are
 started headless. Any agent that can run a shell command can join by hand
-(`swarm join`). Adapters define CLI-specific probing, headless/interactive startup and optional
+(`hivewire join`). Adapters define CLI-specific probing, headless/interactive startup and optional
 native notification hooks.
 
 | Kind | Headless command | Sign-in check | Unattended flag | Recorded command-line check |
@@ -24,14 +24,14 @@ CLIs update themselves. Qoder went from 0.1.46 to 1.1.73 during one session and
 dropped two options its adapter passed. Before `spawn`, `launch` or `probe` uses
 a CLI, the tool checks every option it is about to pass against that CLI's own
 help. A missing option stops the launch and is named; `probe` reports it as
-`CHANGED`. Re-verify with `swarm probe --live` before relying on an adapter.
+`CHANGED`. Re-verify with `hivewire probe --live` before relying on an adapter.
 
 **DeepSeek models through opencode** are a configurable adapter route; actual
 availability requires the chosen provider/model and account. opencode accepts
 a DeepSeek API key, so:
 
 ```bash
-swarm spawn opencode --name ds1 --task T1 --model deepseek/deepseek-chat
+hivewire spawn opencode --name ds1 --task T1 --model deepseek/deepseek-chat
 ```
 
 **Kilo Code** has its own parallel mode (`--parallel`), which creates a git branch
@@ -42,10 +42,10 @@ config` beforehand.
 ## Readiness
 
 ```bash
-swarm probe                 # installed? version? signed in? (no requests sent)
-swarm probe --live          # also asks each installed CLI to reply READY (one request each)
-swarm agents                # agents already in the pool: state, OS, task, last heartbeat
-swarm send ds1 "free for the API task?" --kind question # acknowledge via bus; reply with --reply-to ID
+hivewire probe                 # installed? version? signed in? (no requests sent)
+hivewire probe --live          # also asks each installed CLI to reply READY (one request each)
+hivewire agents                # agents already in the pool: state, OS, task, last heartbeat
+hivewire send ds1 "free for the API task?" --kind question # acknowledge via bus; reply with --reply-to ID
 ```
 
 `probe` runs each CLI's own sign-in status command and reports only its exit
@@ -54,13 +54,17 @@ printed or stored.
 
 ## Spawning
 
-Prefer headless `spawn` plus `swarm sessions` for workers whose output must stay
+At assignment startup, the coordinator runs `hivewire workspace` to open or reuse
+the managed terminal and browser dashboard. Spawned executions appear as tabs
+automatically; opening the workspace does not start any provider agents.
+
+Prefer headless `spawn` plus `hivewire sessions` for workers whose output must stay
 auditable. The manager uses one existing terminal with per-execution tabs, leaves
 workers running when detached, and retains failed/exited sessions. The browser
 Sessions page shows the same captures. See [managed sessions](managed-sessions.md).
 
 ```bash
-swarm spawn <kind> --name <name> --task <task> [--model <model>] [--unattended] [--dry-run]
+hivewire spawn <kind> --name <name> --task <task> [--model <model>] [--unattended] [--dry-run]
 ```
 
 1. The service joins `<name>` and claims `<task>` (or the best task) for it, which
@@ -115,14 +119,14 @@ only. Hooks run as bounded owned commands, without shell interpolation. Defaults
 and failure handling are in the [bus contract](../skills/agents-collaboration/BUS.md#automatic-adapter-relay-and-hooks).
 
 At native tool boundaries, a wrapper can invoke
-`swarm bus hook --stage before-tool --enforce --json`. It returns current messages
+`hivewire bus hook --stage before-tool --enforce --json`. It returns current messages
 and control state and exits 2 when blocked. Map its result to that CLI's native
 hook protocol; allow recovery/diagnostic coordination commands so a paused worker
 can checkpoint, acknowledge and hand off. The engine does not modify vendor-global
 hook settings. A native bridge is needed to inject context into a CLI's active
 session; the common relay cannot preempt an unsupported model request.
 
-Externally started CLIs can run `swarm bus listen --as NAME --json`
+Externally started CLIs can run `hivewire bus listen --as NAME --json`
 as their relay. Its optional `--once` is an inspection/notification pass that
 releases receipts before returning. Supervised launch paths manage lifetime and
 lease release automatically. No relay signal authorizes killing a registry PID.

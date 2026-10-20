@@ -1,16 +1,40 @@
 # Managed headless sessions
 
+At assignment startup, the coordinator runs:
+
+```text
+hivewire workspace --as COORDINATOR
+```
+
+This finite command starts or reuses the hidden loopback dashboard, opens it in
+the browser once per board/server, and opens one visible session manager. Its
+agent tabs follow owned executions as they start; no provider agents are started
+by opening the workspace. Later calls reuse a live manager. Closing it leaves
+workers running, and the next call can reopen it. Use `workspace --reopen` to open
+the browser again after closing its tab. There is no browser-tab closure detector.
+
+Windows uses a named Windows Terminal window when available, otherwise a single
+new console. macOS uses Terminal; Linux uses an installed desktop terminal.
+SSH, CI, `SWARM_HEADLESS=1`, and Linux without a display skip desktop viewers.
+`workspace --no-open` explicitly starts only the hidden dashboard. If no terminal
+or browser can open, the command reports a fallback and never restarts workers.
+Concurrent startup requests share a short lease so they do not open duplicate
+viewers. `workspace --dry-run --json` previews startup without launching anything;
+`workspace --json` returns finite startup status without revealing the URL token.
+The dashboard starts as an observer (`--observe`); the session manager and normal
+engine commands continue their existing recovery sweeps.
+
 Use one terminal to inspect workers instead of opening a window for each CLI:
 
 ```text
-swarm sessions
+hivewire sessions
 # Equivalent console entry point, in the terminal you already opened:
-swarm console --managed
+hivewire console --managed
 ```
 
-`swarm` abbreviates your verified Python executable and the absolute installed
+`hivewire` abbreviates your verified Python executable and the absolute installed
 launcher path. From this source checkout, use
-`python skills/agents-collaboration/swarm.py sessions`.
+`python skills/agents-collaboration/hivewire.py sessions`.
 
 Each owned execution appears as a tab with its agent, task, assignment epoch,
 state and observed exit code. Failed and completed sessions remain listed.
@@ -24,8 +48,8 @@ It opens no additional terminal windows and needs neither Windows Terminal nor t
 Start a task-bound worker through the normal headless path, then inspect it:
 
 ```text
-swarm spawn opencode --name ola --task API-1
-swarm sessions
+hivewire spawn opencode --name ola --task API-1
+hivewire sessions
 ```
 
 Replace the kind, agent name and task ID with actual configured/eligible values.
@@ -33,7 +57,7 @@ Normal architecture, contracts, routing and permission checks still apply.
 Alternatively, start the requested kinds on eligible tasks from the manager:
 
 ```text
-swarm sessions --agents opencode,claude
+hivewire sessions --agents opencode,claude
 ```
 
 Existing active or uncertain sessions count toward the requested number of each
@@ -58,10 +82,10 @@ request does not establish observed exit. Unknown supervision requires inspectio
 ## Headless inspection and log following
 
 ```text
-swarm sessions --once --json
-swarm sessions --agents opencode,claude --once --json
-swarm execution logs EXECUTION_ID --lines 100 --json
-swarm execution logs EXECUTION_ID --stream supervisor --follow
+hivewire sessions --once --json
+hivewire sessions --agents opencode,claude --once --json
+hivewire execution logs EXECUTION_ID --lines 100 --json
+hivewire execution logs EXECUTION_ID --stream supervisor --follow
 ```
 
 Use an actual execution ID from the session list. `--once` is the finite machine

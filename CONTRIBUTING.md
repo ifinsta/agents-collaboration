@@ -56,7 +56,7 @@ Rules:
 
 Add it to `DEFAULTS["adapters"]` in `swarm_core.py` with its version, sign-in status
 and headless command. Mark it `verified: True` only after you have run
-`swarm probe --live <kind>` and a real `swarm spawn` with that CLI. Record the CLI
+`hivewire probe --live <kind>` and a real `hivewire spawn` with that CLI. Record the CLI
 version you verified in `docs/agents.md`.
 
 ## Documentation

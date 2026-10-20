@@ -1,7 +1,7 @@
 # Design
 
 The state-changing engine is a standard-library Python module behind the
-`swarm.py` launcher. It coordinates existing coding CLIs through one local
+`hivewire.py` launcher. It coordinates existing coding CLIs through one local
 SQLite/Git authority. Read the [skill](../skills/agents-collaboration/SKILL.md)
 for commands, [bus contract](../skills/agents-collaboration/BUS.md) for transport,
 and [security policy](../SECURITY.md) for the trust boundary.
@@ -14,7 +14,7 @@ distinguishes implemented behavior, recorded snapshots and acceptance still owed
 
 ```mermaid
 flowchart LR
-    Agents["Coding-agent CLIs"] --> CLI["swarm.py"]
+    Agents["Coding-agent CLIs"] --> CLI["hivewire.py"]
     CLI --> Engine["swarm_core.py"]
     Engine --> Board["Local SQLite board"]
     Engine --> Git["Git worktrees and target refs"]
@@ -140,7 +140,7 @@ performs normal sweeps unless `--observe` is set, so the overall process can sti
 update liveness/recovery state.
 
 ```text
-swarm dashboard --web --observe --no-open
+hivewire dashboard --web --observe --no-open
 ```
 
 This is an unreleased source feature. The current installer manifest file list

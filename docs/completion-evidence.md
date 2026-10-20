@@ -18,10 +18,10 @@ architecture brief and authorized actor context. Define executable checks before
 approving that brief:
 
 ```text
-swarm goal outcome health "The health result includes the running version" --check "Assert the returned fields against VERSION"
-swarm goal check health 1 --command '["python","checks/health.py"]'
-swarm goal architecture health --approve
-swarm goal commit health --assign
+hivewire goal outcome health "The health result includes the running version" --check "Assert the returned fields against VERSION"
+hivewire goal check health 1 --command '["python","checks/health.py"]'
+hivewire goal architecture health --approve
+hivewire goal commit health --assign
 ```
 
 Repeat `--command` for multiple argv arrays for one outcome. Setting the same
@@ -34,10 +34,10 @@ still follows the architecture's risk policy.
 After the tasks land:
 
 ```text
-swarm goal verify health --key health-final
-swarm verification list
-swarm verification show RECEIPT
-swarm goal close health
+hivewire goal verify health --key health-final
+hivewire verification list
+hivewire verification show RECEIPT
+hivewire goal close health
 ```
 
 `goal verify` runs configured project gates and every approved outcome command on
@@ -56,8 +56,8 @@ success event; closed goal policy remains immutable.
 For work landed through another integration path:
 
 ```text
-swarm record T1 --commit COMMIT --key imported-T1 --note "Why this commit carries the task"
-swarm verify T1 --key recheck-T1
+hivewire record T1 --commit COMMIT --key imported-T1 --note "Why this commit carries the task"
+hivewire verify T1 --key recheck-T1
 ```
 
 `record` checks target ancestry, current authorization and incident clearance,
@@ -73,8 +73,8 @@ task verification on the needed machine, a human can relate the receipt to that
 obligation:
 
 ```text
-swarm verify T1 --key required-machine
-swarm verification resolve-owed T1 --receipt RECEIPT --reason "What was checked on the required machine"
+hivewire verify T1 --key required-machine
+hivewire verification resolve-owed T1 --receipt RECEIPT --reason "What was checked on the required machine"
 ```
 
 The receipt must match the current assignment, commit, obligation and policy.
@@ -97,7 +97,7 @@ run for that subject. Inspect retained processes and artifacts before a human
 reconciles it:
 
 ```text
-swarm verification reconcile RECEIPT --confirm-stopped --reason "How cessation was confirmed"
+hivewire verification reconcile RECEIPT --confirm-stopped --reason "How cessation was confirmed"
 ```
 
 Reconciliation labels the old run `abandoned` by human attestation, retains its

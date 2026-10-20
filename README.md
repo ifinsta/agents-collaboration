@@ -1,4 +1,6 @@
-# agents-collaboration
+# Hivewire
+
+**Independent agents. Accountable teamwork.**
 
 Coordinate your existing coding agents through a local Git workflow with explicit
 ownership, recoverable work and verified integration.
@@ -19,6 +21,53 @@ See the [documentation index](docs/README.md) for current contracts and evidence
 [Walk through the generated example](docs/simulation.md), or choose a
 [use case](usecases/README.md). The simulation uses scripted workers and real
 Git/SQLite operations; it establishes no real-agent productivity advantage.
+To see the browser dashboard first, jump to [See it](#see-it).
+
+## See it
+
+`hivewire dashboard --web` opens a local browser view of the board: who is working on
+what, what is waiting on you, and how the team is arranged. These pictures are of a
+**seeded demo board**, not live agents. It is built with real `hivewire` commands by
+[examples/dashboard_demo.py](examples/dashboard_demo.py); the silent agent, the open
+incident and the two merged tasks are written straight into its database.
+
+![Overview: team, merge progress and what is waiting on you](docs/images/dashboard-overview.png)
+
+The overview shows each agent as *Name (cli) – Role* with a status, its task and its
+progress. The right column lists what needs a human: answer or waive a question,
+approve an architecture brief. A silent agent is flagged with the command that
+recovers its task.
+
+![Team canvas: owner, orchestrator, implementers, reviewer and the merge gate](docs/images/dashboard-team.png)
+
+The team canvas draws the working arrangement: approvals from the owner, task
+assignments from the orchestrator, review and collaboration links, and the inbox
+steward's reminders. Select an agent for its current work, relationships and recent
+activity. Pan, zoom, search and fit are on the canvas.
+
+| Inbox | Task |
+|---|---|
+| ![Inbox: a decision awaiting acknowledgement, with a reply box](docs/images/dashboard-inbox.png) | ![Task: plan, evidence and relationships](docs/images/dashboard-task.png) |
+
+The inbox lets you reply to and acknowledge messages. The **inbox steward** reminds
+agents of messages left unacknowledged for ten minutes and escalates to the
+orchestrator or to you. It never acknowledges on anyone's behalf.
+
+![The same board in a 500 px wide window](docs/images/dashboard-phone.png)
+
+Try it yourself; nothing here touches your own repositories or `~/.agents`:
+
+```text
+python examples/dashboard_demo.py          # prints the directory and the command
+cd <that directory>
+python <path to>/hivewire.py dashboard --web
+```
+
+Run `hivewire dashboard --web` in any repository. Every repository on the machine
+shares one stable address, with a board switcher. Guarded actions, `--read-only`
+and the access token are described in the [web dashboard guide](docs/web-dashboard.md).
+Regenerate these images with `python scripts/dashboard_screenshots.py` (needs Edge,
+Chrome or Chromium).
 
 ## When to use it
 
@@ -50,7 +99,7 @@ conflicts can still occur, and configured checks can be incomplete. Read the
 Requires Python 3.11+ and Git. Owned supervision on Linux/macOS also requires
 `ps`. Agent CLIs, credentials and optional terminal tools are supplied separately.
 
-To install the release selected by the public installer, from your Git repository:
+To install the current Hivewire source selected by the public installer, from your Git repository:
 
 ```bash
 # bash, zsh, Git Bash
@@ -62,9 +111,9 @@ curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/i
 irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
 ```
 
-The selected release may predate this unreleased source. Read its installed skill
-and inspect its protocol before using examples from this branch. To install a
-reviewed local checkout instead, replace `PATH_TO_PROJECT` with your target repo:
+The installer targets `main` and requires a Hivewire-only payload. For the
+unpublished working tree described here, install a reviewed local checkout;
+replace `PATH_TO_PROJECT` with your target repo:
 
 ```text
 python scripts/make_manifest.py --check
@@ -76,47 +125,56 @@ adds agent pointers; `--scaffold` separately creates an explained project config
 The tool does not import its example backlog. See [INSTALL.md](INSTALL.md) for
 source/release selection, shell rules, verification and updates.
 
+## Command name
+
+Use `hivewire`, launched as `python <skill directory>/hivewire.py` or the absolute
+command printed by `join` and `claim`. This is the only shipped and supported
+launcher. Install pointers, examples and CI use it. Board/configuration paths,
+environment variables and repository addresses are storage and integration
+identifiers; they do not define alternate commands.
+
 ## Workflow
 
-Below, `swarm` means the absolute launcher command printed by `join` or `claim`.
+Below, `hivewire` means the absolute launcher command printed by `join` or `claim`.
 Examples are outlines: fill templates with repository facts, replace placeholders
 and run all planned steps before advancing. Configure executable project gates in
 `.agents/swarm/config.toml` before integration.
 
 ```text
-swarm environment
-swarm join --as ann --kind claude
-swarm goal new health "Ship a health endpoint operators can rely on"
-swarm goal answer health --set done_looks_like="..." ...
-swarm goal outcome health "The endpoint returns the running version" --check "Assert version against VERSION"
-swarm goal check health 1 --command '["python","checks/health.py"]'
-swarm goal task health H-api "Add the endpoint" --scope src/ --serves 1 --done-when "The endpoint check passes"
-swarm goal architecture health --template
+hivewire environment
+hivewire join --as ann --kind claude
+hivewire workspace --as ann
+hivewire goal new health "Ship a health endpoint operators can rely on"
+hivewire goal answer health --set done_looks_like="..." ...
+hivewire goal outcome health "The endpoint returns the running version" --check "Assert version against VERSION"
+hivewire goal check health 1 --command '["python","checks/health.py"]'
+hivewire goal task health H-api "Add the endpoint" --scope src/ --serves 1 --done-when "The endpoint check passes"
+hivewire goal architecture health --template
 # Record every architecture answer and source evidence, then approve separately.
-swarm goal architecture health --approve
-swarm goal review health
-swarm goal commit health
+hivewire goal architecture health --approve
+hivewire goal review health
+hivewire goal commit health
 ```
 
 Each worker claims a task, reads its contract and works in its task worktree:
 
 ```text
-swarm next --as ann
-swarm explain H-api
-swarm plan --as ann --template
+hivewire next --as ann
+hivewire explain H-api
+hivewire plan --as ann --template
 # Record a complete plan and ordered steps, then start.
-swarm start --as ann
+hivewire start --as ann
 # Implement, test, commit and record every planned step with its evidence.
-swarm submit --as ann --evidence "Acceptance command and observed result"
-swarm merge --as ann
+hivewire submit --as ann --evidence "Acceptance command and observed result"
+hivewire merge --as ann
 ```
 
 After all goal tasks land, the coordinator or human runs the approved outcome
 checks and closes the goal against their retained receipt:
 
 ```text
-swarm goal verify health --key health-final
-swarm goal close health
+hivewire goal verify health --key health-final
+hivewire goal close health
 ```
 
 See [SKILL.md](skills/agents-collaboration/SKILL.md) for the complete workflow,
@@ -125,19 +183,24 @@ See [SKILL.md](skills/agents-collaboration/SKILL.md) for the complete workflow,
 
 ## Run and observe agents
 
-For one terminal with tabs over headless workers, use `swarm sessions` (or
-`swarm console --managed`). It retains failed/exited sessions and output; closing
+The coordinator automatically runs `hivewire workspace` at assignment startup.
+It opens one managed terminal with live agent tabs and the browser dashboard,
+reuses existing views, and leaves workers running when a viewer closes. Use
+`workspace --reopen` to reopen the browser, or `--no-open` for a headless server.
+
+For one terminal with tabs over headless workers, use `hivewire sessions` (or
+`hivewire console --managed`). It retains failed/exited sessions and output; closing
 the viewer leaves workers running. The browser dashboard also has a Sessions page.
 See [managed sessions](docs/managed-sessions.md) for controls and audit limits.
 
 These are independent launch examples; use free names and eligible task IDs.
 
 ```text
-swarm probe
-swarm spawn opencode --name ola --task API-1
-swarm launch claude --name ann --task DOCS-2
-swarm agents
-swarm console --agents opencode,claude
+hivewire probe
+hivewire spawn opencode --name ola --task API-1
+hivewire launch claude --name ann --task DOCS-2
+hivewire agents
+hivewire console --agents opencode,claude
 ```
 
 Task-bound `spawn` and `launch` use owned supervision and, by default, an automatic
@@ -153,7 +216,7 @@ bus and event versions 1**. JSON consumers read typed data under `result`.
 The [migration guide](docs/legacy-migration.md) lists removed options/settings.
 
 The [latest recorded broad runtime snapshot](docs/validation/managed-sessions/report.md)
-passed 425 Linux tests and 91 selected Windows checks, with three Windows skips.
+passed 425 Linux tests and 94 selected Windows cases (91 passed, 3 skipped).
 Both used the same frozen source; browser and real-terminal checks are recorded
 separately. Later working-tree changes require fresh source-bound validation. Hosted
 six-runtime acceptance and macOS remain unexecuted in these records.

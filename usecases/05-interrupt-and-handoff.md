@@ -9,24 +9,24 @@ and the [bus contract](../skills/agents-collaboration/BUS.md).
 Every fresh claim gets bounded terms. To negotiate custom terms **before claiming**:
 
 ```bash
-swarm contract offer H-api ann --active-time-min 60 --deadline-min 90
-swarm contract accept H-api --as ann
+hivewire contract offer H-api ann --active-time-min 60 --deadline-min 90
+hivewire contract accept H-api --as ann
 ```
 
 While working, Ann uses the current epoch printed by `explain`. Replace `EPOCH`
 and the other uppercase placeholders with actual values.
 
 ```bash
-swarm explain H-api
-swarm checkpoint --as ann --epoch EPOCH --note "endpoint stubbed" --next "wire version string"
+hivewire explain H-api
+hivewire checkpoint --as ann --epoch EPOCH --note "endpoint stubbed" --next "wire version string"
 ```
 
 ## Request and complete a stop
 
 ```bash
-swarm interrupt request ann --mode yield --reason "production incident takes priority" --deadline-min 10
-swarm interrupt show INTERRUPT_ID --as ann
-swarm explain H-api
+hivewire interrupt request ann --mode yield --reason "production incident takes priority" --deadline-min 10
+hivewire interrupt show INTERRUPT_ID --as ann
+hivewire explain H-api
 ```
 
 `attention` requests attention while allowing work; `pause`, `yield` and `cancel`
@@ -34,9 +34,9 @@ fence work through a new epoch. Cancel requires the human unless delegated. Ann
 reads the **new** epoch, acknowledges the control, and records a fresh checkpoint:
 
 ```bash
-swarm interrupt ack INTERRUPT_ID --epoch NEW_EPOCH --as ann
-swarm checkpoint --epoch NEW_EPOCH --as ann --note "safe stopping state" --next "remaining work"
-swarm interrupt complete INTERRUPT_ID --epoch NEW_EPOCH --checkpoint CHECKPOINT_ID --note "ready for successor" --as ann
+hivewire interrupt ack INTERRUPT_ID --epoch NEW_EPOCH --as ann
+hivewire checkpoint --epoch NEW_EPOCH --as ann --note "safe stopping state" --next "remaining work"
+hivewire interrupt complete INTERRUPT_ID --epoch NEW_EPOCH --checkpoint CHECKPOINT_ID --note "ready for successor" --as ann
 ```
 
 A completed **yield or cancel already hands off the task**. Do not issue a second
@@ -45,8 +45,8 @@ released work and remaining terms before claiming; expired terms require explici
 contract recovery.
 
 ```bash
-swarm explain H-api
-swarm claim H-api --as bo
+hivewire explain H-api
+hivewire claim H-api --as bo
 ```
 
 For a voluntary handoff without a yield/cancel control, use `handoff` with a fresh

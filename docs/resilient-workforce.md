@@ -83,12 +83,12 @@ a separate interface version, not a database migration.
 After defining outcomes and drafting tasks:
 
 ```text
-swarm goal architecture health --template
-swarm goal architecture health --set current_system="..." --set constraints="..." ... --evidence src/app.py
-swarm goal architecture health
-swarm goal architecture health --approve
-swarm goal review health
-swarm goal commit health --assign
+hivewire goal architecture health --template
+hivewire goal architecture health --set current_system="..." --set constraints="..." ... --evidence src/app.py
+hivewire goal architecture health
+hivewire goal architecture health --approve
+hivewire goal review health
+hivewire goal commit health --assign
 ```
 
 The template names the ten fields: current system, constraints, options,
@@ -104,10 +104,10 @@ Every fresh task claim accepts the configurable default contract shown in the
 claim output. Use an explicit offer when terms need negotiation before claiming:
 
 ```text
-swarm contract offer T1 ann --active-time-min 30 --deadline-min 45
-swarm contract show T1
-swarm contract accept T1 --as ann
-swarm claim T1 --as ann
+hivewire contract offer T1 ann --active-time-min 30 --deadline-min 45
+hivewire contract show T1
+hivewire contract accept T1 --as ann
+hivewire claim T1 --as ann
 ```
 
 An offer can instead specify `--deadline` as an absolute ISO timestamp with a
@@ -145,9 +145,9 @@ Already-held uncontracted work must checkpoint/release before reclaiming.
 ## Checkpoint and recovery
 
 ```text
-swarm explain T1
-swarm checkpoint --as ann --epoch 1 --note "progress and evidence" --next "concrete next step" --blockers "none"
-swarm release --as ann "Checkpoint retained; run the fixture test before continuing."
+hivewire explain T1
+hivewire checkpoint --as ann --epoch 1 --note "progress and evidence" --next "concrete next step" --blockers "none"
+hivewire release --as ann "Checkpoint retained; run the fixture test before continuing."
 ```
 
 Checkpoints record commit, tracked-diff fingerprint, status (including untracked
@@ -191,13 +191,13 @@ per-recipient leases through `bus receive/ack/retry/renew --json`. All current
 producers use typed messages; historical read-once records remain inspectable.
 
 ```text
-swarm send bob "Review the fixture decision" --as ann --kind decision --priority critical --key fixture-1 --task T1 --epoch 1
-swarm inbox --as bob --json
-swarm bus receive --as bob --consumer bob:boot-1 --json
-swarm bus ack 42 --as bob --consumer bob:boot-1 --token TOKEN --json
-swarm inbox --as bob --all --after 40 --limit 100 --json
-swarm messages dead-letter
-swarm messages resolve 42 --reason "The operator reviewed and deferred this decision"
+hivewire send bob "Review the fixture decision" --as ann --kind decision --priority critical --key fixture-1 --task T1 --epoch 1
+hivewire inbox --as bob --json
+hivewire bus receive --as bob --consumer bob:boot-1 --json
+hivewire bus ack 42 --as bob --consumer bob:boot-1 --token TOKEN --json
+hivewire inbox --as bob --all --after 40 --limit 100 --json
+hivewire messages dead-letter
+hivewire messages resolve 42 --reason "The operator reviewed and deferred this decision"
 ```
 
 Envelope version 1 includes the message/thread IDs, typed kind, sender,
@@ -236,12 +236,12 @@ general secret detection. Existing stored text is not retroactively scrubbed.
 ## Targeted interrupts and handoff
 
 ```text
-swarm interrupt request bob --mode pause --reason "Review the interface boundary" --key pause-1
-swarm interrupt show 1
-swarm interrupt ack 1 --as bob --epoch 2
-swarm checkpoint --as bob --epoch 2 --note "progress and blockers" --next "review the fixture"
-swarm interrupt complete 1 --as bob --epoch 2 --checkpoint 7 --note "Stopped safely at this checkpoint"
-swarm interrupt resume 1
+hivewire interrupt request bob --mode pause --reason "Review the interface boundary" --key pause-1
+hivewire interrupt show 1
+hivewire interrupt ack 1 --as bob --epoch 2
+hivewire checkpoint --as bob --epoch 2 --note "progress and blockers" --next "review the fixture"
+hivewire interrupt complete 1 --as bob --epoch 2 --checkpoint 7 --note "Stopped safely at this checkpoint"
+hivewire interrupt resume 1
 ```
 
 Only the coordinator or human requests control. `attention` asks for a response
@@ -260,9 +260,9 @@ window is `[interrupts] deadline_min=2`; an absolute `--deadline` or
 `--deadline-min` may override it within a maximum of 24 hours.
 
 ```text
-swarm handoff --as bob --epoch 2 --checkpoint 7 --note "what remains and the evidence"
-swarm checkpoint --as ann --task T1 --epoch 2 --note "operator recovery snapshot" --next "replan the fixture"
-swarm handoff --as ann --task T1 --epoch 2 --checkpoint 8 --note "owner timed out; replan preserved work"
+hivewire handoff --as bob --epoch 2 --checkpoint 7 --note "what remains and the evidence"
+hivewire checkpoint --as ann --task T1 --epoch 2 --note "operator recovery snapshot" --next "replan the fixture"
+hivewire handoff --as ann --task T1 --epoch 2 --checkpoint 8 --note "owner timed out; replan preserved work"
 ```
 
 After timeout the control record escalates once and an operator can capture a
@@ -289,11 +289,11 @@ uncommitted edits. Handoff waits until an in-flight merge releases its queue lea
 ## Independent incident review
 
 ```text
-swarm incident open T1 --signal "The fixture may not cover the returned value" --reviewer cat --key fixture-review-1
-swarm incident brief 1
-swarm incident review 1 --as cat --snapshot <digest> --verdict not_confirmed --evidence diff:<hash> --remediation "Keep the fixture and require the configured acceptance gate"
-swarm incident resolve 1 --revision 1 --outcome cleared --reason "Independent evidence did not confirm the suspected defect"
-swarm incident refresh 1 --revision 1 --reviewer cat --reason "The code or policy changed; inspect the new committed evidence"
+hivewire incident open T1 --signal "The fixture may not cover the returned value" --reviewer cat --key fixture-review-1
+hivewire incident brief 1
+hivewire incident review 1 --as cat --snapshot <digest> --verdict not_confirmed --evidence diff:<hash> --remediation "Keep the fixture and require the configured acceptance gate"
+hivewire incident resolve 1 --revision 1 --outcome cleared --reason "Independent evidence did not confirm the suspected defect"
+hivewire incident refresh 1 --revision 1 --reviewer cat --reason "The code or policy changed; inspect the new committed evidence"
 ```
 
 The coordinator/human opens an incident with a concrete signal; a coordinator
@@ -334,12 +334,12 @@ event. Manual and detector incidents share the same independent review path.
 ## Scoped memory and learning
 
 ```text
-swarm memory propose "Create the task fixture before the acceptance gate" --applicability "For this repository's isolated interface tests" --event 42 --commit <sha> --key fixture-lesson-1
-swarm memory show 1
-swarm memory verify 1 --as bob --revision 1 --confidence medium --reason "Inspected the pinned commit and source event; the applicability matches"
-swarm memory search fixture --task T1
-swarm memory mark 1 --revision 2 --state contradicted --event 51 --reason "New evidence contradicts this applicability"
-swarm memory retire 1 --revision 3 --reason "Retain the historical lesson but stop offering it as current context"
+hivewire memory propose "Create the task fixture before the acceptance gate" --applicability "For this repository's isolated interface tests" --event 42 --commit <sha> --key fixture-lesson-1
+hivewire memory show 1
+hivewire memory verify 1 --as bob --revision 1 --confidence medium --reason "Inspected the pinned commit and source event; the applicability matches"
+hivewire memory search fixture --task T1
+hivewire memory mark 1 --revision 2 --state contradicted --event 51 --reason "New evidence contradicts this applicability"
+hivewire memory retire 1 --revision 3 --reason "Retain the historical lesson but stop offering it as current context"
 ```
 
 Candidates start provisional and need a source event, addressed message or
@@ -383,7 +383,7 @@ policy or code automatically.
 
 ## Harness protocol and operator diagnostics
 
-Use `swarm --json status`, `swarm whoami --as NAME --json` or JSON at any nested
+Use `hivewire --json status`, `hivewire whoami --as NAME --json` or JSON at any nested
 command depth. One result envelope contains `protocol_version`, `ok`,
 `exit_code`, `command`, typed `result`, human-readable `output`, `error`,
 `event_cursor` and `unread`. Read typed data rather than parsing human prose.
@@ -392,8 +392,8 @@ checks. Mutations return the actor/task where applicable; commands that already
 produce JSON put it in `result`. Inbox/environment data is available only under `result`; the old top-level
 JSON aliases have been removed in CLI protocol v2.
 
-`swarm --protocol-version 2 --json protocol` discovers capabilities and refuses
-unsupported versions. `swarm events --after 0 --limit 100 --json` replays durable
+`hivewire --protocol-version 2 --json protocol` discovers capabilities and refuses
+unsupported versions. `hivewire events --after 0 --limit 100 --json` replays durable
 events in ascending ID order (maximum 1,000). Store `next_cursor`; an empty page
 retains the previous cursor. Unknown event versions are refused. Event/message
 contents remain untrusted data. Local agent names remain unauthenticated.
@@ -406,7 +406,7 @@ forced kill may produce no envelope; retry/replay the durable state rather than
 assuming success. JSON blocks interactive launchers and terminals: use
 `--dry-run`, or `--once` for monitor/dashboard.
 
-`swarm doctor --json` gives typed issue codes, severity, task and safe next action.
+`hivewire doctor --json` gives typed issue codes, severity, task and safe next action.
 It checks ownership/contract/reviewer/control drift, local Git artifacts,
 completion/check provenance, missing evidence pins and owed checks. Health errors
 exit 1; warnings remain visible with exit 0. Remote branches are queried only

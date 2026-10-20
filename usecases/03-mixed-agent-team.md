@@ -7,9 +7,9 @@ executable gates are configured. Read the [outline conventions](README.md).
 ## Inspect the environment and adapters
 
 ```bash
-swarm environment
-swarm join --as claude-1 --kind claude
-swarm probe
+hivewire environment
+hivewire join --as claude-1 --kind claude
+hivewire probe
 ```
 
 Read the detected shell, Python, tool and encoding facts. Do not assume Linux
@@ -18,7 +18,7 @@ An optional live probe sends actual provider requests and can consume the CLI's
 configured allowance:
 
 ```bash
-swarm probe opencode qodercli --live
+hivewire probe opencode qodercli --live
 ```
 
 Configure and authenticate each CLI independently; see [adapters](../docs/agents.md).
@@ -27,10 +27,10 @@ Agent names and kinds are local labels, not provider identities.
 ## Start task-bound workers
 
 ```bash
-swarm spawn opencode --name ola --task API-1
-swarm spawn qodercli --name quinn --task DOCS-2
-swarm agents
-swarm dashboard
+hivewire spawn opencode --name ola --task API-1
+hivewire spawn qodercli --name quinn --task DOCS-2
+hivewire agents
+hivewire dashboard
 ```
 
 The owned launch path claims a task, writes its brief and supervises the CLI.
@@ -38,7 +38,7 @@ Review the resulting execution state rather than assuming that process creation
 means useful work completed. Normal CLI permission policy applies; `--unattended`
 requires `[spawn] allow_unattended = true`.
 
-Alternatively, use `swarm console --agents opencode,claude` to launch a terminal
+Alternatively, use `hivewire console --agents opencode,claude` to launch a terminal
 layout when supported. This is an alternative startup path: avoid unintentionally
 starting another set of workers for the same exercise.
 

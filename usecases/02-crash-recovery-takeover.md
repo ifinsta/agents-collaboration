@@ -11,11 +11,11 @@ offline and later orphan the task; a closed terminal alone does not prove that
 all owned descendants stopped.
 
 ```bash
-swarm agents
-swarm status --all
-swarm explain H-api
-swarm execution list
-swarm allocation show H-api
+hivewire agents
+hivewire status --all
+hivewire explain H-api
+hivewire execution list
+hivewire allocation show H-api
 ```
 
 Resolve any unknown owned execution or incomplete allocation through its documented
@@ -25,9 +25,9 @@ to signal a process. See [process supervision](../docs/process-supervision.md).
 ## Resume retained work
 
 ```bash
-swarm claim H-api --take-over --as bo
-swarm explain H-api
-swarm plan --as bo
+hivewire claim H-api --take-over --as bo
+hivewire explain H-api
+hivewire plan --as bo
 ```
 
 Read the preserved plan, completed steps, branch, worktree and current epoch.
@@ -35,7 +35,7 @@ Resolve critical questions and replan only when needed. A retained plan returns
 to planning or awaiting answers; it must pass `start` again before further steps.
 
 ```bash
-swarm start --as bo
+hivewire start --as bo
 ```
 
 Continue the remaining recorded steps with real evidence, commit and follow normal

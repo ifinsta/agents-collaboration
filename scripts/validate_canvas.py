@@ -22,7 +22,9 @@ def source_hashes():
     return {
         name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest()
         for name in (
+            "skills/agents-collaboration/hivewire.py",
             "skills/agents-collaboration/swarm_web.py",
+            "skills/agents-collaboration/swarm_fonts.css",
             "skills/agents-collaboration/swarm_sessions.py",
             "skills/agents-collaboration/swarm_core.py",
             "tests/test_web_dashboard.py",
@@ -75,7 +77,7 @@ def main():
         case.join("cy")
         case.join("drew")
         with case.board() as sw:
-            swarm_web.register(sw, "python swarm.py", str(fixtures.SWARM))
+            swarm_web.register(sw, "python hivewire.py", str(fixtures.SWARM))
         case.to_ready("bob", "T1", "src/proof.txt")
         case.sw("--as", "cy", "claim", "T2")
         case.sw("--as", "cy", "send", "bob", "Please review this boundary", "--kind", "review_request")

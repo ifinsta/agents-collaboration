@@ -1,0 +1,25 @@
+test_ec001_duplicate_live_name_refused_and_resume_allowed (test_swarm.JoiningAndRoles.test_ec001_duplicate_live_name_refused_and_resume_allowed) ... ok
+test_ec001_ec015_solo_then_peers (test_swarm.JoiningAndRoles.test_ec001_ec015_solo_then_peers) ... ok
+test_ec014_bad_names_refused (test_swarm.JoiningAndRoles.test_ec014_bad_names_refused) ... ok
+test_ec017_coordinator_promoted_when_coordinator_goes_silent (test_swarm.JoiningAndRoles.test_ec017_coordinator_promoted_when_coordinator_goes_silent) ... ok
+test_ec022_human_cannot_be_impersonated_by_an_agent (test_swarm.JoiningAndRoles.test_ec022_human_cannot_be_impersonated_by_an_agent) ... ok
+test_ec005_swarm_cap (test_swarm.FullSwarm.test_ec005_swarm_cap) ... ok
+test_ec029_ec038_capabilities_are_checked (test_swarm.Claiming.test_ec029_ec038_capabilities_are_checked) ... ok
+test_ec033_concurrent_claims_have_one_winner (test_swarm.Claiming.test_ec033_concurrent_claims_have_one_winner) ... ok
+test_ec034_one_task_at_a_time (test_swarm.Claiming.test_ec034_one_task_at_a_time) ... ok
+test_ec035_reservations_are_respected (test_swarm.Claiming.test_ec035_reservations_are_respected) ... ok
+test_ec036_dependencies_must_be_done (test_swarm.Claiming.test_ec036_dependencies_must_be_done) ... ok
+test_ec065_declared_locks_are_taken_at_claim (test_swarm.Claiming.test_ec065_declared_locks_are_taken_at_claim) ... ok
+test_ec072_cannot_act_from_another_agents_worktree (test_swarm.Claiming.test_ec072_cannot_act_from_another_agents_worktree) ... ok
+test_ec044_no_start_without_plan (test_swarm.Planning.test_ec044_no_start_without_plan) ... ok
+test_ec045_every_critical_question_must_be_answered (test_swarm.Planning.test_ec045_every_critical_question_must_be_answered) ... ok
+test_ec046_ec050_ec051_unknown_opens_a_question_and_answers_force_a_replan (test_swarm.Planning.test_ec046_ec050_ec051_unknown_opens_a_question_and_answers_force_a_replan) ... ok
+test_ec047_listed_unknowns_must_be_asked (test_swarm.Planning.test_ec047_listed_unknowns_must_be_asked) ... ok
+test_ec054_critical_question_mid_work_pauses_the_task (test_swarm.Planning.test_ec054_critical_question_mid_work_pauses_the_task) ... ok
+test_ec056_ec057_steps_in_order_with_evidence (test_swarm.Planning.test_ec056_ec057_steps_in_order_with_evidence) ... ok
+test_ec060_overlapping_scope_needs_acknowledgement (test_swarm.Planning.test_ec060_overlapping_scope_needs_acknowledgement) ... ok
+
+----------------------------------------------------------------------
+Ran 20 tests in 89.895s
+
+OK

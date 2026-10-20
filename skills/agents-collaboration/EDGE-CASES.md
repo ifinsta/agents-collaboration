@@ -5,8 +5,8 @@ translated to a pool of coding agents. Each says how it is handled.
 
 | Status | Meaning |
 |---|---|
-| **Tested** | Enforced by `swarm.py` and proved by a test in `tests/` (named `test_ecNNN_...`) |
-| **Enforced** | Enforced by `swarm.py`, not yet covered by its own test |
+| **Tested** | Enforced by `hivewire.py` and proved by a test in `tests/` (named `test_ecNNN_...`) |
+| **Enforced** | Enforced by `hivewire.py`, not yet covered by its own test |
 | **Rule** | A rule in `SKILL.md` the agent must follow; the service cannot check it |
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
@@ -30,7 +30,7 @@ Totals: 347 cases. 262 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
 | EC-011 | Clocks disagree between machines. | One board on one host, one clock. Pools across machines are not supported. | Open |
 | EC-012 | An agent leaves while holding a task. | Refused without a handoff note; with one, the task is released. | Tested |
 | EC-013 | A returning agent finds its old name offline. | It reclaims the same identity, and the same slot when free. | Enforced |
-| EC-014 | A name is unsafe for paths, branches or shells. | Names are 2–32 characters of `a-z0-9-`; `human` and `swarm` are reserved. | Tested |
+| EC-014 | A name is unsafe for paths, branches or shells. | Names are 2–32 characters of `a-z0-9-`; `human` and `hivewire` are reserved. | Tested |
 
 ## B. Pool awareness and roles
 
@@ -238,7 +238,7 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | Id | Situation | Handling | Status |
 |---|---|---|---|
 | EC-148 | A worktree lacks the git-ignored local files the project needs (`.env`), so gates and servers fail there. | `[worktree] copy` lists files copied from the main checkout at claim; only git-ignored ones, so they can never be committed. | Tested |
-| EC-149 | The human cannot see what the agents are doing, or start more of them, without reading logs. | The coordinator is told to ask, once per board: open a console? Yes opens it; no is recorded and not asked again. | Tested |
+| EC-149 | The human cannot see what the agents are doing, or start more of them, without reading logs. | The coordinator runs `hivewire workspace` at assignment startup: one managed terminal with agent tabs and the browser dashboard. Existing views are reused; explicit decline is respected. | Tested |
 | EC-150 | The console's monitor pane competes with a monitor that already runs. | The pane observes the event stream instead of holding the monitor lease. | Tested |
 | EC-151 | A pane command contains the terminal's separator (`;` in Windows Terminal) and is split into two commands. | Pane commands are checked and refused before anything opens. | Tested |
 | EC-152 | The machine has no split-capable terminal, or no display at all (a server over SSH). | Windows Terminal, else tmux plus a new terminal window, else one window per pane, else tmux attach instructions or one printed command per pane. | Tested |
@@ -247,7 +247,7 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-155 | A CLI cannot take a first message on its command line (Qoder's interactive mode). | The pane prints the exact first message to paste. | Tested |
 | EC-156 | Claude Code does not look in `.agents/skills/`. | `install.py --claude` adds a pointer skill in `.claude/skills/`; it refuses an unowned/edited destination unless replacement is explicitly forced. | Tested |
 | EC-157 | Every repository needs its own install. | `install.py --user` installs once into the home folder; the tool works in any repository. | Tested |
-| EC-158 | An installed copy falls behind the releases. | `swarm version` and `swarm update`, which reinstalls and keeps the pointers already present. | Tested |
+| EC-158 | An installed copy falls behind the releases. | `hivewire version` and `hivewire update`, which reinstalls and keeps the pointers already present. | Tested |
 
 ## P. Turning a piece of work into tasks (v0.3.0)
 
@@ -259,12 +259,12 @@ earlier board, v0.1.0 met these within minutes. Each is now handled.
 | EC-162 | A task has no way to tell when it is finished. | Every task needs a done-check. | Tested |
 | EC-163 | A task is too large for one agent to finish, verify and merge. | Size L fails review until it is split. | Tested |
 | EC-164 | A task depends on work that does not exist. | Refused when the task is drafted. | Tested |
-| EC-165 | An agent starts a task blind to what its inputs actually produced. | `swarm context`, the claim output and the brief show each task it builds on: what it produced, how it was proved, its files and commit, anything still owed. | Tested |
+| EC-165 | An agent starts a task blind to what its inputs actually produced. | `hivewire context`, the claim output and the brief show each task it builds on: what it produced, how it was proved, its files and commit, anything still owed. | Tested |
 | EC-166 | An agent does not know who consumes its result or what they need. | The same context shows every task waiting on it, with that task's done-check and scope. | Tested |
 | EC-167 | Work is assigned to an agent whose machine cannot verify it. | `goal commit --assign` gives the first wave to free agents whose detected and declared capabilities match. | Tested |
 | EC-168 | The tool assumes a project layout, settings or a pre-written backlog. | Config and backlog are optional; the installer creates them only with `--scaffold`; goals produce the tasks. | Tested |
 | EC-169 | A goal is declared done because its tasks merged, though its outcomes were never checked. | Closure needs landed task commits and a current passed engine receipt for executable outcome checks; prose and fabricated done rows cannot close it. | Tested |
-| EC-171 | Example content shipped with the tool is imported as real work (v0.3.1's `--scaffold` put two placeholder tasks on every new board). | `--scaffold` creates only a config of explained defaults that names no backlog; the example backlog carries a marker, and the tool never imports it; `swarm sync` withdraws tasks imported from it that nobody touched. | Tested |
+| EC-171 | Example content shipped with the tool is imported as real work (v0.3.1's `--scaffold` put two placeholder tasks on every new board). | `--scaffold` creates only a config of explained defaults that names no backlog; the example backlog carries a marker, and the tool never imports it; `hivewire sync` withdraws tasks imported from it that nobody touched. | Tested |
 | EC-172 | The config names a backlog file that does not exist. | Reported as a warning; the board stays as it is. | Tested |
 | EC-173 | An agent answers a goal question with "unknown" and is told every question is answered, so it believes the interrogation is finished. | An unknown is not counted: the output says which questions wait, and which question each became and who it went to. Found by the published simulation. | Tested |
 | EC-170 | On Windows, the tool's output through a pipe (how agents read it) is cp1252: "§" arrives garbled and "→" in a note crashes the command. | Output is UTF-8 on every OS, whatever the console or pipe. | Tested |
@@ -277,7 +277,7 @@ Found by using the v0.2.0 console for real.
 |---|---|---|---|
 | EC-174 | Views wider or taller than their pane wrap into noise, and the board scrolls past the part that matters. | Every view reads its pane's size: the board fits its height (most important lines first, events fill the rest), and lines are clipped or wrapped to the width. | Tested |
 | EC-175 | Events print as raw records: UTC timestamps, internal kinds, Python lists. | Events read as sentences in local time, with colour by kind when the pane is a terminal (`NO_COLOR` turns it off). | Tested |
-| EC-176 | Long-running panes keep running old code after `swarm update`. | The monitor and the board notice a changed `swarm.py` and restart themselves on it. | Enforced |
+| EC-176 | Long-running panes keep running old code after `hivewire update`. | The monitor and the board notice a changed `hivewire.py` and restart themselves on it. | Enforced |
 | EC-177 | Leaving the launcher silently drops the pane to a bare shell, and the person starts an agent by hand, in the main checkout, without a brief. | Leaving says what the pane now is, how to reopen the menu, and why the menu is the safer way. | Tested |
 | EC-178 | The person wants an agent present without handing it a task yet. | No-task launches are refused before registration. Add or release an eligible task before starting a supervised worker. | Tested |
 | EC-179 | The person wants an agent on a particular task, not whatever is next. | The launcher lists the open tasks this machine can take and starts the agent on the chosen one. | Tested |
@@ -286,9 +286,9 @@ Found by using the v0.2.0 console for real.
 | EC-191 | A bad, missing or unrelated commit in a recorded intent completes a task that was never merged. | Only git's answer counts: the commit must be an ancestor of the target. A malformed, unknown or unlanded commit never completes anything. | Tested |
 | EC-192 | The live merge and recovery both record the same merge (a slow acknowledgement racing a sweep), so it completes twice: two events, two nudges. | One compare-and-set (`state<>'done'`) in one place: exactly one caller wins and emits the event; the other changes nothing. | Tested |
 | EC-193 | The merger died holding the queue, and everyone waits out the lease (45 minutes). | A queue lease whose holder is offline is broken at once. | Tested |
-| EC-194 | The acknowledgement is lost and the agent retries `swarm merge`. | If the agent's last task is already merged, `merge` says so and changes nothing. | Tested |
+| EC-194 | The acknowledgement is lost and the agent retries `hivewire merge`. | If the agent's last task is already merged, `merge` says so and changes nothing. | Tested |
 | EC-187 | A project's gate (its whole test suite) runs longer than the agent timeout, so the merging agent is marked offline in the middle of its own merge. Seen in a real project: a 26-minute gate. | While gates run, the merge renews the agent's heartbeat and the queue's lease every `keepalive_sec` (default 30 s). | Tested |
-| EC-188 | The merge queue's lease is broken while a merge is still running, so two merges could advance the target at once. | Before the target moves, the merge checks it still holds the queue. If not, it stops, touches nothing, and asks for `swarm merge` again. | Tested |
+| EC-188 | The merge queue's lease is broken while a merge is still running, so two merges could advance the target at once. | Before the target moves, the merge checks it still holds the queue. If not, it stops, touches nothing, and asks for `hivewire merge` again. | Tested |
 | EC-182 | An agent CLI updates itself and drops options its adapter passes (Qoder went from 0.1.46 to 1.1.73 mid-session and dropped `-q` and `--max-turns`). | Before `spawn`, `launch` or `probe` uses a CLI, every option it is about to pass is checked against that CLI's own `--help`. A missing one stops the launch and names the options. | Tested |
 | EC-183 | An interactive CLI cannot take a first message, and the message printed before it opens is hidden behind its screen, so the agent starts without its instructions. | Adapters pass the first message where the CLI allows it (Qoder's `-i`). Otherwise it goes on the clipboard, and the launch waits for Enter before the CLI starts. | Enforced |
 | EC-184 | An agent exits before doing anything, and its task is held as orphaned, out of the pool. | A task with no plan, no step, no commit and nothing uncommitted goes straight back to the pool, and its empty worktree is removed. Boards that already hold such orphans are cleaned on the next command. | Tested |

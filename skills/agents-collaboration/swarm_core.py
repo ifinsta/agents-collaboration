@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-"""swarm: coordination for up to N coding agents working on one git repository.
+"""Hivewire: coordination for up to N coding agents working on one git repository.
 
 One file, standard library only (Python 3.11+). State is a SQLite database in
 the repository's git common directory (``.git/swarm/``), so every worktree of a
 clone shares it and nothing is ever committed. Every command runs a sweep first
 (liveness, leases, escalations), so the protocol stays correct even when no
-monitor is running; ``swarm monitor`` adds timely nudges and an event stream.
+monitor is running; ``hivewire monitor`` adds timely nudges and an event stream.
 
 The protocol it enforces is in SKILL.md next to this file. In short:
 
@@ -13,7 +13,7 @@ The protocol it enforces is in SKILL.md next to this file. In short:
          -> step done, in order -> submit -> merge (queue, rebase, gates,
          advance target) -> done -> next
 
-Run ``swarm.py -h`` for commands. Agent identity is ``--as NAME`` or ``SWARM_AS``.
+Run ``hivewire.py -h`` for commands. Agent identity is ``--as NAME`` or ``SWARM_AS``.
 """
 
 from __future__ import annotations
@@ -35,7 +35,7 @@ from pathlib import Path
 __version__ = "0.4.4"
 REPO = "ifinsta/agents-collaboration"
 HERE = Path(__file__).resolve().parent
-LAUNCHER = HERE / "swarm.py"  # the entry point: the path agents are told to run
+LAUNCHER = HERE / "hivewire.py"  # the entry point: the path agents are told to run
 SCHEMA_VERSION = 12
 PROTOCOL_VERSION = 2
 EVENT_VERSION = 1
@@ -64,7 +64,7 @@ DEFAULT_CHECKLIST = {
     "dependencies": "What must already exist, and have you confirmed it does?",
     "risks": "What could go wrong, and who or what would it affect?",
     "rollback": "If this turns out wrong after merge, how is it undone?",
-    "unknowns": "What do you not know that matters? ('none', or ask each one with `swarm ask`)",
+    "unknowns": "What do you not know that matters? ('none', or ask each one with `hivewire ask`)",
 }
 
 DEFAULTS: dict = {
@@ -593,7 +593,7 @@ class OwnedProcess:
 
                 if signal.getsignal(signal.SIGCHLD) != signal.SIG_DFL:
                     raise SwarmError(
-                        "Owned process groups require the default SIGCHLD handler so their anchor cannot be reaped elsewhere. Use a clean swarm CLI process."
+                        "Owned process groups require the default SIGCHLD handler so their anchor cannot be reaped elsewhere. Use a clean hivewire CLI process."
                     )
                 if not shutil.which("ps"):
                     raise SwarmError(
@@ -1185,7 +1185,7 @@ class Swarm:
             version = self.meta("schema_version")
             if version and int(version) > SCHEMA_VERSION:
                 self.db.close()
-                raise SwarmError(f"The board was written by a newer swarm (schema {version}). Update swarm.py.")
+                raise SwarmError(f"The board was written by a newer hivewire (schema {version}). Update hivewire.py.")
         try:
             self.db.execute("PRAGMA journal_mode=WAL")
             with self.tx():
@@ -1417,7 +1417,7 @@ class Swarm:
     def task(self, task_id: str) -> sqlite3.Row:
         row = self.db.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone()
         if not row:
-            raise SwarmError(f"There is no task {task_id}. `swarm status --all` lists them.")
+            raise SwarmError(f"There is no task {task_id}. `hivewire status --all` lists them.")
         return row
 
     def update_task(self, task_id: str, **fields) -> None:
@@ -1456,9 +1456,9 @@ class Swarm:
             raise SwarmError("Say who you are: --as NAME (or set SWARM_AS).")
         row = self.agent(who)
         if not row or row["state"] in ("left",):
-            raise SwarmError(f"{who} has not joined. Run `swarm join --as {who} --kind <cli>` first.")
+            raise SwarmError(f"{who} has not joined. Run `hivewire join --as {who} --kind <cli>` first.")
         if row["state"] == "offline":
-            raise SwarmError(f"{who} was marked offline (no heartbeat). Run `swarm join --as {who} --resume`.")
+            raise SwarmError(f"{who} was marked offline (no heartbeat). Run `hivewire join --as {who} --resume`.")
         self.update_agent(who, heartbeat_at=iso())
         return row
 
@@ -1474,18 +1474,18 @@ class Swarm:
         row = self.require_agent(who)
         task_id = task_id or row["task"]
         if not task_id:
-            raise SwarmError(f"{who} holds no task. `swarm next --as {who}` asks for one.")
+            raise SwarmError(f"{who} holds no task. `hivewire next --as {who}` asks for one.")
         task = self.task(task_id)
         if task["assignee"] != who or task["state"] not in HELD:
             raise SwarmError(
                 f"{who} no longer holds {task_id} (holder: {task['assignee']}, state {task['state']}). "
-                "Stop work on it; read `swarm whoami`."
+                "Stop work on it; read `hivewire whoami`."
             )
         self._guard_cwd(who, task_id)
         client_epoch = getattr(self, "client_epoch", None)
         if client_epoch is not None and client_epoch != task["epoch"]:
             raise SwarmError(
-                f"Stale epoch {client_epoch}; {task_id} is epoch {task['epoch']}. Read `swarm explain {task_id}`."
+                f"Stale epoch {client_epoch}; {task_id} is epoch {task['epoch']}. Read `hivewire explain {task_id}`."
             )
         if not recovery:
             allocation_permission(self, task_id)
@@ -1495,7 +1495,7 @@ class Swarm:
             ).fetchone()
             if stopped:
                 raise SwarmError(
-                    f"Execution {stopped['id']} is stopping. Checkpoint, exit and inspect `swarm execution show {stopped['id']}` before doing more work."
+                    f"Execution {stopped['id']} is stopping. Checkpoint, exit and inspect `hivewire execution show {stopped['id']}` before doing more work."
                 )
             interrupt_permission(self, task)
             contract_permission(self, task, working=working, settling=settling)
@@ -1592,7 +1592,7 @@ class Swarm:
                 self.event("task_orphaned", t["assignee"], t["id"], "holder offline; branch and worktree kept")
                 self.notify_coordinator(
                     f"{t['id']} is orphaned: {t['assignee']} went offline. "
-                    f"Another agent may `swarm claim {t['id']} --take-over`.",
+                    f"Another agent may `hivewire claim {t['id']} --take-over`.",
                     t["id"],
                 )
         for t in self.db.execute("SELECT * FROM tasks WHERE state='orphaned'").fetchall():
@@ -1796,7 +1796,7 @@ def store_message(
     if version != 1 or priority not in ("normal", "high", "critical"):
         raise SwarmError("Supported envelope version is 1; priority is normal, high or critical.")
     if kind not in MESSAGE_KINDS:
-        raise SwarmError("Unsupported message kind. Use `swarm send --help` for the typed envelope kinds.")
+        raise SwarmError("Unsupported message kind. Use `hivewire send --help` for the typed envelope kinds.")
     body = bounded_text(sw, body)
     for value in (thread_id, correlation_id, idempotency_key):
         if value is not None and (not value.strip() or len(value) > 200):
@@ -2111,7 +2111,7 @@ def bus_control_view(sw: Swarm, who: str) -> dict:
         reason = "Global pause: checkpoint and await authorized resume."
     if task:
         if getattr(sw, "client_epoch", None) not in (None, task["epoch"]):
-            reason = f"Stale task epoch; inspect swarm explain {task['id']} before more work."
+            reason = f"Stale task epoch; inspect hivewire explain {task['id']} before more work."
         try:
             allocation_permission(sw, task["id"])
             interrupt_permission(sw, task)
@@ -2124,7 +2124,7 @@ def bus_control_view(sw: Swarm, who: str) -> dict:
             (who, task["id"]),
         ).fetchone()
         if stopping:
-            reason = f"Execution {stopping['id']} is stopping or uncertain. Checkpoint and inspect swarm execution show before more work."
+            reason = f"Execution {stopping['id']} is stopping or uncertain. Checkpoint and inspect hivewire execution show before more work."
     return {"blocked": bool(reason), "reason": reason, "task_id": task["id"] if task else None,
             "epoch": task["epoch"] if task else None, "controls": controls}
 
@@ -2248,7 +2248,7 @@ def sweep_messages(sw: Swarm) -> None:
                 "message_dead_letter", m["recipient"], m["task"], f"critical message {m['id']} expired unacknowledged"
             )
             sw.notify_coordinator(
-                f"Critical message {m['id']} expired unacknowledged. Inspect `swarm messages dead-letter`; resolve only after reviewing its evidence.",
+                f"Critical message {m['id']} expired unacknowledged. Inspect `hivewire messages dead-letter`; resolve only after reviewing its evidence.",
                 m["task"],
             )
         else:
@@ -2286,7 +2286,7 @@ def interrupt_permission(sw: Swarm, t) -> None:
     ).fetchone()
     if row and t["assignee"] == row["target"]:
         raise SwarmError(
-            f"Interrupt {row['id']} ({row['mode']}, {row['state']}) stops new permissions. Read `swarm interrupt show {row['id']}`; acknowledge, checkpoint, then complete or hand off."
+            f"Interrupt {row['id']} ({row['mode']}, {row['state']}) stops new permissions. Read `hivewire interrupt show {row['id']}`; acknowledge, checkpoint, then complete or hand off."
         )
 
 
@@ -2297,7 +2297,7 @@ def sweep_interrupts(sw: Swarm) -> None:
         sw.db.execute("UPDATE interrupts SET state='timed_out' WHERE id=?", (r["id"],))
         sw.event("interrupt_timeout", r["target"], r["task"], f"interrupt {r['id']}: checkpoint/recovery required")
         sw.notify_coordinator(
-            f"Interrupt {r['id']} timed out. Inspect `swarm interrupt show {r['id']}`; capture a recovery checkpoint and hand off preserved work. No process was killed.",
+            f"Interrupt {r['id']} timed out. Inspect `hivewire interrupt show {r['id']}`; capture a recovery checkpoint and hand off preserved work. No process was killed.",
             r["task"],
         )
 
@@ -2393,7 +2393,7 @@ def freeze_review(sw: Swarm, t, override: str | None = None) -> dict:
 def incident_row(sw: Swarm, incident_id: int):
     r = sw.db.execute("SELECT * FROM incidents WHERE id=?", (incident_id,)).fetchone()
     if not r:
-        raise SwarmError("No such incident. Use `swarm incident list` to inspect the review queue.")
+        raise SwarmError("No such incident. Use `hivewire incident list` to inspect the review queue.")
     return r
 
 
@@ -2441,7 +2441,7 @@ def dispatch_review(sw: Swarm, r, reviewer: str, snapshot: dict) -> None:
     sw.message(
         "swarm",
         reviewer,
-        f"Read-only review I{r['id']} revision {r['revision']}: `swarm incident brief {r['id']}`. Return a verdict with --snapshot {digest}, evidence citations and remediation. Chat is not authority.",
+        f"Read-only review I{r['id']} revision {r['revision']}: `hivewire incident brief {r['id']}`. Return a verdict with --snapshot {digest}, evidence citations and remediation. Chat is not authority.",
         kind="review_request",
         task=r["task"],
         epoch=snapshot["epoch"],
@@ -2528,7 +2528,7 @@ def incident_clearance(
     submission = json.loads(fresh["submit"] or "{}")
     if require_submission and submission and submission.get("head") != head:
         raise SwarmError(
-            "Submission does not describe the reviewed head. `swarm submit` current evidence, then refresh the incident."
+            "Submission does not describe the reviewed head. `hivewire submit` current evidence, then refresh the incident."
         )
     tree = git("rev-parse", f"{integrated_head or head}^{{tree}}", cwd=sw.main_root)
     proof = []
@@ -2536,7 +2536,7 @@ def incident_clearance(
         review = incident_review(sw, r)
         if r["state"] != "resolved" or r["outcome"] != "cleared" or review["verdict"] != "not_confirmed":
             raise SwarmError(
-                f"Incident I{r['id']} blocks integration ({r['state']}, {r['outcome'] or 'unresolved'}). Inspect `swarm incident brief {r['id']}`, then review/resolve the evidence."
+                f"Incident I{r['id']} blocks integration ({r['state']}, {r['outcome'] or 'unresolved'}). Inspect `hivewire incident brief {r['id']}`, then review/resolve the evidence."
             )
         if (
             review["epoch"] != fresh["epoch"]
@@ -2546,7 +2546,7 @@ def incident_clearance(
             or json.loads(review["snapshot"])["owner"] != fresh["assignee"]
         ):
             raise SwarmError(
-                f"Incident I{r['id']} clearance is stale. Submit the current work, then `swarm incident refresh {r['id']} --reason ...` and obtain a fresh review."
+                f"Incident I{r['id']} clearance is stale. Submit the current work, then `hivewire incident refresh {r['id']} --reason ...` and obtain a fresh review."
             )
         proof.append(
             {
@@ -2593,7 +2593,7 @@ def reviewer_command_guard(sw: Swarm, a) -> None:
     safe |= a.command == "usage" and a.usage_action in ("show", "inspect")
     if not safe:
         raise SwarmError(
-            f"Read-only review I{me['reviewing']} is assigned to you. Submit `swarm incident review {me['reviewing']}` before other work; do not modify the subject's worktree."
+            f"Read-only review I{me['reviewing']} is assigned to you. Submit `hivewire incident review {me['reviewing']}` before other work; do not modify the subject's worktree."
         )
 
 
@@ -2632,7 +2632,7 @@ def cmd_incident(sw: Swarm, a) -> None:
             review = incident_review(sw, r)
             if a.incident_action in ("resolve", "refresh") and a.revision != r["revision"]:
                 raise SwarmError(
-                    f"Stale incident revision; inspect `swarm incident brief {r['id']}` and use --revision {r['revision']}."
+                    f"Stale incident revision; inspect `hivewire incident brief {r['id']}` and use --revision {r['revision']}."
                 )
             if a.incident_action == "review":
                 if who != review["reviewer"] or who in (r["subject"], json.loads(review["snapshot"])["owner"]):
@@ -2732,7 +2732,7 @@ def cmd_incident(sw: Swarm, a) -> None:
                 sw.event("incident_refreshed", who, r["task"], f"I{incident_id}: {a.reason}")
         failpoint("before_incident_commit")
     failpoint("after_incident_commit")
-    print(f"I{incident_id} {a.incident_action} recorded; inspect `swarm incident brief {incident_id}`")
+    print(f"I{incident_id} {a.incident_action} recorded; inspect `hivewire incident brief {incident_id}`")
 
 
 def sweep_oversight(sw: Swarm) -> None:
@@ -2770,7 +2770,7 @@ def sweep_oversight(sw: Swarm) -> None:
 def memory_row(sw: Swarm, memory_id: int):
     row = sw.db.execute("SELECT * FROM memories WHERE id=?", (memory_id,)).fetchone()
     if not row:
-        raise SwarmError("No such memory. Use `swarm memory search --all` to inspect the registry.")
+        raise SwarmError("No such memory. Use `hivewire memory search --all` to inspect the registry.")
     return row
 
 
@@ -2789,7 +2789,7 @@ def memory_sources(
     for event_id in events:
         e = sw.db.execute("SELECT * FROM events WHERE id=?", (event_id,)).fetchone()
         if not e or task and e["task"] not in (None, task):
-            raise SwarmError("Source event is missing or belongs to another task scope. Inspect `swarm log`.")
+            raise SwarmError("Source event is missing or belongs to another task scope. Inspect `hivewire log`.")
     for msg_id in messages:
         m = sw.db.execute("SELECT * FROM messages WHERE id=?", (msg_id,)).fetchone()
         addressed = sw.db.execute("SELECT 1 FROM message_recipients WHERE msg=? AND agent=?", (msg_id, who)).fetchone()
@@ -2971,7 +2971,7 @@ def memory_context(sw: Swarm, query: str, task: str | None = None) -> list[str]:
 def memory_revision(m, revision: int) -> None:
     if revision != m["revision"]:
         raise SwarmError(
-            f"Stale memory revision; inspect `swarm memory show {m['id']}` and use --revision {m['revision']}."
+            f"Stale memory revision; inspect `hivewire memory show {m['id']}` and use --revision {m['revision']}."
         )
 
 
@@ -3381,7 +3381,7 @@ def architecture_evidence(sw: Swarm, paths: list[str]) -> list[dict]:
 def architecture_problems(sw: Swarm, g, *, approval: bool = True) -> list[str]:
     brief = json.loads(g["architecture"] or "{}")
     if not brief:
-        return [f"architecture brief missing: `swarm goal architecture {g['id']} --template`"]
+        return [f"architecture brief missing: `hivewire goal architecture {g['id']} --template`"]
     problems = []
     if sw.db.execute(
         "SELECT 1 FROM questions WHERE goal=? AND answer IS NULL AND waived=0 AND critical=1", (g["id"],)
@@ -3409,7 +3409,7 @@ def architecture_problems(sw: Swarm, g, *, approval: bool = True) -> list[str]:
             problems.append(str(exc))
     if approval:
         if not valid_approval:
-            problems.append(f"architecture approval missing or stale: `swarm goal architecture {g['id']} --approve`")
+            problems.append(f"architecture approval missing or stale: `hivewire goal architecture {g['id']} --approve`")
         elif brief.get("risk") == "high" and approved.get("by") != HUMAN:
             problems.append("high-risk architecture needs human approval")
     return problems
@@ -3480,7 +3480,7 @@ def cmd_goal_architecture(sw: Swarm, a) -> None:
         sw.db.execute("UPDATE goals SET architecture=?, workflow_version=2 WHERE id=?", (json.dumps(brief), a.goal))
         goal_changed(sw, a.goal)
         sw.event("architecture_recorded", who, None, f"{a.goal} brief revision {brief['revision']}")
-    print(f"architecture brief {brief['revision']} saved; review it, then `swarm goal architecture {a.goal} --approve`")
+    print(f"architecture brief {brief['revision']} saved; review it, then `hivewire goal architecture {a.goal} --approve`")
 
 
 def current_contract(sw: Swarm, task_id: str):
@@ -3630,7 +3630,7 @@ def usage_permission(sw: Swarm, c, *, claiming=False, settling=False) -> None:
     reason = usage_limit_reason(sw, c, include_terminal=True)
     if reason:
         raise SwarmError(
-            f"Contract usage is blocked: {reason}. Inspect `swarm usage show {c['task']}`; checkpoint/report usage or request human recovery."
+            f"Contract usage is blocked: {reason}. Inspect `hivewire usage show {c['task']}`; checkpoint/report usage or request human recovery."
         )
     rows = sw.db.execute(
         "SELECT * FROM usage_runs WHERE budget_origin=? AND state IN ('reserved','running')",
@@ -3639,7 +3639,7 @@ def usage_permission(sw: Swarm, c, *, claiming=False, settling=False) -> None:
     if settling:
         if any(r["id"] != getattr(sw, "current_usage_run", None) for r in rows):
             raise SwarmError(
-                f"Usage is not settled. Report or finish the pending runs in `swarm usage show {c['task']}` before submission/integration."
+                f"Usage is not settled. Report or finish the pending runs in `hivewire usage show {c['task']}` before submission/integration."
             )
     elif claiming and any(
         r["contract_id"] != c["id"] or r["owner"] != c["owner"] or r["epoch"] != c["epoch"] for r in rows
@@ -3656,7 +3656,7 @@ def usage_permission(sw: Swarm, c, *, claiming=False, settling=False) -> None:
             for r in rows
         ):
             raise SwarmError(
-                f"Reserve the next bounded usage window first: `swarm usage reserve {c['task']} --key <window> --as {c['owner']}`. Reports close a window; they do not authorize another one."
+                f"Reserve the next bounded usage window first: `hivewire usage reserve {c['task']} --key <window> --as {c['owner']}`. Reports close a window; they do not authorize another one."
             )
 
 
@@ -3676,7 +3676,7 @@ def sweep_usage(sw: Swarm) -> None:
 def usage_row(sw: Swarm, ident: str):
     row = sw.db.execute("SELECT * FROM usage_runs WHERE id=?", (ident,)).fetchone()
     if not row:
-        raise SwarmError("No such usage run. Inspect `swarm usage show TASK`.")
+        raise SwarmError("No such usage run. Inspect `hivewire usage show TASK`.")
     return row
 
 
@@ -3857,7 +3857,7 @@ def cmd_usage(sw: Swarm, a) -> None:
             t = sw.task(a.task)
             if c["state"] == "active":
                 if t["assignee"] != c["owner"] or t["epoch"] != c["epoch"]:
-                    raise SwarmError("The reservation's assignment is stale; inspect `swarm explain TASK`.")
+                    raise SwarmError("The reservation's assignment is stale; inspect `hivewire explain TASK`.")
                 interrupt_permission(sw, t)
                 contract_permission(sw, t, reserving=True)
             elif c["epoch"] != t["epoch"] + 1 or contract_expiry(c):
@@ -4030,16 +4030,16 @@ def contract_permission(
     reason = contract_expiry(c) or usage_limit_reason(sw, c)
     if reason or c["state"] in ("expired", "closed"):
         recovery_hint = (
-            f"Ask the coordinator for `swarm contract offer {t['id']} <owner>` before claiming retained work."
+            f"Ask the coordinator for `hivewire contract offer {t['id']} <owner>` before claiming retained work."
             if claiming
-            else f"Use `swarm checkpoint` and `swarm release`, or ask for `swarm contract extend {t['id']}`."
+            else f"Use `hivewire checkpoint` and `hivewire release`, or ask for `hivewire contract extend {t['id']}`."
         )
         raise SwarmError(f"Contract for {t['id']} is {reason or c['state']}. {recovery_hint}")
     expected_epoch = t["epoch"] + (1 if claiming else 0)
     expected_state = "accepted" if claiming else "active"
     if c["state"] != expected_state or c["epoch"] != expected_epoch:
         raise SwarmError(
-            f"Contract for {t['id']} is {c['state']} at epoch {c['epoch']}. Read `swarm contract show {t['id']}`; accept the offer before claiming."
+            f"Contract for {t['id']} is {c['state']} at epoch {c['epoch']}. Read `hivewire contract show {t['id']}`; accept the offer before claiming."
         )
     if claiming and c["owner"] != getattr(sw, "claimant", None):
         raise SwarmError(f"Contract for {t['id']} is offered to {c['owner']}; ask the coordinator to re-offer it.")
@@ -4051,7 +4051,7 @@ def contract_permission(
             raise SwarmError("Review reserve reached. Submit completed work, or checkpoint/release a partial result.")
         if c["checkpoint_due"]:
             raise SwarmError(
-                f"Checkpoint due before new work: `swarm checkpoint --epoch {t['epoch']} --note ... --next ...`."
+                f"Checkpoint due before new work: `hivewire checkpoint --epoch {t['epoch']} --note ... --next ...`."
             )
 
 
@@ -4167,7 +4167,7 @@ def sweep_contracts(sw: Swarm) -> None:
                 sw.message(
                     "swarm",
                     c["owner"],
-                    "Checkpoint due: `swarm checkpoint --note ... --next ...` with the current --epoch.",
+                    "Checkpoint due: `hivewire checkpoint --note ... --next ...` with the current --epoch.",
                     task=t["id"],
                 )
         elif (
@@ -4178,7 +4178,7 @@ def sweep_contracts(sw: Swarm) -> None:
         ):
             sw.db.execute("UPDATE task_contracts SET recovery_notified=1 WHERE id=?", (c["id"],))
             sw.notify_coordinator(
-                f"{t['id']} checkpoint grace elapsed. Inspect `swarm explain {t['id']}`, then release/re-offer; no process was terminated and no files removed.",
+                f"{t['id']} checkpoint grace elapsed. Inspect `hivewire explain {t['id']}`, then release/re-offer; no process was terminated and no files removed.",
                 t["id"],
             )
             sw.event("contract_recovery_required", c["owner"], t["id"], "grace elapsed; artifacts preserved")
@@ -4245,22 +4245,22 @@ def cmd_contract(sw: Swarm, a) -> None:
             sw.message(
                 who,
                 a.owner,
-                f"Contract {c['id']} offered for {a.task}. Inspect `swarm contract show {a.task}`; accept, counter once, or report blocked before {c['decision_at']}.",
+                f"Contract {c['id']} offered for {a.task}. Inspect `hivewire contract show {a.task}`; accept, counter once, or report blocked before {c['decision_at']}.",
                 kind="decision",
                 task=a.task,
             )
         elif not c:
-            raise SwarmError(f"No contract. Ask the coordinator for `swarm contract offer {a.task} <owner>`.")
+            raise SwarmError(f"No contract. Ask the coordinator for `hivewire contract offer {a.task} <owner>`.")
         elif a.contract_action in ("accept", "counter", "blocked"):
             if who != c["owner"]:
                 raise SwarmError(f"Only offered owner {c['owner']} may respond to this contract.")
             if getattr(a, "epoch", None) is not None and a.epoch != c["epoch"]:
                 raise SwarmError(
-                    f"Stale offer epoch {a.epoch}; inspect `swarm contract show {a.task}` for epoch {c['epoch']}."
+                    f"Stale offer epoch {a.epoch}; inspect `hivewire contract show {a.task}` for epoch {c['epoch']}."
                 )
             if c["state"] != "offered" or contract_expiry(c) or c["epoch"] != t["epoch"] + 1:
                 raise SwarmError(
-                    "This offer is no longer open. Read `swarm explain` and ask the coordinator for a new offer."
+                    "This offer is no longer open. Read `hivewire explain` and ask the coordinator for a new offer."
                 )
             if a.contract_action == "accept":
                 sw.db.execute("UPDATE task_contracts SET state='accepted',accepted_at=? WHERE id=?", (iso(), c["id"]))
@@ -4362,18 +4362,18 @@ def cmd_contract(sw: Swarm, a) -> None:
             sw.message(
                 who,
                 c["owner"],
-                f"Contract extended once by {a.minutes} min: {a.reason}. `swarm start` resumes accounted time.",
+                f"Contract extended once by {a.minutes} min: {a.reason}. `hivewire start` resumes accounted time.",
                 kind="decision",
                 task=a.task,
             )
             sw.event("contract_extended", who, a.task, a.reason)
-    print(f"contract {a.contract_action} recorded for {a.task}; `swarm explain {a.task}` shows the next step")
+    print(f"contract {a.contract_action} recorded for {a.task}; `hivewire explain {a.task}` shows the next step")
 
 
 def checkpoint_snapshot(sw: Swarm, t, note: str, next_step: str, blockers: str) -> dict:
     if not t["worktree"] or not Path(t["worktree"]).exists():
         raise SwarmError(
-            "The claim is still creating its worktree. Wait for claim to finish; after interruption inspect `swarm allocation show TASK` and run `swarm allocation prepare TASK` as its holder, then retry."
+            "The claim is still creating its worktree. Wait for claim to finish; after interruption inspect `hivewire allocation show TASK` and run `hivewire allocation prepare TASK` as its holder, then retry."
         )
     path = Path(t["worktree"])
     import hashlib
@@ -4419,7 +4419,7 @@ def checkpoint_target(sw: Swarm, a):
         if t["state"] not in ("expired", "orphaned", "interrupted"):
             raise SwarmError("Operator snapshots require a recoverable expired/orphaned/interrupted task.")
         if a.epoch is None or a.epoch != t["epoch"]:
-            raise SwarmError(f"Pass the current --epoch {t['epoch']} from `swarm explain {t['id']}`.")
+            raise SwarmError(f"Pass the current --epoch {t['epoch']} from `hivewire explain {t['id']}`.")
         return t
     return sw.require_holder(a.as_, recovery=True)
 
@@ -4433,7 +4433,7 @@ def cmd_checkpoint(sw: Swarm, a) -> None:
         c = current_contract(sw, t["id"])
         if (c or t["state"] == "interrupted") and a.epoch is None:
             raise SwarmError(
-                f"Checkpoint must fence its snapshot: pass --epoch {t['epoch']} from `swarm explain {t['id']}`."
+                f"Checkpoint must fence its snapshot: pass --epoch {t['epoch']} from `hivewire explain {t['id']}`."
             )
     snapshot = checkpoint_snapshot(sw, t, a.note, a.next_step, a.blockers)
     snapshot["recorded_by"] = a.as_ or HUMAN
@@ -4441,7 +4441,7 @@ def cmd_checkpoint(sw: Swarm, a) -> None:
         fresh = checkpoint_target(sw, a)
         allocation_permission(sw, fresh["id"])
         if fresh["id"] != t["id"] or fresh["epoch"] != t["epoch"]:
-            raise SwarmError("Ownership changed while capturing the checkpoint. Stop; read `swarm whoami`.")
+            raise SwarmError("Ownership changed while capturing the checkpoint. Stop; read `hivewire whoami`.")
         cur = sw.db.execute(
             "INSERT INTO checkpoints(task,owner,epoch,contract_id,created_at,snapshot) VALUES(?,?,?,?,?,?)",
             (t["id"], t["assignee"], t["epoch"], c["id"] if c else None, iso(), json.dumps(snapshot)),
@@ -4477,7 +4477,7 @@ def checked_checkpoint(sw: Swarm, t, checkpoint_id: int, after: int = 0):
 def interrupt_row(sw: Swarm, interrupt_id: int):
     r = sw.db.execute("SELECT * FROM interrupts WHERE id=?", (interrupt_id,)).fetchone()
     if not r:
-        raise SwarmError("No such interrupt. Inspect `swarm status --all` or `swarm explain <task>`.")
+        raise SwarmError("No such interrupt. Inspect `hivewire status --all` or `hivewire explain <task>`.")
     return r
 
 
@@ -4576,12 +4576,12 @@ def cmd_interrupt(sw: Swarm, a) -> None:
                     raise SwarmError("Interrupt key must contain 1..200 characters.")
             target = sw.agent(a.target)
             if not target or target["state"] == "left":
-                raise SwarmError("Interrupt target must be a joined agent. Inspect `swarm agents`.")
+                raise SwarmError("Interrupt target must be a joined agent. Inspect `hivewire agents`.")
             t = sw.task(target["task"]) if target["task"] else None
             if not t and a.mode != "attention":
                 raise SwarmError("This target holds no task; use attention for a question.")
             if t and (t["state"] not in HELD or t["assignee"] != a.target or t["state"] == "expired"):
-                raise SwarmError("Target assignment is not interruptible; inspect `swarm explain` for recovery.")
+                raise SwarmError("Target assignment is not interruptible; inspect `hivewire explain` for recovery.")
             prior = sw.db.execute(
                 "SELECT * FROM interrupts WHERE target=? AND resumed_at IS NULL AND (state IN ('requested','acknowledged') OR (mode<>'attention' AND state IN ('completed','timed_out')))",
                 (a.target,),
@@ -4654,7 +4654,7 @@ def cmd_interrupt(sw: Swarm, a) -> None:
                     raise SwarmError(f"Only target {r['target']} may acknowledge/complete this interrupt.")
                 if t and (a.epoch is None or a.epoch != r["epoch"]):
                     raise SwarmError(
-                        f"Stale or missing interrupt epoch; inspect `swarm interrupt show {r['id']}` and pass --epoch {r['epoch']}."
+                        f"Stale or missing interrupt epoch; inspect `hivewire interrupt show {r['id']}` and pass --epoch {r['epoch']}."
                     )
                 if a.interrupt_action == "complete" and r["state"] == "completed":
                     print(f"interrupt {r['id']} already completed")
@@ -4663,7 +4663,7 @@ def cmd_interrupt(sw: Swarm, a) -> None:
                     print(f"interrupt {r['id']} already acknowledged")
                     return
             if t and (t["epoch"] != r["epoch"] or t["assignee"] != r["target"]):
-                raise SwarmError("Interrupt belongs to a stale assignment. Stop; inspect `swarm explain`.")
+                raise SwarmError("Interrupt belongs to a stale assignment. Stop; inspect `hivewire explain`.")
             if a.interrupt_action == "ack":
                 if r["state"] not in ("requested", "acknowledged"):
                     raise SwarmError("This interrupt is terminal; inspect its checkpoint/recovery status.")
@@ -4699,14 +4699,14 @@ def cmd_interrupt(sw: Swarm, a) -> None:
                 sw.message(
                     who,
                     r["target"],
-                    f"Pause {r['id']} resumed at epoch {t['epoch'] + 1}. Inspect `swarm explain {t['id']}` before continuing.",
+                    f"Pause {r['id']} resumed at epoch {t['epoch'] + 1}. Inspect `hivewire explain {t['id']}` before continuing.",
                     kind="decision",
                     task=t["id"],
                     epoch=t["epoch"] + 1,
                 )
             sw.event(f"interrupt_{a.interrupt_action}", who, r["task"], f"interrupt {r['id']}")
     failpoint("after_interrupt_commit")
-    print(f"interrupt {interrupt_id} {a.interrupt_action} recorded; inspect `swarm interrupt show {interrupt_id}`")
+    print(f"interrupt {interrupt_id} {a.interrupt_action} recorded; inspect `hivewire interrupt show {interrupt_id}`")
 
 
 def cmd_explain(sw: Swarm, a) -> None:
@@ -4726,7 +4726,7 @@ def cmd_explain(sw: Swarm, a) -> None:
         usage = usage_summary(sw, c)
         if any(usage["budget"][k] is not None for k in ("tokens", "cost_micros", "tool_seconds")) or usage["unknown"]:
             print(
-                f"  usage remaining: {json.dumps(usage['remaining'])}; unknown: {len(usage['unknown'])}; inspect `swarm usage show {a.task}`"
+                f"  usage remaining: {json.dumps(usage['remaining'])}; unknown: {len(usage['unknown'])}; inspect `hivewire usage show {a.task}`"
             )
         print(
             f"  checkpoint: {c['checkpoint_at'] or 'none'}{' (DUE)' if c['checkpoint_due'] else ''}; extensions {c['extension_count']}/1"
@@ -4736,9 +4736,9 @@ def cmd_explain(sw: Swarm, a) -> None:
                 f"  grace until: {c['grace_until']}; next: checkpoint --epoch {t['epoch']}, then release or request one justified extension"
             )
         elif c["state"] == "offered":
-            print(f"  next: `swarm contract accept {a.task} --as {c['owner']}` (or counter/blocked)")
+            print(f"  next: `hivewire contract accept {a.task} --as {c['owner']}` (or counter/blocked)")
         elif c["state"] == "accepted":
-            print(f"  next: `swarm claim {a.task} --as {c['owner']}`")
+            print(f"  next: `hivewire claim {a.task} --as {c['owner']}`")
     latest = sw.db.execute("SELECT * FROM checkpoints WHERE task=? ORDER BY id DESC LIMIT 1", (a.task,)).fetchone()
     if latest:
         print(f"  latest checkpoint {latest['id']}: {latest['snapshot']}")
@@ -4748,7 +4748,7 @@ def cmd_explain(sw: Swarm, a) -> None:
         "SELECT * FROM interrupts WHERE task=? AND resumed_at IS NULL ORDER BY id DESC LIMIT 3", (t["id"],)
     ):
         print(
-            f"  interrupt {r['id']}: {r['mode']} {r['state']}, epoch {r['epoch']}, deadline {r['deadline_at']}; `swarm interrupt show {r['id']}`"
+            f"  interrupt {r['id']}: {r['mode']} {r['state']}, epoch {r['epoch']}, deadline {r['deadline_at']}; `hivewire interrupt show {r['id']}`"
         )
     print(f"  next: {next_action(sw, t)}")
 
@@ -4819,14 +4819,14 @@ def check_graph(tasks: dict[str, list[str]]) -> None:
 
 def cmd_init(sw: Swarm, a) -> None:
     sync_backlog(sw, quiet=False)
-    print(f"Board ready at {sw.dir}. `swarm status` shows it.")
+    print(f"Board ready at {sw.dir}. `hivewire status` shows it.")
 
 
 def sync_backlog(sw: Swarm, quiet: bool = True) -> None:
     rel = sw.config["project"]["backlog"]
     if not rel:
         if not quiet:
-            print("No backlog configured ([project] backlog); add tasks with `swarm add`.")
+            print("No backlog configured ([project] backlog); add tasks with `hivewire add`.")
         return
     path = sw.main_root / rel
     if not path.is_file():
@@ -4837,7 +4837,7 @@ def sync_backlog(sw: Swarm, quiet: bool = True) -> None:
     if is_example_backlog(text, rows):
         print(
             f"warning: {rel} is the example backlog that ships with agents-collaboration; it is never imported "
-            "as work. Write your own table, or create tasks with `swarm goal`.",
+            "as work. Write your own table, or create tasks with `hivewire goal`.",
             file=sys.stderr,
         )
         rows = []
@@ -4904,8 +4904,8 @@ def cmd_join(sw: Swarm, a) -> None:
             )
         if len(live) >= sw.config["swarm"]["max_agents"]:
             raise SwarmError(
-                f"The swarm is full ({len(live)} of {sw.config['swarm']['max_agents']}). Wait for "
-                "someone to leave; `swarm agents` shows who is busy."
+                f"The hivewire is full ({len(live)} of {sw.config['swarm']['max_agents']}). Wait for "
+                "someone to leave; `hivewire agents` shows who is busy."
             )
         used = {r["slot"] for r in live}
         slot = (
@@ -4953,7 +4953,7 @@ def cmd_join(sw: Swarm, a) -> None:
     print(f"environment: {env['os_release']}, shell {env['shell']}; caps {', '.join(caps)}")
     print(f"command: {self_command()} <subcommand> --as {name}   (works from any directory)")
     print(
-        f"READ BEFORE YOUR FIRST COMMAND: `swarm environment --as {name}` "
+        f"READ BEFORE YOUR FIRST COMMAND: `hivewire environment --as {name}` "
         f"({len(environment_rules(env))} rules for this machine)"
     )
     if peers:
@@ -4961,8 +4961,8 @@ def cmd_join(sw: Swarm, a) -> None:
     else:
         print("SOLO: no other live agent. You are coordinator and worker; questions go to the human.")
     if me["task"]:
-        print(f"you hold {me['task']}: run `swarm whoami --as {name}` to pick up where you left off")
-    question = console_question(sw, name)
+        print(f"you hold {me['task']}: run `hivewire whoami --as {name}` to pick up where you left off")
+    question = workspace_hint(sw, name)
     if question:
         print(question)
     warning = skill_not_committed(sw) if sw.is_coordinator(name) else None
@@ -5029,7 +5029,7 @@ def cmd_status(sw: Swarm, a) -> None:
     done = {r["id"] for r in sw.db.execute("SELECT id FROM tasks WHERE state='done'")}
     live = sw.live_agents()
     if sw.paused():
-        print(f"PAUSED by {sw.meta('paused')}: no claims or merges until `swarm resume`.")
+        print(f"PAUSED by {sw.meta('paused')}: no claims or merges until `hivewire resume`.")
     print(
         f"agents live: {len(live)} of {sw.config['swarm']['max_agents']}"
         + ("  (SOLO)" if len(live) == 1 else "")
@@ -5295,7 +5295,7 @@ def cmd_next(sw: Swarm, a) -> sqlite3.Row:
         if me["reviewing"]:
             raise SwarmError("Complete the assigned independent review before claiming implementation work.")
         if sw.paused():
-            raise SwarmError(f"The swarm is paused by {sw.meta('paused')}. Wait for `swarm resume`.")
+            raise SwarmError(f"The hivewire is paused by {sw.meta('paused')}. Wait for `hivewire resume`.")
         if me["task"]:
             raise SwarmError(f"You still hold {me['task']}. Merge it (or release it) before taking another task.")
         pending = sw.db.execute("SELECT id FROM tasks WHERE cleanup_pending=1").fetchall()
@@ -5304,7 +5304,7 @@ def cmd_next(sw: Swarm, a) -> sqlite3.Row:
         if not options and not left_behind:
             raise SwarmError(
                 "Nothing you can take now (dependencies, capabilities, locks or reservations). "
-                "`swarm status --all` shows why; tell the coordinator you are free."
+                "`hivewire status --all` shows why; tell the coordinator you are free."
             )
         pick = options[0] if options else left_behind[0]
     for row in pending:  # cleanup separately checks process activity and retained local work
@@ -5312,7 +5312,7 @@ def cmd_next(sw: Swarm, a) -> sqlite3.Row:
     if not options:
         print(
             f"No open task; {pick['id']} was left behind by {pick['assignee']} with work in it. Taking it over: "
-            f"read its plan and steps first (`swarm whoami`)."
+            f"read its plan and steps first (`hivewire whoami`)."
         )
     return claim(sw, me["name"], pick["id"], force=False, take_over=not options)
 
@@ -5378,10 +5378,10 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
             (who,),
         ).fetchone():
             raise SwarmError(
-                "An owned execution is stopping or lost supervision. Inspect `swarm execution list`; exit/reconcile it before claiming more work."
+                "An owned execution is stopping or lost supervision. Inspect `hivewire execution list`; exit/reconcile it before claiming more work."
             )
         if sw.paused():
-            raise SwarmError(f"The swarm is paused by {sw.meta('paused')}.")
+            raise SwarmError(f"The hivewire is paused by {sw.meta('paused')}.")
         if me["task"]:
             raise SwarmError(f"You still hold {me['task']}. Merge it (or release it) before taking another task.")
         t = sw.task(task_id)
@@ -5393,7 +5393,7 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
             (task_id,),
         ).fetchone():
             raise SwarmError(
-                "The task's owned execution is still stopping or uncertain. Inspect `swarm execution list`; confirm cessation before reassigning its retained work."
+                "The task's owned execution is still stopping or uncertain. Inspect `hivewire execution list`; confirm cessation before reassigning its retained work."
             )
         if t["state"] == "orphaned":
             if sw.db.execute(
@@ -5401,7 +5401,7 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
                 (task_id, t["assignee"]),
             ).fetchone():
                 raise SwarmError(
-                    "The previous owned execution is still live or uncertain. Inspect `swarm execution list`; confirm it stopped before takeover."
+                    "The previous owned execution is still live or uncertain. Inspect `hivewire execution list`; confirm it stopped before takeover."
                 )
             if not take_over:
                 raise SwarmError(
@@ -5507,7 +5507,7 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
     with sw.tx():
         if not claim_still_current(sw, who, task_id, epoch, branch):
             raise SwarmError(
-                f"Assignment changed while preparing {task_id}. Stop; preserve {path} and its branch, then inspect `swarm explain {task_id}`."
+                f"Assignment changed while preparing {task_id}. Stop; preserve {path} and its branch, then inspect `hivewire explain {task_id}`."
             )
         sw.update_task(task_id, worktree=str(path), base_sha=git("rev-parse", sw.target(), cwd=sw.main_root))
         # Local file writes share the ownership fence; a release cannot race the copies.
@@ -5523,25 +5523,25 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
     failpoint("after_claim_setup_commit")
     if copy_error:
         raise SwarmError(
-            f"Worktree retained at {path}, but local settings could not be copied: {copy_error}. Inspect `swarm explain {task_id}`, preserve any partial copies and repair [worktree] copy before continuing."
+            f"Worktree retained at {path}, but local settings could not be copied: {copy_error}. Inspect `hivewire explain {task_id}`, preserve any partial copies and repair [worktree] copy before continuing."
         ) from copy_error
     for line in copied:
         print(line)
     print(f"claimed {task_id}: {final_task['title']}")
     print(f"  worktree  {path}")
     print(f"  branch    {branch}")
-    print(f"  slot      {me['slot']}  (`swarm env --as {who}` prints your environment)")
+    print(f"  slot      {me['slot']}  (`hivewire env --as {who}` prints your environment)")
     print(f"  command   {self_command()} <subcommand> --as {who}")
     if c:
         print(
-            f"  contract  {c['id']}, epoch {epoch}, deadline {json.loads(c['terms'])['deadline_at']}; `swarm explain {task_id}`"
+            f"  contract  {c['id']}, epoch {epoch}, deadline {json.loads(c['terms'])['deadline_at']}; `hivewire explain {task_id}`"
         )
     for line in context:
         print(f"  {line}")
     if take_over and final_task["plan"]:
-        print(f"next: read the retained plan and steps (`swarm whoami --as {who}`), resolve questions/replan as needed, then `swarm start --as {who}` before continuing.")
+        print(f"next: read the retained plan and steps (`hivewire whoami --as {who}`), resolve questions/replan as needed, then `hivewire start --as {who}` before continuing.")
     else:
-        print(f"next: cd into the worktree, then `swarm plan --as {who} --template` and answer every question.")
+        print(f"next: cd into the worktree, then `hivewire plan --as {who} --template` and answer every question.")
     return final_task
 
 
@@ -5555,8 +5555,8 @@ def allocation_permission(sw: Swarm, task_id: str) -> None:
     row = pending_allocation(sw, task_id)
     if row:
         raise SwarmError(
-            f"Worktree allocation {row['id']} is {row['state']}; Git may still write. Inspect `swarm allocation show {task_id}`. "
-            f"After independently confirming every allocation process stopped, a human can run `swarm allocation reconcile {task_id} --confirm-stopped --reason <evidence>`."
+            f"Worktree allocation {row['id']} is {row['state']}; Git may still write. Inspect `hivewire allocation show {task_id}`. "
+            f"After independently confirming every allocation process stopped, a human can run `hivewire allocation reconcile {task_id} --confirm-stopped --reason <evidence>`."
         )
 
 
@@ -5567,7 +5567,7 @@ def cmd_allocation(sw: Swarm, a) -> None:
             allocation_permission(sw, a.task)
             sw.allocation_receipt = (a.as_, a.task, task["epoch"], task["branch"])
         path = ensure_worktree(sw, a.task, task["branch"])
-        print(f"Git worktree retained at {path}; inspect local settings and `swarm explain {a.task}` before continuing.")
+        print(f"Git worktree retained at {path}; inspect local settings and `hivewire explain {a.task}` before continuing.")
         return
     with sw.tx():
         sw.task(a.task)
@@ -5594,7 +5594,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
     if path in registered:
         current = git("rev-parse", "--abbrev-ref", "HEAD", cwd=path)
         if current != branch:
-            raise SwarmError(f"{path} exists but is on {current}, not {branch}. Fix it by hand or run `swarm doctor`.")
+            raise SwarmError(f"{path} exists but is on {current}, not {branch}. Fix it by hand or run `hivewire doctor`.")
         return path
     if path.exists():
         raise SwarmError(f"{path} exists but is not a git worktree. Move it away first.")
@@ -5606,7 +5606,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
     def current():
         t, agent = sw.task(ident), sw.agent(who)
         if (t["assignee"], t["epoch"], t["branch"]) != (who, epoch, expected_branch) or not agent or agent["task"] != ident:
-            raise SwarmError(f"Assignment changed while preparing {ident}. Preserve its files; inspect `swarm explain {ident}`.")
+            raise SwarmError(f"Assignment changed while preparing {ident}. Preserve its files; inspect `hivewire explain {ident}`.")
 
     allocation_id = uuid.uuid4().hex
     # This intent must commit BEFORE process creation. A killed SQLite writer
@@ -5627,7 +5627,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
                 current()
                 row = sw.db.execute("SELECT state FROM allocations WHERE id=?", (allocation_id,)).fetchone()
                 if row["state"] != "running":
-                    raise SwarmError(f"Allocation was reconciled before startup. Preserve work; inspect `swarm allocation show {ident}`.")
+                    raise SwarmError(f"Allocation was reconciled before startup. Preserve work; inspect `hivewire allocation show {ident}`.")
                 child = OwnedProcess(argv, sw.main_root, dict(os.environ), output, errors=errors)
             return child
         except BaseException as exc:
@@ -5651,13 +5651,13 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
             state = "quiescent" if getattr(exc, "owned_quiescent", False) else "unknown"
             sw.db.execute("UPDATE allocations SET state=?,ended_at=?,detail=? WHERE id=? AND state='running'",
                           (state, iso(), redact_text(str(exc))[-2000:], allocation_id))
-        raise SwarmError(f"Git allocation failed: {exc}. Inspect `swarm allocation show {ident}`; preserve the retained path before retrying.") from exc
+        raise SwarmError(f"Git allocation failed: {exc}. Inspect `hivewire allocation show {ident}`; preserve the retained path before retrying.") from exc
     with sw.tx():
         sw.db.execute("UPDATE allocations SET state='quiescent',ended_at=?,detail=? WHERE id=? AND state='running'",
                       (iso(), f"Observed owned Git group stopped; exit {done.returncode}", allocation_id))
         sw.event("allocation_quiescent", who, ident, f"{allocation_id}: exit {done.returncode}")
     if done.returncode:
-        raise SwarmError(f"Git allocation failed: {done.stderr}. Inspect `swarm allocation show {ident}` and preserve retained files before retrying.")
+        raise SwarmError(f"Git allocation failed: {done.stderr}. Inspect `hivewire allocation show {ident}` and preserve retained files before retrying.")
     failpoint("after_worktree_create")
     return path
 
@@ -5669,7 +5669,7 @@ def release(sw: Swarm, who: str, t: sqlite3.Row, note: str, *, checkpoint_id: in
     ).fetchone()
     if pending and checkpoint_id is None:
         raise SwarmError(
-            "An interrupt requires a fenced checkpoint and `swarm handoff`; plain release cannot bypass it."
+            "An interrupt requires a fenced checkpoint and `hivewire handoff`; plain release cannot bypass it."
         )
     c = current_contract(sw, t["id"])
     if c:
@@ -5721,7 +5721,7 @@ def cmd_assign(sw: Swarm, a) -> None:
         sw.message(
             a.as_ or HUMAN,
             a.agent,
-            f"You are assigned {a.task}. When free: `swarm claim {a.task} --as {a.agent}`.",
+            f"You are assigned {a.task}. When free: `hivewire claim {a.task} --as {a.agent}`.",
             kind="decision",
             task=a.task,
         )
@@ -5745,7 +5745,7 @@ def cmd_plan(sw: Swarm, a) -> None:
         print("A value of 'unknown' opens a question and blocks `start` until it is answered.\n")
         for key, prompt in keys.items():
             print(f"  {key:14} {prompt}")
-        print('\nexample: swarm plan --as NAME --set outcome="..." ... --step "..." --step "..."')
+        print('\nexample: hivewire plan --as NAME --set outcome="..." ... --step "..." --step "..."')
         return
     answers = {}
     for item in a.set or []:
@@ -5766,7 +5766,7 @@ def cmd_plan(sw: Swarm, a) -> None:
             raise SwarmError(f"Answer these before planning (use 'unknown' where you cannot):\n{lines}")
         if merged["unknowns"].lower() not in ("none", "no", "n/a") and not a.unknowns_asked:
             raise SwarmError(
-                "You listed unknowns. Ask each one with `swarm ask` (critical if it changes the plan), "
+                "You listed unknowns. Ask each one with `hivewire ask` (critical if it changes the plan), "
                 "then re-run plan with --unknowns-asked."
             )
         steps_old = json.loads(t["steps"])
@@ -5842,9 +5842,9 @@ def cmd_plan(sw: Swarm, a) -> None:
         sw.event("planned", a.as_, t["id"], f"revision {plan['revision']}, {len(steps)} steps, {open_q} open questions")
     print(f"plan recorded (revision {plan['revision']}), {len(steps)} steps")
     print(
-        f"{open_q} critical question(s) open: wait for answers (`swarm inbox`)"
+        f"{open_q} critical question(s) open: wait for answers (`hivewire inbox`)"
         if open_q
-        else f"next: `swarm start --as {a.as_}`"
+        else f"next: `hivewire start --as {a.as_}`"
     )
 
 
@@ -5886,7 +5886,7 @@ def cmd_ask(sw: Swarm, a) -> None:
     if to == HUMAN:
         print(
             "The human answers through you: ask them in your own interface, then record their words with "
-            f'`swarm answer {qid} --as {a.as_} --from-human "<their answer, verbatim>"`.'
+            f'`hivewire answer {qid} --as {a.as_} --from-human "<their answer, verbatim>"`.'
         )
 
 
@@ -5925,7 +5925,7 @@ def settle_after_answer(sw: Swarm, q: sqlite3.Row, by: str) -> None:
         if q["goal"]:
             goal_changed(sw, q["goal"])
         sw.message(
-            by, q["asker"], f"Answer to Q{q['id']} on goal {q['goal']}: see `swarm questions --all`.", kind="decision"
+            by, q["asker"], f"Answer to Q{q['id']} on goal {q['goal']}: see `hivewire questions --all`.", kind="decision"
         )
         sw.event("answered", by, None, f"goal {q['goal']} Q{q['id']}")
         return
@@ -5933,7 +5933,7 @@ def settle_after_answer(sw: Swarm, q: sqlite3.Row, by: str) -> None:
     sw.message(
         by,
         q["asker"],
-        f"Answer to Q{q['id']} on {t['id']}: see `swarm questions --task {t['id']}`. Re-check your plan against it.",
+        f"Answer to Q{q['id']} on {t['id']}: see `hivewire questions --task {t['id']}`. Re-check your plan against it.",
         kind="decision",
         task=t["id"],
     )
@@ -5991,11 +5991,11 @@ def cmd_start(sw: Swarm, a) -> None:
         sw.sweep()
         t = sw.require_holder(a.as_, working=True)
         if not t["plan"]:
-            raise SwarmError("No plan yet. `swarm plan --template` lists the questions to answer first.")
+            raise SwarmError("No plan yet. `hivewire plan --template` lists the questions to answer first.")
         if t["needs_replan"]:
             raise SwarmError(
-                "Answers arrived after your plan. Re-read them (`swarm questions --task "
-                f"{t['id']}`) and re-run `swarm plan` (even unchanged) to confirm it still holds."
+                "Answers arrived after your plan. Re-read them (`hivewire questions --task "
+                f"{t['id']}`) and re-run `hivewire plan` (even unchanged) to confirm it still holds."
             )
         open_q = sw.db.execute(
             "SELECT id FROM questions WHERE task=? AND answer IS NULL AND waived=0 AND critical=1", (t["id"],)
@@ -6024,7 +6024,7 @@ def cmd_step(sw: Swarm, a) -> None:
         if t["state"] != "in_progress":
             raise SwarmError(f"{t['id']} is {t['state']}; steps are recorded only while in progress.")
         if t["needs_replan"]:
-            raise SwarmError("Answers arrived after your plan; re-run `swarm plan` first.")
+            raise SwarmError("Answers arrived after your plan; re-run `hivewire plan` first.")
         steps = json.loads(t["steps"])
         idx = t["step_idx"]
         if a.number != idx + 1:
@@ -6051,7 +6051,7 @@ def cmd_step(sw: Swarm, a) -> None:
         + (
             f" Next: {steps[idx + 1]['text']}"
             if idx + 1 < len(steps)
-            else f" All steps done: `swarm submit --as {a.as_}`"
+            else f" All steps done: `hivewire submit --as {a.as_}`"
         )
     )
 
@@ -6074,7 +6074,7 @@ def hotspot_violations(sw: Swarm, task_id: str, files: list[str], deletions: dic
         for f in files:
             if in_scope(f, paths) and name not in held and (spot.get("always") or deletions.get(f, 0) > 0):
                 kind = "any change" if spot.get("always") else "a non-additive change"
-                problems.append(f"{f}: {kind} to hotspot '{name}' needs `swarm lock {name}`")
+                problems.append(f"{f}: {kind} to hotspot '{name}' needs `hivewire lock {name}`")
     return problems
 
 
@@ -6090,7 +6090,7 @@ def cmd_submit(sw: Swarm, a) -> None:
     if not steps or t["step_idx"] < len(steps):
         raise SwarmError(f"Step {t['step_idx'] + 1} of {len(steps)} is not done.")
     if t["needs_replan"]:
-        raise SwarmError("Answers arrived after your plan; re-run `swarm plan` first.")
+        raise SwarmError("Answers arrived after your plan; re-run `hivewire plan` first.")
     path = Path(t["worktree"])
     submitted_head = git("rev-parse", "HEAD", cwd=path)
     if any(
@@ -6141,7 +6141,7 @@ def cmd_submit(sw: Swarm, a) -> None:
     with sw.tx("submit_publication"):
         t = sw.require_holder(a.as_, record_task, settling=True)
         if t["epoch"] != record_epoch:
-            raise SwarmError("Ownership changed during submission. Stop work and read `swarm whoami`.")
+            raise SwarmError("Ownership changed during submission. Stop work and read `hivewire whoami`.")
         if git("rev-parse", "HEAD", cwd=path) != submitted_head:
             raise SwarmError(
                 "Commit changed while gathering submission evidence. Retry submit against the current head."
@@ -6159,7 +6159,7 @@ def cmd_submit(sw: Swarm, a) -> None:
             t["id"],
             f"{len(files)} file{'' if len(files) == 1 else 's'}" + (f"; owed: {a.owed}" if a.owed else ""),
         )
-    print(f"{t['id']} is ready to merge. Next: `swarm merge --as {a.as_}` (it joins the merge queue).")
+    print(f"{t['id']} is ready to merge. Next: `hivewire merge --as {a.as_}` (it joins the merge queue).")
 
 
 def gate_commands(sw: Swarm) -> list[list[str]]:
@@ -6425,7 +6425,7 @@ def cmd_tool(sw: Swarm, a) -> None:
             or (t["state"] != "in_progress" and not (a.purpose == "check" and t["state"] == "ready_to_merge"))
         ):
             raise SwarmError(
-                "Plan and start implementation first; checks may also run after submission. Read `swarm whoami`."
+                "Plan and start implementation first; checks may also run after submission. Read `hivewire whoami`."
             )
     try:
         done = metered_run(
@@ -6439,7 +6439,7 @@ def cmd_tool(sw: Swarm, a) -> None:
         )
     except subprocess.TimeoutExpired as exc:
         raise SwarmError(
-            "Owned tool timed out; inspect `swarm usage show TASK`, checkpoint the retained work and recover its allowance explicitly."
+            "Owned tool timed out; inspect `hivewire usage show TASK`, checkpoint the retained work and recover its allowance explicitly."
         ) from exc
     a.exit_code = 0 if done.returncode == 0 else 1
     print(
@@ -6520,16 +6520,16 @@ def cmd_merge(sw: Swarm, a) -> None:
         if merged_already:  # a retry after a lost acknowledgement: the merge is done, say so, change nothing
             print(
                 f"Your last task {merged_already['id']} is already merged into {sw.target()} as "
-                f"{merged_already['merged_sha'][:10]}. Nothing to do. `swarm next --as {who}` for more work."
+                f"{merged_already['merged_sha'][:10]}. Nothing to do. `hivewire next --as {who}` for more work."
             )
             return
         t = sw.require_holder(who, settling=True)
         if not gate_commands(sw):
             raise SwarmError("Integration requires configured verification gates. Set [gates] commands, then submit and merge again.")
         if sw.paused():
-            raise SwarmError(f"The swarm is paused by {sw.meta('paused')}.")
+            raise SwarmError(f"The hivewire is paused by {sw.meta('paused')}.")
         if t["state"] not in ("ready_to_merge", "merge_blocked"):
-            raise SwarmError(f"{t['id']} is {t['state']}; `swarm submit` first.")
+            raise SwarmError(f"{t['id']} is {t['state']}; `hivewire submit` first.")
         incident_clearance(sw, t)
         done = {r["id"] for r in sw.db.execute("SELECT id FROM tasks WHERE state='done'")}
         missing = [n for n in json.loads(t["needs"]) if n not in done]
@@ -6559,7 +6559,7 @@ def check_merge_attempt(sw: Swarm, who: str, t) -> None:
     fresh = sw.require_holder(who, t["id"], settling=True)
     if fresh["epoch"] != t["epoch"] or sw.paused():
         raise SwarmError(
-            "Assignment changed or pool paused during this merge attempt; inspect `swarm explain` before continuing."
+            "Assignment changed or pool paused during this merge attempt; inspect `hivewire explain` before continuing."
         )
     if sw.configuration_digest() != sw.config_stamp:
         raise SwarmError(
@@ -6635,11 +6635,11 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             run(["git", "rebase", "--abort"], cwd=path, check=False)
             with sw.tx():
                 if not update_merge_attempt(sw, t, state="needs_rebase", failure=f"conflicts: {conflicts}"):
-                    return "Assignment changed while rebase returned; inspect `swarm explain` for recovery."
+                    return "Assignment changed while rebase returned; inspect `hivewire explain` for recovery."
                 sw.event("needs_rebase", who, t["id"], conflicts.replace("\n", ", "))
             return (
                 f"Rebase onto {target} conflicts in:\n{conflicts}\nRebase by hand in your worktree "
-                f"(`git rebase {target}`), resolve, run the gates, then `swarm submit` again."
+                f"(`git rebase {target}`), resolve, run the gates, then `hivewire submit` again."
             )
         with sw.tx():
             check_merge_attempt(sw, who, t)
@@ -6650,9 +6650,9 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         if failure:
             with sw.tx():
                 if not update_merge_attempt(sw, t, state="gates_failed", failure=failure[-2000:]):
-                    return "Assignment changed while a failed gate returned; inspect `swarm explain` for recovery."
+                    return "Assignment changed while a failed gate returned; inspect `hivewire explain` for recovery."
                 sw.event("gates_failed", who, t["id"], failure.splitlines()[0].rstrip(":"))
-            return f"Gates failed on the rebased branch:\n{failure}\nFix, commit, `swarm submit`, then merge again."
+            return f"Gates failed on the rebased branch:\n{failure}\nFix, commit, `hivewire submit`, then merge again."
         with sw.tx():
             check_merge_attempt(sw, who, t)
             verify_worktree_commit(path, review_source)
@@ -6673,7 +6673,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                         sw, t, state="gates_failed", failure=f"message hook failed: {out.stderr[-500:]}"
                     ):
                         return (
-                            "Assignment changed while the message hook returned; inspect `swarm explain` for recovery."
+                            "Assignment changed while the message hook returned; inspect `hivewire explain` for recovery."
                         )
                 return f"The merge message hook failed:\n{out.stderr[-1500:]}\nHook edits were retained; inspect the worktree diff before retrying."
             lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
@@ -6686,7 +6686,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             if not git("diff", "--cached", "--name-only", cwd=path):
                 with sw.tx():
                     if not update_merge_attempt(sw, t, state="gates_failed", failure="nothing to merge after rebase"):
-                        return "Assignment changed during squash; inspect `swarm explain` for recovery."
+                        return "Assignment changed during squash; inspect `hivewire explain` for recovery."
                 return "After rebasing, the branch changes nothing. Someone may have merged the same work."
             git("commit", "-m", message, cwd=path)
         elif git("diff", "--cached", "--name-only", cwd=path):
@@ -6726,11 +6726,11 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                 if not update_merge_attempt(
                     sw, t, state="ready_to_merge", failure="lost the merge queue during the merge"
                 ):
-                    return "Assignment changed when the queue lease was lost; inspect `swarm explain` for recovery."
+                    return "Assignment changed when the queue lease was lost; inspect `hivewire explain` for recovery."
                 sw.event("merge_lost_queue", who, t["id"], "the queue's lease was taken while gates ran")
             return (
                 f"{t['id']} lost its place in the merge queue while its gates ran, so {target} was not touched. "
-                "Run `swarm merge` again."
+                "Run `hivewire merge` again."
             )
         with sw.tx():  # write ahead: what is about to land, so a crash after the target moves is recognised
             check_merge_attempt(sw, who, t)
@@ -6764,7 +6764,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             incident_clearance(sw, t, source_head=review_source, integrated_head=new_sha)
             if not holds_queue(sw, t["id"]):
                 raise SwarmError(
-                    "Merge permission changed before the target update; checkpoint and inspect `swarm explain`."
+                    "Merge permission changed before the target update; checkpoint and inspect `hivewire explain`."
                 )
             if git("rev-parse", f"refs/heads/{target}", cwd=sw.main_root) != target_sha:
                 raise SwarmError("Target moved before integration. Retry the merge against its current head.")
@@ -6779,7 +6779,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                     )
                     return (
                         f"{holder_tree} has {target} checked out with changes that the merge would overwrite. "
-                        "Nothing was touched. A human must commit or stash there; then `swarm merge` again."
+                        "Nothing was touched. A human must commit or stash there; then `hivewire merge` again."
                     )
             else:
                 git("update-ref", f"refs/heads/{target}", new_sha, target_sha, cwd=sw.main_root)
@@ -6808,7 +6808,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             + (f" {pushed}" if pushed else "")
             + recorded
             + "\n"
-            f"worktree: {cleaned}. You are free: `swarm next --as {who}`."
+            f"worktree: {cleaned}. You are free: `hivewire next --as {who}`."
         )
     with sw.tx():
         update_merge_attempt(sw, t, state="ready_to_merge")
@@ -6908,7 +6908,7 @@ def recover_merges(sw: Swarm) -> None:
                     "swarm",
                     t["assignee"],
                     f"{t['id']} was already merged as {sha[:10]} by your earlier merge, which ended before the "
-                    "board recorded it. It is recorded now: do not merge it again. `swarm next` for more work.",
+                    "board recorded it. It is recorded now: do not merge it again. `hivewire next` for more work.",
                     task=t["id"],
                 )
             push = " merge.push is on: check that the target was pushed." if sw.config["merge"]["push"] else ""
@@ -6954,7 +6954,7 @@ def cleanup(sw: Swarm, t: sqlite3.Row) -> str:
         return "cleanup deferred: task completion is not present in the target; preserve and inspect its work"
     activity = worktree_activity(sw, t)
     if activity:
-        return f"cleanup deferred: {activity}; inspect `swarm execution list` or the launcher terminal before retrying"
+        return f"cleanup deferred: {activity}; inspect `hivewire execution list` or the launcher terminal before retrying"
     if t["branch"] and git("branch", "--list", t["branch"], cwd=sw.main_root):
         tip = git("rev-parse", f"refs/heads/{t['branch']}", cwd=sw.main_root)
         if not landed_in_target(sw, tip):
@@ -6971,7 +6971,7 @@ def cleanup(sw: Swarm, t: sqlite3.Row) -> str:
                 return "cleanup deferred: ignored local work is retained; preserve it outside this worktree before retrying doctor --fix"
             r = run(["git", "worktree", "remove", str(path)], cwd=sw.main_root, check=False)
             if r.returncode != 0:
-                return f"removal deferred ({r.stderr.strip()[-200:]}); `swarm doctor --fix` retries"
+                return f"removal deferred ({r.stderr.strip()[-200:]}); `hivewire doctor --fix` retries"
             notes.append("removed")
     if t["branch"] and git("branch", "--list", t["branch"], cwd=sw.main_root):
         run(["git", "branch", "-D", t["branch"]], cwd=sw.main_root, check=False)
@@ -7034,7 +7034,7 @@ def cmd_send(sw: Swarm, a) -> None:
         if a.task:
             t = sw.task(a.task)
             if a.epoch is not None and a.epoch != t["epoch"]:
-                raise SwarmError(f"Stale message epoch; `swarm explain {a.task}` shows the current assignment.")
+                raise SwarmError(f"Stale message epoch; `hivewire explain {a.task}` shows the current assignment.")
         msg_id = sw.message(
             sender,
             a.to,
@@ -7118,14 +7118,14 @@ def cmd_whoami(sw: Swarm, a) -> None:
     if env:
         print(
             f"environment: {env['os_release']}, shell {env['shell']}, python `{env['python']}` "
-            f"(`swarm environment` lists {len(environment_rules(env))} rules for this machine)"
+            f"(`hivewire environment` lists {len(environment_rules(env))} rules for this machine)"
         )
     if me["reviewing"]:
         print(
-            f"Read-only review I{me['reviewing']}: inspect `swarm incident brief {me['reviewing']}`, then submit the frozen evidence report."
+            f"Read-only review I{me['reviewing']}: inspect `hivewire incident brief {me['reviewing']}`, then submit the frozen evidence report."
         )
     elif not me["task"]:
-        print(f"No task. Next: `swarm next --as {me['name']}`.")
+        print(f"No task. Next: `hivewire next --as {me['name']}`.")
     else:
         t = sw.task(me["task"])
         print(f"task {t['id']} [{t['state']}]: {t['title']}")
@@ -7136,42 +7136,42 @@ def cmd_whoami(sw: Swarm, a) -> None:
         for i, s in enumerate(steps, 1):
             print(f"  {'[x]' if s['done'] else '[ ]'} {i}. {s['text']}")
         if t["needs_replan"]:
-            print("  answers arrived after your plan: re-run `swarm plan`")
+            print("  answers arrived after your plan: re-run `hivewire plan`")
         print(f"  next: {next_action(sw, t)}")
     print(f"command: {self_command()} <subcommand> --as {me['name']}")
-    question = console_question(sw, me["name"])
+    question = workspace_hint(sw, me["name"])
     if question:
         print(question)
     n = sw.unread(me["name"])
     if n:
-        print(f"{n} unread message(s): `swarm inbox --as {me['name']}`")
+        print(f"{n} unread message(s): `hivewire inbox --as {me['name']}`")
 
 
 def next_action(sw: Swarm, t: sqlite3.Row) -> str:
     allocation = pending_allocation(sw, t["id"])
     if allocation:
-        return f"inspect `swarm allocation show {t['id']}`; confirm every Git writer stopped before human reconciliation/reassignment"
+        return f"inspect `hivewire allocation show {t['id']}`; confirm every Git writer stopped before human reconciliation/reassignment"
     execution = sw.db.execute(
         "SELECT id FROM executions WHERE task=? AND agent=? AND (stop_requested_at IS NOT NULL OR state='unknown') AND state NOT IN ('exited','terminated','failed','reconciled') ORDER BY started_at DESC LIMIT 1",
         (t["id"], t["assignee"]),
     ).fetchone()
     if execution:
-        return f"checkpoint --epoch {t['epoch']} and exit; inspect `swarm execution show {execution['id']}` before recovery"
+        return f"checkpoint --epoch {t['epoch']} and exit; inspect `hivewire execution show {execution['id']}` before recovery"
     return {
-        "claimed": "cd into the worktree; `swarm plan --template`, then `swarm plan`",
-        "planning": "re-run `swarm plan` if answers arrived, then `swarm start`"
+        "claimed": "cd into the worktree; `hivewire plan --template`, then `hivewire plan`",
+        "planning": "re-run `hivewire plan` if answers arrived, then `hivewire start`"
         if t["needs_replan"]
-        else "`swarm start`",
-        "awaiting_answers": "wait for answers (`swarm inbox`); do not change files that depend on them",
-        "in_progress": f"finish step {t['step_idx'] + 1}, then `swarm step {t['step_idx'] + 1} --evidence ...`",
-        "needs_rebase": "rebase by hand, resolve, gates, commit, `swarm submit`",
-        "gates_failed": "fix the gate failure, commit, `swarm submit`",
-        "ready_to_merge": "`swarm merge`",
-        "merge_blocked": "wait for the human to clear the target checkout, then `swarm merge`",
-        "orphaned": "`swarm join --resume` restores it if nobody took it over",
-        "expired": f"`swarm checkpoint --epoch {t['epoch']} --note ... --next ...`, then release or request one extension",
-        "interrupted": f"inspect `swarm explain {t['id']}`; interrupt ack, checkpoint --epoch {t['epoch']}, then interrupt complete or handoff",
-    }.get(t["state"], "see `swarm status`")
+        else "`hivewire start`",
+        "awaiting_answers": "wait for answers (`hivewire inbox`); do not change files that depend on them",
+        "in_progress": f"finish step {t['step_idx'] + 1}, then `hivewire step {t['step_idx'] + 1} --evidence ...`",
+        "needs_rebase": "rebase by hand, resolve, gates, commit, `hivewire submit`",
+        "gates_failed": "fix the gate failure, commit, `hivewire submit`",
+        "ready_to_merge": "`hivewire merge`",
+        "merge_blocked": "wait for the human to clear the target checkout, then `hivewire merge`",
+        "orphaned": "`hivewire join --resume` restores it if nobody took it over",
+        "expired": f"`hivewire checkpoint --epoch {t['epoch']} --note ... --next ...`, then release or request one extension",
+        "interrupted": f"inspect `hivewire explain {t['id']}`; interrupt ack, checkpoint --epoch {t['epoch']}, then interrupt complete or handoff",
+    }.get(t["state"], "see `hivewire status`")
 
 
 def cmd_env(sw: Swarm, a) -> None:
@@ -7222,14 +7222,14 @@ def cmd_add(sw: Swarm, a) -> None:
         )
         sw.event("task_added", who, a.task, state)
         if state == "proposed":
-            sw.notify_coordinator(f"{who} proposes {a.task}: {a.title}. `swarm approve {a.task}` to open it.", a.task)
+            sw.notify_coordinator(f"{who} proposes {a.task}: {a.title}. `hivewire approve {a.task}` to open it.", a.task)
     print(f"{a.task} {state}" + ("; the coordinator approves it" if state == "proposed" else ""))
 
 
 def verification_row(sw: Swarm, receipt: str):
     row = sw.db.execute("SELECT * FROM verification_runs WHERE id=?", (receipt,)).fetchone()
     if not row:
-        raise SwarmError(f"No verification receipt {receipt}. Inspect `swarm verification list`.")
+        raise SwarmError(f"No verification receipt {receipt}. Inspect `hivewire verification list`.")
     return row
 
 
@@ -7314,7 +7314,7 @@ def verification_spec(sw: Swarm, kind: str, subject: str, sha: str) -> tuple[dic
             raise SwarmError(f"Define outcomes and tasks, review and commit {subject} before verification or closure.")
         if g["state"] not in ("active", "closed"):
             raise SwarmError(
-                f"{subject} is {g['state']}; review and `swarm goal commit {subject}` before verification."
+                f"{subject} is {g['state']}; review and `hivewire goal commit {subject}` before verification."
             )
         problems = goal_problems(sw, g, tasks)
         for t in tasks:
@@ -7333,7 +7333,7 @@ def verification_spec(sw: Swarm, kind: str, subject: str, sha: str) -> tuple[dic
             commands = outcome.get("commands")
             if not commands:
                 problems.append(
-                    f'outcome {outcome["n"]} has no executable check: `swarm goal check {subject} {outcome["n"]} --command \'["python","check.py"]\'`, then approve the revised architecture'
+                    f'outcome {outcome["n"]} has no executable check: `hivewire goal check {subject} {outcome["n"]} --command \'["python","check.py"]\'`, then approve the revised architecture'
                 )
             else:
                 bounded_check_commands(commands)
@@ -7569,7 +7569,7 @@ def run_verification(sw: Swarm, kind: str, subject: str, sha: str, who: str, ret
                     break
             if code != 0:
                 raise SwarmError(
-                    f"Check {len(results)} failed or timed out; inspect `swarm verification show {receipt}` and its retained worktree."
+                    f"Check {len(results)} failed or timed out; inspect `hivewire verification show {receipt}` and its retained worktree."
                 )
         verify_worktree_commit(tree, sha)
         with sw.tx():
@@ -7700,7 +7700,7 @@ def cmd_verification(sw: Swarm, a) -> None:
                 or row["config_digest"] != sw.configuration_digest()
             ):
                 raise SwarmError(
-                    "Use a passed task verification receipt for this landed commit and current policy: `swarm verify TASK`."
+                    "Use a passed task verification receipt for this landed commit and current policy: `hivewire verify TASK`."
                 )
             submit = json.loads(t["submit"] or "{}")
             if not submit.get("owed"):
@@ -7709,7 +7709,7 @@ def cmd_verification(sw: Swarm, a) -> None:
             fresh, _, _ = verification_fingerprint(sw, "task", a.task, t["merged_sha"])
             if fresh != row["fingerprint"]:
                 raise SwarmError(
-                    "The receipt predates this assignment or obligation. Run `swarm verify TASK` again before resolving owed checks."
+                    "The receipt predates this assignment or obligation. Run `hivewire verify TASK` again before resolving owed checks."
                 )
             proof = json.loads(t["integration_evidence"] or "{}")
             proof.setdefault("owed_resolutions", []).append(
@@ -7800,7 +7800,7 @@ def cmd_record(sw: Swarm, a) -> None:
                 who,
                 holder,
                 f"{a.task} was recorded as already merged ({sha[:10]}). Stop work on it; "
-                "you are free for `swarm next`.",
+                "you are free for `hivewire next`.",
                 task=a.task,
             )
         close_contract(sw, current_contract(sw, a.task))
@@ -7861,7 +7861,7 @@ def cmd_events(sw: Swarm, a) -> None:
         raise SwarmError("Use --after >= 0 and --limit between 1 and 1000.")
     rows = sw.db.execute("SELECT * FROM events WHERE id>? ORDER BY id LIMIT ?", (a.after, a.limit)).fetchall()
     if any(e["version"] != EVENT_VERSION for e in rows):
-        raise SwarmError("An event uses an unsupported protocol version. Update swarm before consuming it.")
+        raise SwarmError("An event uses an unsupported protocol version. Update hivewire before consuming it.")
     print(
         json.dumps(
             {"events": [redacted_data(dict(e)) for e in rows], "next_cursor": rows[-1]["id"] if rows else a.after},
@@ -7892,6 +7892,7 @@ def cmd_protocol(sw: Swarm, a) -> None:
                     "provenance-memory",
                     "verification-receipts",
                     "managed-sessions",
+                    "assignment-workspace",
                     "retained-execution-logs",
                 ],
                 "identity": "local names; unauthenticated",
@@ -7917,7 +7918,7 @@ def cmd_resume(sw: Swarm, a) -> None:
         sw.require_coordinator(a.as_ or HUMAN)
         setter = sw.meta("paused")
         if setter and (a.as_ or HUMAN) not in (setter, HUMAN):
-            raise SwarmError(f"The pause was set by {setter}; only they or a human may lift it. Ask with `swarm send`.")
+            raise SwarmError(f"The pause was set by {setter}; only they or a human may lift it. Ask with `hivewire send`.")
         sw.set_meta("paused", None)
         sw.message(a.as_ or HUMAN, "*", "RESUMED: carry on.")
         sw.event("resumed", a.as_ or HUMAN)
@@ -7956,12 +7957,12 @@ def cmd_monitor(sw: Swarm, a) -> None:
                         ).fetchone()
                     ):
                         sw.message(
-                            "swarm", agent["name"], "You are idle and tasks are open: `swarm next`.", kind="status", correlation_id="monitor:nudge"
+                            "swarm", agent["name"], "You are idle and tasks are open: `hivewire next`.", kind="status", correlation_id="monitor:nudge"
                         )
                 for t in sw.db.execute("SELECT * FROM tasks WHERE state='ready_to_merge'"):
                     if minutes_since(t["updated_at"]) > 30 and not sw.meta("merge_lock"):
                         sw.message(
-                            "swarm", t["assignee"], f"{t['id']} is ready: `swarm merge`.", kind="status", correlation_id="monitor:nudge", task=t["id"]
+                            "swarm", t["assignee"], f"{t['id']} is ready: `hivewire merge`.", kind="status", correlation_id="monitor:nudge", task=t["id"]
                         )
                         sw.update_task(t["id"])
             width, _ = term_size()
@@ -8040,7 +8041,7 @@ def render(template: list[str], values: dict) -> list[str]:
 
 
 def brief_prompt(name: str) -> str:
-    prompt = f"You are swarm agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
+    prompt = f"You are hivewire agent {name}. Read the file {BRIEF_NAME} in this directory and follow it exactly."
     if not SAFE_PROMPT_RE.match(prompt):  # a Windows .cmd shim passes argv through cmd.exe
         raise SwarmError("The agent name makes an unsafe prompt.")
     return prompt
@@ -8068,8 +8069,8 @@ def write_brief(sw: Swarm, name: str, kind: str, t: sqlite3.Row) -> None:
     text += f"\nAssignment epoch: {t['epoch']}. Use --epoch {t['epoch']} (or SWARM_EPOCH) on holder commands.\n"
     c = current_contract(sw, t["id"])
     if c:
-        text += f"Contract: {c['id']}; deadline: {json.loads(c['terms'])['deadline_at']}. Inspect `swarm explain {t['id']}` before starting.\n"
-    text += "\nSupervised adapters relay incoming messages and stop controls to SWARM_BUS_INBOX. Native tool hooks can run `swarm bus hook --stage before-tool --enforce --json`; stop new work when blocked, checkpoint and complete the authoritative interrupt. A notification is not an acknowledgement.\n"
+        text += f"Contract: {c['id']}; deadline: {json.loads(c['terms'])['deadline_at']}. Inspect `hivewire explain {t['id']}` before starting.\n"
+    text += "\nSupervised adapters relay incoming messages and stop controls to SWARM_BUS_INBOX. Native tool hooks can run `hivewire bus hook --stage before-tool --enforce --json`; stop new work when blocked, checkpoint and complete the authoritative interrupt. A notification is not an acknowledgement.\n"
     (Path(t["worktree"]) / BRIEF_NAME).write_text(text, encoding="utf-8")
     (sw.dir / "briefs" / f"{name}.md").write_text(text, encoding="utf-8")
     archive = sw.dir / "briefs" / "by-content"
@@ -8106,7 +8107,7 @@ def prepared_assignment(sw: Swarm, name: str, task) -> None:
         )
     if sw.paused() or not claim_still_current(sw, name, task["id"], task["epoch"], task["branch"]):
         raise SwarmError(
-            f"Assignment changed or pool paused during startup for {task['id']}. Preserve the brief/worktree; inspect `swarm explain {task['id']}` before starting a new worker."
+            f"Assignment changed or pool paused during startup for {task['id']}. Preserve the brief/worktree; inspect `hivewire explain {task['id']}` before starting a new worker."
         )
     interrupt_permission(sw, sw.task(task["id"]))
     contract_permission(sw, sw.task(task["id"]), reserving=True)
@@ -8181,7 +8182,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
     if not ad:
         raise SwarmError(f"No adapter {a.kind!r}; known: {', '.join(sw.config['adapters'])}.")
     if not shutil.which(ad["run"][0]):
-        raise SwarmError(f"{ad['run'][0]} is not installed (`swarm probe`).")
+        raise SwarmError(f"{ad['run'][0]} is not installed (`hivewire probe`).")
     if a.unattended and not sw.config["spawn"]["allow_unattended"]:
         raise SwarmError(
             "Unattended agents bypass their own permission prompts. Enable [spawn] allow_unattended "
@@ -8211,7 +8212,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
         "SELECT 1 FROM executions WHERE agent=? AND state NOT IN ('exited','terminated','failed','reconciled')", (name,)
     ).fetchone():
         raise SwarmError(
-            "This agent has a live/uncertain execution. Inspect `swarm execution list` before restarting it."
+            "This agent has a live/uncertain execution. Inspect `hivewire execution list` before restarting it."
         )
     t = prepare_agent(sw, a.kind, name, a.model, a.caps, a.task)
     values["cwd"] = t["worktree"]
@@ -8235,7 +8236,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
             (name,),
         ).fetchone():
             raise SwarmError(
-                "This agent has a live/uncertain execution. Inspect `swarm execution list` before restarting it."
+                "This agent has a live/uncertain execution. Inspect `hivewire execution list` before restarting it."
             )
         sw.db.execute(
             "INSERT INTO executions(id,agent,task,epoch,state,started_at,heartbeat_at,policy,argv,output) VALUES(?,?,?,?,'starting',?,?,?,?,?)",
@@ -8289,7 +8290,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
             )
             sw.event("execution_start_refused", name, t["id"], f"{execution}: {exc}")
         raise SwarmError(
-            f"Independent supervisor startup failed: {exc}. Work was retained. Inspect `swarm execution show {execution}`; use an operator terminal or a host that permits independent process startup. No fallback was attempted."
+            f"Independent supervisor startup failed: {exc}. Work was retained. Inspect `hivewire execution show {execution}`; use an operator terminal or a host that permits independent process startup. No fallback was attempted."
         ) from exc
     packet_attempted = False
     try:
@@ -8328,7 +8329,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
                 )
                 sw.event("execution_handoff_refused", name, t["id"], execution)
         raise SwarmError(
-            f"Execution startup was interrupted: {exc}. Inspect `swarm execution show {execution}` and {log}. Do not restart blindly."
+            f"Execution startup was interrupted: {exc}. Inspect `hivewire execution show {execution}` and {log}. Do not restart blindly."
         ) from exc
     deadline = time.monotonic() + policy["startup_sec"]
     while time.monotonic() < deadline:
@@ -8341,13 +8342,13 @@ def cmd_spawn(sw: Swarm, a) -> None:
             break
         if proc.poll() is not None:
             raise SwarmError(
-                f"Execution supervisor exited during startup; inspect `swarm execution show {execution}` and {log}."
+                f"Execution supervisor exited during startup; inspect `hivewire execution show {execution}` and {log}."
             )
         time.sleep(0.05)
     record = execution_row(sw, execution)
     if record["state"] in ("starting", "unknown", "failed"):
         raise SwarmError(
-            f"Execution {execution} has no confirmed ready state ({record['state']}). Inspect `swarm execution show {execution}` and {log}; do not restart blindly."
+            f"Execution {execution} has no confirmed ready state ({record['state']}). Inspect `hivewire execution show {execution}` and {log}; do not restart blindly."
         )
     print(f"spawned {name} ({a.kind}) on {t['id']}, supervisor pid {proc.pid}; execution {execution}; log {log}")
 
@@ -8358,7 +8359,7 @@ EXECUTION_TERMINAL = ("exited", "terminated", "failed", "reconciled")
 def execution_row(sw: Swarm, execution: str):
     row = sw.db.execute("SELECT * FROM executions WHERE id=?", (execution,)).fetchone()
     if not row:
-        raise SwarmError("No such execution. Inspect `swarm execution list`.")
+        raise SwarmError("No such execution. Inspect `hivewire execution list`.")
     return row
 
 
@@ -8415,7 +8416,7 @@ def sweep_executions(sw: Swarm) -> None:
             )
             sw.event("execution_supervision_lost", row["agent"], row["task"], row["id"])
             sw.notify_coordinator(
-                f"Execution {row['id']} lost supervision. Preserve work and inspect `swarm execution show {row['id']}`; no automatic restart.",
+                f"Execution {row['id']} lost supervision. Preserve work and inspect `hivewire execution show {row['id']}`; no automatic restart.",
                 row["task"],
             )
 
@@ -8854,8 +8855,21 @@ def cmd_sessions(sw: Swarm, a) -> None:
     from contextlib import redirect_stdout
     import swarm_sessions
 
+    if getattr(a, "workspace_console", False) and (not getattr(a, "workspace_id", None) or a.once or a.json):
+        raise SwarmError("The private workspace console requires a live interactive viewer request.")
+    if getattr(a, "workspace_console", False) and os.name == "nt":
+        # A new Windows console must use its own handles, not the assistant's pipes.
+        sys.stdin = open("CONIN$", encoding="utf-8")
+        sys.stdout = open("CONOUT$", "w", encoding="utf-8", buffering=1)
+        sys.stderr = sys.stdout
     if not a.once and not (sys.stdin.isatty() and sys.stdout.isatty()):
-        raise SwarmError("Run `swarm sessions` in your terminal, or use `sessions --once --json` headlessly. No terminal window was opened.")
+        raise SwarmError("Run `hivewire sessions` in your terminal, or use `sessions --once --json` headlessly. No terminal window was opened.")
+    workspace_id = getattr(a, "workspace_id", None)
+    if workspace_id:
+        import swarm_workspace
+
+        if a.once or not swarm_workspace.valid_token(workspace_id) or not swarm_workspace.touch_viewer(sw, workspace_id):
+            raise SwarmError("This workspace viewer request expired; run `hivewire workspace` again.")
     with redirect_stdout(io.StringIO()):
         errors = start_session_workers(sw, a) if a.agents else []
     if a.once:
@@ -8867,7 +8881,7 @@ def cmd_sessions(sw: Swarm, a) -> None:
             for row in data["sessions"]:
                 print(swarm_sessions.clean(f"{row['id']}  {row['agent']} ({row['kind']})  {row['task']}  {row['state']}  exit={row['exit_code']}"))
             if not data["sessions"]:
-                print("No owned sessions yet. Start one with `swarm spawn CLI --name NAME --task TASK`.")
+                print("No owned sessions yet. Start one with `hivewire spawn CLI --name NAME --task TASK`.")
         if errors:
             raise SwarmError("Some workers could not start; existing sessions were retained. " + "; ".join(errors))
         return
@@ -8881,6 +8895,8 @@ def cmd_sessions(sw: Swarm, a) -> None:
             refresh = 0
             while True:
                 if time.monotonic() >= refresh:
+                    if workspace_id:
+                        swarm_workspace.touch_viewer(sw, workspace_id)
                     with sw.tx():
                         sw.sweep()
                     snapshot = redacted_data(swarm_sessions.listing(sw.db, limit=a.limit))
@@ -8939,7 +8955,10 @@ def cmd_sessions(sw: Swarm, a) -> None:
                 time.sleep(0.05)
     except KeyboardInterrupt:
         pass
-    print("Session viewer detached. Workers continue under their supervisors; reopen with `swarm sessions`.")
+    finally:
+        if workspace_id:
+            swarm_workspace.touch_viewer(sw, workspace_id, close=True)
+    print("Session viewer detached. Workers continue under their supervisors; reopen with `hivewire sessions`.")
 
 
 # --------------------------------------------------------------------------- interactive agents and the console
@@ -9104,8 +9123,8 @@ def code_changed() -> bool:
 
 
 def restart_self() -> None:
-    """A long-running pane picks up an updated swarm.py by running the new code in its place."""
-    print(paint("swarm.py was updated; restarting this view on the new code.", "dim"), flush=True)
+    """A long-running pane picks up an updated hivewire.py by running the new code in its place."""
+    print(paint("hivewire.py was updated; restarting this view on the new code.", "dim"), flush=True)
     sys.exit(subprocess.call([sys.executable, str(LAUNCHER), *sys.argv[1:]]))
 
 
@@ -9232,7 +9251,7 @@ def launch_supervised_terminal(sw: Swarm, name: str, task, argv: list[str], call
         if sw.agent(name)["pid"] != previous_pid or sw.db.execute(
             "SELECT 1 FROM executions WHERE agent=? AND state NOT IN ('exited','terminated','failed','reconciled')", (name,)
         ).fetchone():
-            raise SwarmError("Interactive process changed or is uncertain. Inspect `swarm execution list` before restarting.")
+            raise SwarmError("Interactive process changed or is uncertain. Inspect `hivewire execution list` before restarting.")
         sw.db.execute(
             "INSERT INTO executions(id,agent,task,epoch,state,supervisor_pid,started_at,heartbeat_at,policy,argv) VALUES(?,?,?,?,'starting',?,?,?,?,?)",
             (execution, name, task["id"], task["epoch"], os.getpid(), iso(), iso(), json.dumps(policy), json.dumps(redacted_data(argv))),
@@ -9249,7 +9268,7 @@ def launch_supervised_terminal(sw: Swarm, name: str, task, argv: list[str], call
                 startup_caller(sw, caller, parent)
                 prepared_assignment(sw, name, task)
                 if row["state"] != "starting" or row["supervisor_pid"] != os.getpid() or row["stop_requested_at"] or sw.agent(name)["pid"] != os.getpid():
-                    raise SwarmError("Interactive startup changed/stopped. Preserve work; inspect `swarm execution list`.")
+                    raise SwarmError("Interactive startup changed/stopped. Preserve work; inspect `hivewire execution list`.")
                 attempted = True
                 owned = OwnedProcess(argv, Path(task["worktree"]), {**sw.env_for(sw.agent(name), task["id"]), "SWARM_EXECUTION_ID": execution,
                                      **({"SWARM_BUS_INBOX": str(inbox.path)} if inbox else {})},
@@ -9283,7 +9302,7 @@ def launch_supervised_terminal(sw: Swarm, name: str, task, argv: list[str], call
             inbox.close()
         if owned:
             owned.close()
-    print(f"Supervised terminal exited ({owned.returncode}); retained work and execution {execution} are inspectable with `swarm execution show {execution}`.")
+    print(f"Supervised terminal exited ({owned.returncode}); retained work and execution {execution} are inspectable with `hivewire execution show {execution}`.")
 
 
 def cmd_launch(sw: Swarm, a) -> None:
@@ -9292,7 +9311,7 @@ def cmd_launch(sw: Swarm, a) -> None:
     if not template:
         raise SwarmError(f"No interactive command for {a.kind}; set [adapters.{a.kind}] interactive = [...].")
     if not shutil.which(template[0]):
-        raise SwarmError(f"{template[0]} is not installed (`swarm probe`).")
+        raise SwarmError(f"{template[0]} is not installed (`hivewire probe`).")
     caller = a.as_ or HUMAN
     parent_execution_id = startup_parent(sw, caller, a.dry_run)
     name = a.name or free_name(sw, a.kind)
@@ -9327,7 +9346,7 @@ def cmd_launch(sw: Swarm, a) -> None:
         launch_supervised_terminal(sw, name, t, argv, caller, parent_execution_id, previous_pid)
     except OSError as exc:
         raise SwarmError(
-            f"Interactive startup failed: {exc}. Work was retained; inspect `swarm whoami --as {name}` and repair the adapter before retrying."
+            f"Interactive startup failed: {exc}. Work was retained; inspect `hivewire whoami --as {name}` and repair the adapter before retrying."
         ) from exc
 
 
@@ -9372,13 +9391,13 @@ def cmd_launcher(sw: Swarm, a) -> None:
         kinds = interactive_kinds(sw)
         print("\n" + paint("START AGENTS", "bold") + f"  in {sw.main_root.name}")
         for line in textwrap.wrap(
-            "Each agent joins the swarm with a brief that tells it the protocol, and opens in "
+            "Each agent joins the hivewire with a brief that tells it the protocol, and opens in "
             "its own tab when this terminal can make one.",
             width,
         ):
             print(paint(line, "dim"))
         if not kinds:
-            print("No agent CLI is installed (`swarm probe`).")
+            print("No agent CLI is installed (`hivewire probe`).")
             return
         menu = "   ".join(f"{i}. {kind}" for i, kind in enumerate(kinds, 1))
         for line in textwrap.wrap(menu, width - 2):
@@ -9387,7 +9406,7 @@ def cmd_launcher(sw: Swarm, a) -> None:
         if choice is None or choice.lower() in ("q", "quit", "exit"):
             for line in textwrap.wrap(
                 f"Launcher closed. This pane is now a plain shell in {sw.main_root.name}. Reopen the menu with: "
-                f"{' '.join(self_argv())} launcher. A CLI you start here by hand reads AGENTS.md and joins the swarm "
+                f"{' '.join(self_argv())} launcher. A CLI you start here by hand reads AGENTS.md and joins the hivewire "
                 "itself, but in the main checkout and without a brief; the menu is the safer way.",
                 width,
             ):
@@ -9453,7 +9472,7 @@ def cmd_launcher(sw: Swarm, a) -> None:
                 ),
             )
         except SwarmError as exc:
-            print(f"swarm: {exc}")
+            print(f"hivewire: {exc}")
 
 
 def board_lines(sw: Swarm, width: int, height: int) -> list[str]:
@@ -9557,10 +9576,10 @@ def serve_web_dashboard(sw: Swarm, a) -> None:
     try:
         import swarm_web
     except ImportError:
-        raise SwarmError("swarm_web.py is missing next to swarm_core.py. Run `swarm update` to reinstall.")
-    launcher = skill_ref(sw)[: -len("SKILL.md")] + "swarm.py"
+        raise SwarmError("swarm_web.py is missing next to swarm_core.py. Run `hivewire update` to reinstall.")
+    launcher = skill_ref(sw)[: -len("SKILL.md")] + "hivewire.py"
     if launcher.startswith(".."):  # the skill lives outside this repository (a user-wide install): name it in full
-        launcher = (Path(__file__).resolve().parent / "swarm.py").as_posix()
+        launcher = (Path(__file__).resolve().parent / "hivewire.py").as_posix()
     try:
         swarm_web.serve(
             sw,
@@ -9571,7 +9590,7 @@ def serve_web_dashboard(sw: Swarm, a) -> None:
             describe=describe_event,
             command=f'python "{launcher}"' if " " in launcher else f"python {launcher}",
             reset=a.reset_link,
-            launcher=str(Path(__file__).resolve().parent / "swarm.py"),
+            launcher=str(LAUNCHER),
             read_only=a.read_only,
         )
     except ValueError as exc:
@@ -9596,7 +9615,7 @@ def cmd_steward(sw: Swarm, a) -> None:
     try:
         import swarm_web
     except ImportError:
-        raise SwarmError("swarm_web.py is missing next to swarm_core.py. Run `swarm update` to reinstall.")
+        raise SwarmError("swarm_web.py is missing next to swarm_core.py. Run `hivewire update` to reinstall.")
     while True:
         with sw.tx():
             sw.sweep()
@@ -9656,16 +9675,34 @@ def observe_events(sw: Swarm, a) -> None:
             restart_self()
 
 
-def console_question(sw: Swarm, name: str) -> str | None:
-    if not sw.is_coordinator(name) or sw.meta("console"):
+def workspace_hint(sw: Swarm, name: str) -> str | None:
+    if not sw.is_coordinator(name):
+        return None
+    import swarm_workspace
+
+    if swarm_workspace.state(sw, "console").get("decision") == "declined" or swarm_workspace.viewer_alive(sw):
         return None
     return (
-        'ASK THE HUMAN NOW, once per board, with your question tool: "Use one terminal with tabs to inspect '
-        'and manage headless workers?" Yes: run `swarm console --managed` in a terminal '
-        "(or `swarm sessions`); it opens no extra windows. Start workers with `spawn`, or use "
-        "`sessions --agents opencode,qodercli`. No: `swarm console --decline`. "
-        "Use the separate interactive console only when explicitly requested."
+        f"OPEN WORKSPACE NOW: run `{self_command()} workspace --as {name}` at assignment startup. "
+        "It opens one managed terminal with live agent tabs and the browser dashboard, reusing existing views. "
+        "Do not ask the human to open viewers manually. On a headless machine use `workspace --no-open`."
     )
+
+
+def cmd_workspace(sw: Swarm, a) -> None:
+    import swarm_workspace
+
+    sw.require_coordinator(a.as_ or HUMAN)
+    result = swarm_workspace.open_workspace(sw, no_open=a.no_open, reopen=a.reopen, dry_run=a.dry_run)
+    if a.json:
+        print(json.dumps(result))
+    else:
+        for key in ("dashboard", "terminal", "browser"):
+            print(f"{key}: {result[key]}")
+        for warning in result.get("warnings", []):
+            print(f"warning: {warning}")
+        if result["terminal"].startswith("manual"):
+            print("No desktop terminal was opened. Attach with `hivewire sessions` when a terminal is available.")
 
 
 def short_path(path: str) -> str:
@@ -9684,15 +9721,15 @@ def console_panes(sw: Swarm, agents: list[str]) -> list[dict]:
     holder = sw.meta("monitor")
     running = bool(holder) and minutes_since(json.loads(holder)["at"]) < 2
     panes = [
-        {"title": "swarm board", "argv": [*me, "dashboard"], "tab": "swarm"},
-        {"title": "swarm monitor", "argv": [*me, "monitor", *(["--observe"] if running else [])], "tab": "swarm"},
+        {"title": "hivewire board", "argv": [*me, "dashboard"], "tab": "swarm"},
+        {"title": "hivewire monitor", "argv": [*me, "monitor", *(["--observe"] if running else [])], "tab": "swarm"},
         {"title": "start agents", "argv": [*me, "launcher"], "tab": "swarm"},
     ]
     taken: set[str] = set()
     for kind in agents:
         template = interactive_argv(sw, kind)
         if not template or not shutil.which(template[0]):
-            raise SwarmError(f"{kind} cannot start interactively here (`swarm probe`; or set its interactive command).")
+            raise SwarmError(f"{kind} cannot start interactively here (`hivewire probe`; or set its interactive command).")
         name = free_name(sw, kind, taken)
         taken.add(name)
         panes.append({"title": f"{name} ({kind})", "argv": [*me, "launch", kind, "--name", name], "tab": "agents"})
@@ -9811,12 +9848,12 @@ def cmd_console(sw: Swarm, a) -> None:
         with sw.tx():
             sw.set_meta("console", json.dumps({"decision": "declined", "by": who, "at": iso()}))
             sw.event("console_declined", who)
-        print("noted: no console. `swarm console` opens one whenever you want it.")
+        print("noted: no console. `hivewire console` opens one whenever you want it.")
         return
     if getattr(a, "managed", False):
         if a.dry_run:
             print("would attach one terminal session viewer; workers run headlessly and retain output")
-            print("would run: swarm sessions" + (" --agents " + a.agents if a.agents else ""))
+            print("would run: hivewire sessions" + (" --agents " + a.agents if a.agents else ""))
             return
         return cmd_sessions(sw, argparse.Namespace(agents=a.agents, unattended=False, once=False, limit=200, as_=a.as_, json=False))
     panes = console_panes(sw, split_list(a.agents))
@@ -9896,7 +9933,7 @@ def copy_into_worktree(sw: Swarm, path: Path) -> list[str]:
 
 
 def cmd_version(sw: Swarm, a) -> None:
-    print(f"agents-collaboration {__version__} at {Path(__file__).resolve().parent}")
+    print(f"Hivewire {__version__} at {Path(__file__).resolve().parent}")
 
 
 def cmd_update(sw: Swarm, a) -> None:
@@ -9961,7 +9998,7 @@ MIN_ANSWER = 15
 def goal_row(sw: Swarm, goal_id: str) -> sqlite3.Row:
     row = sw.db.execute("SELECT * FROM goals WHERE id=?", (goal_id,)).fetchone()
     if not row:
-        raise SwarmError(f"There is no goal {goal_id}. `swarm goal list` shows them.")
+        raise SwarmError(f"There is no goal {goal_id}. `hivewire goal list` shows them.")
     return row
 
 
@@ -10003,7 +10040,7 @@ def cmd_goal_new(sw: Swarm, a) -> None:
     print(f"goal {a.goal}: {a.title}")
     print("Before any task exists, answer these. Each answer needs substance; 'unknown' becomes a critical question.")
     print_goal_questions({})
-    print(f'\nnext: swarm goal answer {a.goal} --set done_looks_like="..." --set who_uses_it="..." ...')
+    print(f'\nnext: hivewire goal answer {a.goal} --set done_looks_like="..." --set who_uses_it="..." ...')
 
 
 def cmd_goal_answer(sw: Swarm, a) -> None:
@@ -10019,7 +10056,7 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
                 raise SwarmError(f"--set {item!r}: use key=value.")
             key, value = (part.strip() for part in item.split("=", 1))
             if key not in GOAL_KEYS:
-                raise SwarmError(f"{key!r} is not a goal question. `swarm goal show {a.goal}` lists them.")
+                raise SwarmError(f"{key!r} is not a goal question. `hivewire goal show {a.goal}` lists them.")
             if value.lower() in ("unknown", "?", "tbd"):
                 to = route_question(sw, who, "coordinator")
                 cur = sw.db.execute(
@@ -10052,7 +10089,7 @@ def cmd_goal_answer(sw: Swarm, a) -> None:
     for line in asked:
         print(line)
     if not missing and not waiting:
-        print(f'next: the outcomes (end of the backward chain): swarm goal outcome {a.goal} "..." --check "..."')
+        print(f'next: the outcomes (end of the backward chain): hivewire goal outcome {a.goal} "..." --check "..."')
 
 
 def cmd_goal_ask(sw: Swarm, a) -> None:
@@ -10108,7 +10145,7 @@ def cmd_goal_check(sw: Swarm, a) -> None:
         outcomes = json.loads(g["outcomes"] or "[]")
         outcome = next((o for o in outcomes if o["n"] == a.outcome), None)
         if not outcome:
-            raise SwarmError("Choose an existing outcome number from `swarm goal show`.")
+            raise SwarmError("Choose an existing outcome number from `hivewire goal show`.")
         if outcome.get("commands") == commands:
             print("Check definition is unchanged; existing approval and receipts are retained.")
             return
@@ -10292,7 +10329,7 @@ def cmd_goal_review(sw: Swarm, a) -> None:
         raise SwarmError("the plan is not ready:\n  - " + "\n  - ".join(problems))
     print(
         "\nreview passed: every outcome has work toward it, every task serves an outcome and says how it is "
-        f"proved done, and something can start now. Next: `swarm goal commit {a.goal} --assign`."
+        f"proved done, and something can start now. Next: `hivewire goal commit {a.goal} --assign`."
     )
 
 
@@ -10323,7 +10360,7 @@ def assign_wave(sw: Swarm, who: str, tasks: list[sqlite3.Row]) -> list[str]:
         sw.message(
             who,
             match["name"],
-            f"You are assigned {t['id']} ({t['title']}). `swarm claim {t['id']}`.",
+            f"You are assigned {t['id']} ({t['title']}). `hivewire claim {t['id']}`.",
             kind="decision",
             task=t["id"],
         )
@@ -10381,7 +10418,7 @@ def cmd_goal_list(sw: Swarm, a) -> None:
         print(json.dumps({"goals": [protocol_row(g) for g in rows]}, ensure_ascii=False))
         return
     if not rows:
-        print('no goals yet: `swarm goal new <id> "what you want to achieve"`')
+        print('no goals yet: `hivewire goal new <id> "what you want to achieve"`')
     for g in rows:
         tasks = goal_tasks(sw, g["id"])
         done = sum(1 for t in tasks if t["state"] == "done")
@@ -10406,7 +10443,7 @@ def cmd_goal_close(sw: Swarm, a) -> None:
             return
         if g["state"] != "active":
             raise SwarmError(
-                f"Review and `swarm goal commit {a.goal}` before closure; an uncommitted or empty goal cannot be closed."
+                f"Review and `hivewire goal commit {a.goal}` before closure; an uncommitted or empty goal cannot be closed."
             )
         sha = git("rev-parse", f"refs/heads/{sw.target()}", cwd=sw.main_root)
         fingerprint, _, _ = verification_fingerprint(sw, "goal", a.goal, sha)
@@ -10416,7 +10453,7 @@ def cmd_goal_close(sw: Swarm, a) -> None:
         ).fetchone()
         if not receipt or receipt["state"] != "passed":
             raise SwarmError(
-                f"Run each outcome's check through `swarm goal verify {a.goal}` before closure; free-text evidence cannot replace a current passed receipt."
+                f"Run each outcome's check through `hivewire goal verify {a.goal}` before closure; free-text evidence cannot replace a current passed receipt."
             )
         outcomes = json.loads(g["outcomes"] or "[]")
         given = {}
@@ -10519,7 +10556,7 @@ def cmd_context(sw: Swarm, a) -> None:
 BRIEF_NAME = ".swarm-brief.md"
 BRIEF = """# Brief for {name}
 
-You are **{name}**, a {kind} agent in a swarm of coding agents sharing one git
+You are **{name}**, a {kind} agent in a hivewire of coding agents sharing one git
 repository. A coordination service tracks who does what; you talk to it with:
 
     {swarm} <command> --as {name}
@@ -10599,7 +10636,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "missing_worktree",
                 f"worktree {t['worktree']} is missing",
-                f"Inspect swarm explain {t['id']}; use claim --take-over only after the holder is recoverable.",
+                f"Inspect hivewire explain {t['id']}; use claim --take-over only after the holder is recoverable.",
                 t["id"],
             )
         if t["state"] in HELD and t["branch"] and t["branch"] not in branches:
@@ -10613,7 +10650,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "ownership_drift",
                 "task and agent ownership disagree",
-                f"Inspect swarm explain {t['id']} and preserve its branch before recovery.",
+                f"Inspect hivewire explain {t['id']} and preserve its branch before recovery.",
                 t["id"],
             )
         contract = current_contract(sw, t["id"])
@@ -10623,7 +10660,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
                 issue(
                     "unknown_usage",
                     "Usage evidence or owned command supervision is unknown",
-                    f"Inspect swarm usage show {t['id']}; report numeric evidence or request human conservative settlement.",
+                    f"Inspect hivewire usage show {t['id']}; report numeric evidence or request human conservative settlement.",
                     t["id"],
                 )
             reason = usage_limit_reason(sw, contract, include_terminal=True)
@@ -10631,7 +10668,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
                 issue(
                     "usage_exhausted",
                     reason,
-                    f"Inspect swarm usage show {t['id']}; checkpoint and request explicit human budget recovery.",
+                    f"Inspect hivewire usage show {t['id']}; checkpoint and request explicit human budget recovery.",
                     t["id"],
                     "warning",
                 )
@@ -10639,7 +10676,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "contract_epoch",
                 "accepted contract has a stale epoch",
-                f"Inspect swarm contract show {t['id']}; checkpoint and request a revised offer.",
+                f"Inspect hivewire contract show {t['id']}; checkpoint and request a revised offer.",
                 t["id"],
             )
         if t["state"] == "done" and t["merged_sha"]:
@@ -10692,7 +10729,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
                 issue(
                     "cleanup_pending",
                     "merged; worktree cleanup pending",
-                    "Preview with swarm doctor --fix --dry-run; apply with --fix.",
+                    "Preview with hivewire doctor --fix --dry-run; apply with --fix.",
                     t["id"],
                     "warning",
                 )
@@ -10706,7 +10743,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "agent_assignment_drift",
                 f"{agent['name']} refers to a task it does not hold",
-                "Inspect swarm agents and swarm status --all; preserve task artifacts.",
+                "Inspect hivewire agents and hivewire status --all; preserve task artifacts.",
                 tid,
             )
         if agent["reviewing"]:
@@ -10718,14 +10755,14 @@ def cmd_doctor(sw: Swarm, a) -> None:
                 issue(
                     "review_reservation",
                     f"{agent['name']} has an inconsistent review reservation",
-                    f"Inspect swarm incident brief {agent['reviewing']}; a human must settle the review.",
+                    f"Inspect hivewire incident brief {agent['reviewing']}; a human must settle the review.",
                 )
     for lock in sw.db.execute("SELECT * FROM locks"):
         if lock["task"] not in tasks or tasks[lock["task"]]["state"] not in HELD:
             issue(
                 "orphan_lock",
                 f"lock {lock['name']} has no held task",
-                f"Inspect preserved work before swarm unlock {lock['name']} --as human.",
+                f"Inspect preserved work before hivewire unlock {lock['name']} --as human.",
                 lock["task"],
             )
     for r in sw.db.execute(
@@ -10735,7 +10772,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "interrupt_drift",
                 f"stop interrupt {r['id']} is pending on an unstopped task",
-                f"Inspect swarm interrupt show {r['id']}; do not resume work until settled.",
+                f"Inspect hivewire interrupt show {r['id']}; do not resume work until settled.",
                 r["task"],
             )
     expected_pins = set()
@@ -10790,7 +10827,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
         issue(
             "verification_supervision_lost",
             f"verification {row['id']} is uncertain",
-            f"Inspect swarm verification show {row['id']}; confirm cessation before human reconciliation.",
+            f"Inspect hivewire verification show {row['id']}; confirm cessation before human reconciliation.",
             row["subject"] if row["kind"] == "task" else None,
         )
     remote = sw.config["project"]["remote"]
@@ -10800,7 +10837,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "execution_output_capture" if output.get("error") else "execution_output_limited",
                 f"execution {execution['id']} has failed or limited output capture",
-                f"Inspect swarm execution show {execution['id']} and its retained log; preserve work and reduce output before a new execution.",
+                f"Inspect hivewire execution show {execution['id']} and its retained log; preserve work and reduce output before a new execution.",
                 execution["task"],
                 "error" if output.get("error") else "warning",
             )
@@ -10811,14 +10848,14 @@ def cmd_doctor(sw: Swarm, a) -> None:
             issue(
                 "execution_supervision_lost",
                 f"execution {execution['id']} has uncertain process state",
-                f"Inspect swarm execution show {execution['id']}; preserve work, confirm processes stopped, then reconcile as human.",
+                f"Inspect hivewire execution show {execution['id']}; preserve work, confirm processes stopped, then reconcile as human.",
                 execution["task"],
             )
         elif execution["stop_requested_at"]:
             issue(
                 "execution_stopping",
                 f"execution {execution['id']} awaits stop under its captured policy",
-                f"Inspect swarm execution show {execution['id']}; checkpoint and exit the worker.",
+                f"Inspect hivewire execution show {execution['id']}; checkpoint and exit the worker.",
                 execution["task"],
                 "warning",
             )
@@ -10901,7 +10938,7 @@ def cmd_doctor(sw: Swarm, a) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    p = argparse.ArgumentParser(prog="swarm", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p = argparse.ArgumentParser(prog="hivewire", description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--as", dest="as_", default=os.environ.get("SWARM_AS"), help="your agent name")
     p.add_argument("--json", action="store_true", help="one versioned JSON result; accepted at any command depth")
     p.add_argument("--protocol-version", type=int, default=PROTOCOL_VERSION, help="required result protocol version")
@@ -10943,6 +10980,12 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--unattended", action="store_true", help="requires the project's explicit spawn permission policy")
     sp.add_argument("--once", action="store_true", help="list sessions and return; no terminal needed")
     sp.add_argument("--limit", type=int, choices=range(1, 1001), default=200, metavar="1..1000")
+    sp.add_argument("--workspace-id", default=None, help=argparse.SUPPRESS)
+    sp.add_argument("--workspace-console", action="store_true", help=argparse.SUPPRESS)
+    sp = add("workspace", cmd_workspace, "open or reuse the assignment's managed terminal and browser dashboard")
+    sp.add_argument("--no-open", action="store_true", help="start/reuse the hidden dashboard without opening desktop viewers")
+    sp.add_argument("--reopen", action="store_true", help="open the browser again; reuse any live session manager")
+    sp.add_argument("--dry-run", action="store_true", help="describe viewers without starting processes or opening windows")
     ap = add("allocation", cmd_allocation, "inspect Git allocation and attest cessation before reuse")
     asub = ap.add_subparsers(dest="allocation_action", required=True)
     for action in ("show", "prepare", "reconcile"):
@@ -11583,7 +11626,7 @@ def execute_command(args) -> tuple[int, object, int | None, int]:
         if not args.json and n and args.command not in ("inbox", "leave", "join"):
             row = sw.agent(args.as_)
             if row["state"] != "left":
-                print(f"\n[{n} unread message(s): swarm inbox --as {args.as_}]")
+                print(f"\n[{n} unread message(s): hivewire inbox --as {args.as_}]")
         cursor = sw.db.execute("SELECT COALESCE(MAX(id),0) FROM events").fetchone()[0]
         result = protocol_result(sw, args, sys.stdout.getvalue()) if args.json else None
         if args.json and args.command == "merge" and (not result.get("task") or result["task"]["state"] != "done"):
@@ -11614,7 +11657,7 @@ def main(argv: list[str] | None = None) -> int:
                 return process_group_anchor()
             raise SwarmError("Invalid private execution entry arguments; no process was signaled.")
         except (SwarmError, OSError, ValueError, sqlite3.Error) as exc:
-            print(f"swarm execution: {redact_text(str(exc))}", file=sys.stderr)
+            print(f"hivewire execution: {redact_text(str(exc))}", file=sys.stderr)
             return 2
     # Normalize the global switch before argparse reaches nested command parsers. `--` still quotes literals.
     boundary = raw.index("--") if "--" in raw else len(raw)
@@ -11641,7 +11684,7 @@ def main(argv: list[str] | None = None) -> int:
                 error = {
                     "code": "storage_error" if isinstance(exc, sqlite3.Error) else "command_refused",
                     "message": redact_text(str(exc)),
-                    "next_action": "Inspect swarm status --all --json and swarm doctor --json; preserve worktrees.",
+                    "next_action": "Inspect hivewire status --all --json and hivewire doctor --json; preserve worktrees.",
                 }
             except Exception as exc:
                 code = 70
@@ -11668,7 +11711,7 @@ def main(argv: list[str] | None = None) -> int:
         args = build_parser().parse_args(raw)
         return execute_command(args)[0]
     except (SwarmError, OSError, sqlite3.Error, ValueError) as exc:
-        print(f"swarm: {exc}", file=sys.stderr)
+        print(f"hivewire: {exc}", file=sys.stderr)
         return 2
 
 

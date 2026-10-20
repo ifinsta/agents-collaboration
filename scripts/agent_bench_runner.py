@@ -42,7 +42,7 @@ def main(argv=None):
         "Implement this one coding assignment now using Read/Edit/Write. Only edit durations.py. "
         "Preserve the other function and every test file. Do not delegate, use network tools, or change configuration. "
         "The harness independently runs the acceptance tests after you finish.\n"
-        "The harness already owns all coordination, planning and integration. Do not invoke swarm commands; implement the assigned function only.\n"
+        "The harness already owns all coordination, planning and integration. Do not invoke Hivewire commands; implement the assigned function only.\n"
         + json.dumps({k: assignment[k] for k in ("task", "requirement", "scope")})
     )
     command = [executable, "-p", "--model", args.model, "--max-budget-usd", str(args.max_budget_usd),

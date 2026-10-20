@@ -111,7 +111,7 @@ class Trial:
         return self.run(["git", *args], cwd, required)
 
     def swarm(self, *args, env=None, required=True):
-        tool = self.repo / ".agents/skills/agents-collaboration/swarm.py"
+        tool = self.repo / ".agents/skills/agents-collaboration/hivewire.py"
         return self.run([sys.executable, str(tool), *args], env=env, required=required)
 
     def setup(self):

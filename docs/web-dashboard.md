@@ -5,15 +5,56 @@ Use a matching source installation; an older published tag may not contain it.
 The [evidence index](README.md#evidence-and-release-readiness) distinguishes recorded
 runtime snapshots from later dashboard changes.
 
+At assignment startup the coordinator runs `hivewire workspace`. It starts the
+dashboard as a hidden observer, opens the selected board in the browser once,
+and opens the managed terminal alongside it. Repeat calls reuse both views;
+`workspace --reopen` opens the browser again. See [managed sessions](managed-sessions.md)
+for desktop detection, headless operation and worker lifetime guarantees.
+The direct commands below remain useful for foreground server diagnostics.
+
 ```bash
-swarm dashboard --web                  # prints the link and opens it in your browser
-swarm dashboard --web --no-open        # print the link only
-swarm dashboard --web --port 9000      # another port (default: the saved one, else 8787)
-swarm dashboard --web --observe        # do not sweep; another `monitor` does
-swarm dashboard --web --reset-link     # make a new link; old links stop working
-swarm dashboard --web --read-only      # the page only shows; it cannot act as you
-swarm steward                          # the inbox steward, reviewing every minute (--once for one review)
+hivewire dashboard --web                  # prints the link and opens it in your browser
+hivewire dashboard --web --no-open        # print the link only
+hivewire dashboard --web --port 9000      # another port (default: the saved one, else 8787)
+hivewire dashboard --web --observe        # do not sweep; another `monitor` does
+hivewire dashboard --web --reset-link     # make a new link; old links stop working
+hivewire dashboard --web --read-only      # the page only shows; it cannot act as you
+hivewire steward                          # the inbox steward, reviewing every minute (--once for one review)
 ```
+
+## See it with the demo board
+
+The pictures below are of a **seeded demo board**, not live agents.
+[examples/dashboard_demo.py](../examples/dashboard_demo.py) builds it in a throw-away Git
+repository with real `hivewire` commands: five agents (claude, opencode, qodercli, codex, gemini), a goal
+awaiting approval, one task in the merge queue, one agent gone silent, an open incident under independent
+review, questions, messages of several kinds and a few steward reminders. The silent agent, the incident and the
+two merged tasks are written straight into the database, because producing them legitimately takes real commits
+and a long wait.
+
+```bash
+python examples/dashboard_demo.py       # prints the new directory and the command to run there
+cd <that directory>
+python <path to>/hivewire.py dashboard --web
+```
+
+Heartbeats expire after 20 minutes, so a demo left alone turns into a board of silent agents; build it again to
+see it live. Nothing here touches your repositories or `~/.agents`.
+
+![Overview](images/dashboard-overview.png)
+
+![Team canvas](images/dashboard-team.png)
+
+| Inbox | Task |
+|---|---|
+| ![Inbox](images/dashboard-inbox.png) | ![Task](images/dashboard-task.png) |
+
+![The overview in a 500 px wide window](images/dashboard-phone.png)
+
+Regenerate the pictures with `python scripts/dashboard_screenshots.py [--out DIR] [--browser PATH]`. It builds
+the demo in a temporary directory, runs the dashboard on a free port with throw-away state, photographs each page with
+a headless Edge, Chrome or Chromium, and deletes everything it made. The narrowest shot is 500 px because headless
+browsers widen narrower windows and crop the picture.
 
 ## One dashboard for every board
 
@@ -21,7 +62,7 @@ There is one dashboard per user, not one per run. It lives at a fixed address, `
 that port is taken (then the next free one, which is saved and reused), and its link keeps the same token every
 time. A bookmark of it keeps working across restarts.
 
-- The first `swarm dashboard --web` starts it and stays in the foreground until Ctrl+C.
+- The first `hivewire dashboard --web` starts it and stays in the foreground until Ctrl+C.
 - Every later run, from any repository or session, **adds its board to the running dashboard**, prints the same
   link with that board selected, and returns at once. It does not start a second server.
 - A board switcher appears in the top bar once more than one board is listed. The address carries the board
@@ -31,12 +72,12 @@ time. A bookmark of it keeps working across restarts.
 
 The shared state is in `~/.agents/swarm-web/` (set `SWARM_WEB_HOME` to move it): `server.json` holds the port and
 token, `boards/` one small file per board. Only the terminal that started the dashboard sweeps its own board;
-other listed boards are only read, so run `swarm monitor` for them (or rely on their agents' own commands, which
+other listed boards are only read, so run `hivewire monitor` for them (or rely on their agents' own commands, which
 sweep).
 
 A link without its token, or with an old one, shows a short explanation instead of data.
 
-The terminal board (`swarm dashboard`) is unchanged. This is the same board, drawn for a person who wants
+The terminal board (`hivewire dashboard`) is unchanged. This is the same board, drawn for a person who wants
 more room: who is working on what, what needs a human, what the agents said to each other, and why a
 task is where it is. It refreshes every three seconds and stops with Ctrl+C.
 
@@ -46,14 +87,14 @@ The page is a tool, not only a view. These actions run as **you** (the human), f
 
 | Where | Action | What runs |
 |---|---|---|
-| Overview, Decisions | Answer or waive a question | `swarm answer` / `swarm waive` |
-| Overview, Decisions | Approve an architecture brief (after a confirmation) | `swarm goal architecture GOAL --approve` |
-| Inbox | Reply to a message, with its kind | `swarm send AGENT TEXT --kind KIND --reply-to ID` |
-| Inbox | Acknowledge a message addressed to you | `swarm bus receive` then `swarm bus ack`, with its receipt |
-| Team, Inbox | Review inboxes now | `swarm steward --once` |
-| Team, steward inspector | Start an LLM reviewer (after a confirmation) | `swarm add INBOX-n ...` then `swarm spawn CLI --name NAME --task INBOX-n` |
+| Overview, Decisions | Answer or waive a question | `hivewire answer` / `hivewire waive` |
+| Overview, Decisions | Approve an architecture brief (after a confirmation) | `hivewire goal architecture GOAL --approve` |
+| Inbox | Reply to a message, with its kind | `hivewire send AGENT TEXT --kind KIND --reply-to ID` |
+| Inbox | Acknowledge a message addressed to you | `hivewire bus receive` then `hivewire bus ack`, with its receipt |
+| Team, Inbox | Review inboxes now | `hivewire steward --once` |
+| Team, steward inspector | Start an LLM reviewer (after a confirmation) | `hivewire add INBOX-n ...` then `hivewire spawn CLI --name NAME --task INBOX-n` |
 
-Each action runs the real `swarm` command in that board's repository, so the engine's own checks, refusals and
+Each action runs the real `hivewire` command in that board's repository, so the engine's own checks, refusals and
 events apply exactly as in a terminal; a refusal is shown under the button. Everything else (interrupts,
 take-overs, incident decisions, dead letters) still shows the command to copy. A reply never acknowledges a
 message, and you can acknowledge only messages addressed to you. While you type, the live refresh pauses so your
@@ -73,7 +114,7 @@ agent slot) that reviews every inbox:
 
 It **never acknowledges a message for anyone**: a receipt must come from its recipient. Its reminders expire on
 their own, so they do not pile up in the inboxes they are about, and the human's own inbox is left to the page.
-Run it with `swarm steward` in a terminal or console pane, or press **Review inboxes now**. On the team canvas it
+Run it with `hivewire steward` in a terminal or console pane, or press **Review inboxes now**. On the team canvas it
 sits beside the orchestrator, with dotted lines to the agents it reminded.
 
 For judgement calls (reading threads, drafting replies), start an **LLM reviewer** from the steward's inspector: it
@@ -86,7 +127,7 @@ one task, its own worktree, and its own acknowledgements.
 The **Sessions** page adds a tab per owned execution, retained worker/supervisor
 output, observed exit status and current task evidence. Its GET endpoints are
 observational and board-scoped; start/stop controls use the existing CLI. For one
-terminal with headless workers, use `swarm sessions` or `swarm console --managed`.
+terminal with headless workers, use `hivewire sessions` or `hivewire console --managed`.
 See [managed sessions](managed-sessions.md) for lifetime and capture limits.
 
 | Page | Contents |
@@ -125,14 +166,14 @@ card edges; arrowheads indicate directional relationships:
 |---|---|---|
 | Solid arrow | Accountability: the human approves, the orchestrator assigns, an implementer submits to the integration gate | The coordinator, task holders, tasks in the merge queue |
 | Dotted | Collaboration between peers: a review request, a shared lesson, or the number of messages; and the steward's reminders | Messages between two non-coordinator agents, and from the steward, in the last 24 hours |
-| Dashed blue arrow | Independent review | An open incident, its reviewer and its subject |
+| Dashed teal arrow | Independent review | An open incident, its reviewer and its subject |
 
 The line buttons hide a group of lines. A silent or offline agent is marked with a diamond and a red icon
 (status is always a shape and a word, never colour alone), and its inspector offers the take-over command.
 
 ### Moving around
 
-The canvas uses spaced cards, a dotted background and a floating navigation bar. Task progress bars count
+The canvas uses compact cards, the original dotted grid on a warm paper background, and a floating navigation bar. Task progress bars count
 completed plan steps; a task without recorded steps has no progress bar.
 
 | Control | Behaviour |
@@ -176,7 +217,7 @@ new Sessions page was separately checked at 390 and 1280 px; see its validation 
 - **Team page.** Two sections fill the window below the main header, accounting for wrapped navigation.
   Wide screens place the canvas section beside the inspector. The title and search belong to the canvas
   section; the canvas and inspector scroll independently, without scrolling the page. The workspace has a
-  dotted background, a vertical tool rail on its right with the three line filters (icon buttons with labels),
+  dotted grid, a vertical tool rail on its right with the three line filters (icon buttons with labels),
   a legend in its top-right and navigation at the bottom. On a phone the two sections stack within the
   available height, with a scrollable inspector below and the line buttons beside the canvas.
   The Inbox works the same way on wide screens: list and thread fill the window and scroll separately, the
@@ -184,9 +225,16 @@ new Sessions page was separately checked at 390 and 1280 px; see its validation 
 
 ## Look and accessibility
 
-The interface is deliberately plain: one neutral palette and one accent, sentence-case labels, tables instead of card
-grids, and status always shown as a shape plus a word. Every text colour is at least 4.5:1 against white, the page
-background and the tinted alert backgrounds (the lowest is 4.6:1). On wide screens the Overview, Decisions and task pages
+The interface follows the typography and palette of [DeepInfer's architecture page](https://deepinfer.net/architecture/):
+Archivo body text and bold headings, IBM Plex Mono navigation and technical labels, green-black ink,
+teal accents, rust active indicators, warm paper and raised-paper card surfaces. Page backgrounds use a faint
+32 px square grid; the Team canvas retains its original 20 px dotted grid. Both patterns are drawn with
+local CSS gradients. Archivo (400–700) and IBM Plex Mono (400, 500, 600) are bundled as Latin WOFF2 data in
+`swarm_fonts.css`, including their SIL Open Font License notices; other scripts use the system fallback stack.
+There are no runtime requests to Google Fonts or other external hosts. Compact spacing, small corner radii,
+thin focus indicators, and status shown as a shape plus a word remain consistent.
+See [theme validation and previews](validation/architecture-theme/report.md) for measured fonts, colors and browser checks.
+On wide screens the Overview, Decisions and task pages
 fill the window and their two columns scroll independently, and the live refresh keeps each scroll position.
 
 ## Security model
@@ -202,18 +250,19 @@ fill the window and their two columns scroll independently, and the live refresh
 - Views are `GET` requests that open the board with a read-only SQLite connection (`mode=ro`, `query_only`).
 - Actions are one endpoint, `POST /api/act`, which needs the token header, an `Origin` that is the dashboard's
   own address, a JSON body of at most 16 KB and an action from a fixed list. Inputs are checked first (ids are
-  numbers, names match the agent-name pattern, text is 1 to 4000 characters). The server then runs `swarm` with
+  numbers, names match the agent-name pattern, text is 1 to 4000 characters). The server then runs `hivewire` with
   an argument list, never a shell, and puts free text after `--` so it can never be read as an option. It runs
-  the `swarm.py` that registered the board (a `swarm.py` with `swarm_core.py` beside it), in that repository.
+  the `hivewire.py` that registered the board (a `hivewire.py` with `swarm_core.py` beside it), in that repository.
 - **Anyone with the link can act as you** on the boards it lists. Keep the link private, use `--reset-link` if
   it was shared, and `--read-only` when you only want to watch.
 - Board text is written by agents and is untrusted. The page builds its interface from text nodes only
   (never `innerHTML`), and its Content-Security-Policy is `default-src 'none'` with a single
-  nonce-protected script and style, `connect-src 'self'` and no external fonts, scripts or images.
+  nonce-protected script and style, `connect-src 'self'`, `font-src data:` for the bundled fonts, and no external
+  fonts, scripts or images.
 - Anyone with the link can read every listed board and, while page actions are
   enabled, submit permitted human actions. This remains a trusted-local interface. Do not forward the link; use `--reset-link` if it has been shared. Stop the server
   when you are done.
-- Unless `--observe` is given, the server runs the same sweep every `swarm` command runs (marking silent
+- Unless `--observe` is given, the server runs the same sweep every `hivewire` command runs (marking silent
   agents offline, expiring contracts, escalating unanswered critical messages) every few seconds, as the
   terminal dashboard does. These sweeps can update liveness and recovery records
   through the normal engine; use `--observe` for an observational server loop.

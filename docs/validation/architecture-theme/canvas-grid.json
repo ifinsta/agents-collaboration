@@ -1,0 +1,23 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "canvasGrid": "radial-gradient(circle, rgb(185, 177, 160) 0.8px, rgba(0, 0, 0, 0) 1px)",
+      "canvasSpacing": "20px 20px",
+      "pageGrid": "linear-gradient(rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px), linear-gradient(90deg, rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px)",
+      "paper": "rgb(244, 241, 233)",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "accent": "#0D6B5E",
+      "width": 1440
+    },
+    {
+      "canvasGrid": "radial-gradient(circle, rgb(185, 177, 160) 0.8px, rgba(0, 0, 0, 0) 1px)",
+      "canvasSpacing": "20px 20px",
+      "pageGrid": "linear-gradient(rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px), linear-gradient(90deg, rgba(21, 33, 31, 0.055) 1px, rgba(0, 0, 0, 0) 1px)",
+      "paper": "rgb(244, 241, 233)",
+      "font": "Archivo, \"Helvetica Neue\", Arial, sans-serif",
+      "accent": "#0D6B5E",
+      "width": 390
+    }
+  ]
+}

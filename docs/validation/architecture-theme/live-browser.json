@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "rendered_fonts": {
+    "main h1": [
+      {
+        "familyName": "Archivo SemiBold",
+        "postScriptName": "Archivo-SemiBold-Bold",
+        "isCustomFont": true,
+        "glyphCount": 11
+      }
+    ],
+    ".tabs a": [
+      {
+        "familyName": "IBM Plex Mono",
+        "postScriptName": "IBMPlexMono-Regular",
+        "isCustomFont": true,
+        "glyphCount": 8
+      }
+    ],
+    ".mono": [
+      {
+        "familyName": "IBM Plex Mono",
+        "postScriptName": "IBMPlexMono-Regular",
+        "isCustomFont": true,
+        "glyphCount": 4
+      }
+    ]
+  },
+  "theme": {
+    "colors": {
+      "--bg": "#F4F1E9",
+      "--surface": "#FBF9F3",
+      "--surface-soft": "#EBE6DA",
+      "--text": "#15211F",
+      "--mute": "#4C5A55",
+      "--dim": "#5F6B64",
+      "--accent": "#0D6B5E",
+      "--accentink": "#084C43",
+      "--signal": "#B93D0A"
+    },
+    "bodyWeight": "400",
+    "headingWeight": "700",
+    "navWeight": "400",
+    "headerHeight": 33,
+    "toolbarHeight": 33,
+    "fonts": [
+      {
+        "family": "Archivo",
+        "weight": "400 700",
+        "status": "loaded"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "weight": "400",
+        "status": "loaded"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "weight": "500",
+        "status": "loaded"
+      },
+      {
+        "family": "IBM Plex Mono",
+        "weight": "600",
+        "status": "loaded"
+      }
+    ]
+  },
+  "external_requests": 0,
+  "browser_errors": []
+}

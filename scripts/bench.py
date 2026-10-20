@@ -77,7 +77,7 @@ def main() -> int:
         if not args.no_config:  # most real projects have one, and reading it costs something
             (repo / ".agents" / "swarm").mkdir(parents=True, exist_ok=True)
             (repo / ".agents" / "swarm" / "config.toml").write_text(CONFIG, encoding="utf-8")
-        tool = repo / ".agents" / "skills" / "agents-collaboration" / "swarm.py"
+        tool = repo / ".agents" / "skills" / "agents-collaboration" / "hivewire.py"
         swarm = [sys.executable, str(tool)]
         run([*swarm, "join", "--kind", "claude", "--as", "ann"], repo)
         run([*swarm, "add", "T1", "A first task", "--as", "ann"], repo)
@@ -94,12 +94,12 @@ def main() -> int:
         )
         rows = [
             ("python -c pass (scale)", [sys.executable, "-c", "pass"]),
-            ("swarm version", [*swarm, "version"]),
-            ("swarm status", [*swarm, "status"]),
-            ("swarm agents", [*swarm, "agents"]),
-            ("swarm whoami", [*swarm, "whoami", "--as", "ann"]),
-            ("swarm inbox", [*swarm, "inbox", "--as", "ann"]),
-            ("swarm environment", [*swarm, "environment", "--json"]),
+            ("hivewire version", [*swarm, "version"]),
+            ("hivewire status", [*swarm, "status"]),
+            ("hivewire agents", [*swarm, "agents"]),
+            ("hivewire whoami", [*swarm, "whoami", "--as", "ann"]),
+            ("hivewire inbox", [*swarm, "inbox", "--as", "ann"]),
+            ("hivewire environment", [*swarm, "environment", "--json"]),
         ]
         for label, argv in rows:
             run(argv, repo)  # the first run writes the bytecode cache and warms the file system

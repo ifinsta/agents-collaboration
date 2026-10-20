@@ -1,7 +1,7 @@
-# Documentation
+# Hivewire documentation
 
 Current source: **0.4.4, unreleased**; CLI protocol **2**, database schema **12**,
-bus/message/event versions **1**. Use the installed skill for an older release.
+bus/message/event versions **1**. These guides target the current Hivewire source.
 The [migration guide](legacy-migration.md) describes the breaking cleanup.
 
 ## Start here
@@ -25,14 +25,15 @@ The [migration guide](legacy-migration.md) describes the breaking cleanup.
 | One terminal, headless workers and retained audit tabs | [Managed sessions](managed-sessions.md) |
 | Integration, outcome checks and receipts | [Completion evidence](completion-evidence.md) |
 | Recorded time, tokens/cost and missing accounting | [Usage allowances](usage-budgets.md) |
-| Browser dashboard, access token and observation mode | [Web dashboard](web-dashboard.md) |
+| Browser dashboard, demo board, actions, access token and observation mode | [Web dashboard](web-dashboard.md) |
+| Regenerating the dashboard pictures | [dashboard_demo.py](../examples/dashboard_demo.py), [dashboard_screenshots.py](../scripts/dashboard_screenshots.py), [images](images/) |
 | Adapter command snapshots and readiness checks | [Agent CLIs](agents.md) |
 | Implemented behavior and known gaps | [Edge-case register](../skills/agents-collaboration/EDGE-CASES.md) |
 
 ## Evidence and release readiness
 
-The latest recorded broad runtime snapshot passed **425 Linux tests** and **91 selected
-Windows checks**, with three Windows skips. See its [source hashes, scopes, browser
+The latest recorded broad runtime snapshot passed **425 Linux tests** and **94 selected
+Windows cases** (91 passed, 3 skipped). See its [source hashes, scopes, browser
 and real-terminal checks](validation/managed-sessions/report.md). These results describe that
 snapshot. They do not validate subsequent code, documentation or packaging edits.
 Hosted Windows/Linux/macOS acceptance and macOS execution remain unestablished

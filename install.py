@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Install the agents-collaboration skill.
+"""Install Hivewire, the agents-collaboration skill.
 
 Into the current repository, with every pointer agents look for (bash, zsh, Git Bash):
     curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
@@ -14,7 +14,7 @@ From a local checkout:
     python install.py --source path/to/agents-collaboration --project path/to/repo --all
 
 What it does, and nothing else:
-  1. downloads the skill files of one release (default: the tag below) and checks
+  1. downloads the current Hivewire skill files (default: main) and checks
      each against the SHA-256 in that release's MANIFEST.json;
   2. writes them to <repo>/.agents/skills/agents-collaboration/ (or, with --user,
      ~/.agents/skills/agents-collaboration/), refusing to overwrite files you
@@ -46,7 +46,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 REPO = "ifinsta/agents-collaboration"
-DEFAULT_REF = "v0.4.4"
+DEFAULT_REF = "main"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"
 MARK_START = "<!-- agents-collaboration:start -->"
@@ -66,7 +66,7 @@ description: {description}
 ---
 
 {mark}
-# agents-collaboration
+# Hivewire
 
 The full skill is installed at `{skill}`. Read that file now and follow it
 exactly. The coordination tool is `python {tool}`.
@@ -145,6 +145,8 @@ def install(args: argparse.Namespace) -> None:
     if args.agents_md and root is None:
         fail("--agents-md needs a repository: add --project <path>")
     manifest = json.loads(source.read(f"{SKILL_DIR}/MANIFEST.json").decode("utf-8"))
+    if "hivewire.py" not in manifest["files"] or "swarm.py" in manifest["files"]:
+        fail("This payload is not Hivewire-only. Select current Hivewire source with hivewire.py as its only launcher.")
     files = {}
     for name, digest in manifest["files"].items():
         data = source.read(f"{SKILL_DIR}/{name}").replace(b"\r\n", b"\n")  # a CRLF checkout is still the same file
@@ -154,10 +156,10 @@ def install(args: argparse.Namespace) -> None:
 
     dest = base / ".agents" / "skills" / SKILL
     record_path = dest / "INSTALLED.json"
+    previous = json.loads(record_path.read_text(encoding="utf-8")) if record_path.exists() else {}
     if dest.exists() and not args.force:
         if not record_path.exists():
             fail(f"{dest} exists but was not installed by this installer; use --force to replace it")
-        previous = json.loads(record_path.read_text(encoding="utf-8"))
         edited = [
             name
             for name, digest in previous.get("files", {}).items()
@@ -170,10 +172,24 @@ def install(args: argparse.Namespace) -> None:
                 + ". Move your changes upstream, or use --force to discard them"
             )
 
+    retired = sorted(set(previous.get("files", {})) - set(files))
+    obsolete_launcher = dest / "swarm.py"
+    if obsolete_launcher.exists() and obsolete_launcher.name not in retired:
+        if not args.force:
+            fail("The destination contains an unmanaged obsolete launcher; use --force to remove it")
+        retired.append(obsolete_launcher.name)
+    for name in retired:
+        if Path(name).name != name or (dest / name).is_symlink():
+            fail("An installed-file record has an unsafe retired path; refusing cleanup")
+
     shown = "~" if args.user else "."
     actions = []
     if not args.dry_run:
         dest.mkdir(parents=True, exist_ok=True)
+    for name in retired:
+        actions.append(f"remove {shown}/.agents/skills/{SKILL}/{name}")
+        if not args.dry_run:
+            (dest / name).unlink(missing_ok=True)
     for name, data in files.items():
         actions.append(f"write {shown}/.agents/skills/{SKILL}/{name}")
         if not args.dry_run:
@@ -195,10 +211,10 @@ def install(args: argparse.Namespace) -> None:
 
     if args.user:
         skill_ref = (dest / "SKILL.md").as_posix()
-        tool_ref = (dest / "swarm.py").as_posix()
+        tool_ref = (dest / "hivewire.py").as_posix()
     else:
         skill_ref = f".agents/skills/{SKILL}/SKILL.md"
-        tool_ref = f".agents/skills/{SKILL}/swarm.py"
+        tool_ref = f".agents/skills/{SKILL}/hivewire.py"
 
     if root is not None and args.scaffold:
         swarm_dir = root / ".agents" / "swarm"
@@ -239,7 +255,7 @@ def install(args: argparse.Namespace) -> None:
             stub.write_bytes(content.encode("utf-8"))
 
     where = str(dest) if args.user else str(root)
-    print(f"agents-collaboration {manifest.get('version', '')} from {source.label()} into {where}")
+    print(f"Hivewire {manifest.get('version', '')} from {source.label()} into {where}")
     for line in actions:
         print(f"  {'(dry run) ' if args.dry_run else ''}{line}")
     tool = f"python {tool_ref}"
@@ -251,7 +267,7 @@ def install(args: argparse.Namespace) -> None:
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Install the agents-collaboration skill.")
+    parser = argparse.ArgumentParser(description="Install Hivewire, the agents-collaboration skill.")
     parser.add_argument("--project", default=None, help="a path inside the target repository (default: here)")
     parser.add_argument("--user", action="store_true", help="install once into your home folder, for every repository")
     parser.add_argument("--ref", default=DEFAULT_REF, help=f"release tag or branch on GitHub (default {DEFAULT_REF})")
