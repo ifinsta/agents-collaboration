@@ -1588,10 +1588,14 @@ class Swarm:
             if gone and return_if_untouched(self, t, "its holder left before doing any work"):
                 continue
             if gone:
+                audit = progress_audit(self, t)
+                ref = rescue_uncommitted(self, t) if audit["uncommitted"] else None
                 self.update_task(t["id"], state="orphaned")
-                self.event("task_orphaned", t["assignee"], t["id"], "holder offline; branch and worktree kept")
+                self.event(
+                    "task_orphaned", t["assignee"], t["id"], "holder offline; branch and worktree kept; " + audit_text(audit, ref)
+                )
                 self.notify_coordinator(
-                    f"{t['id']} is orphaned: {t['assignee']} went offline. "
+                    f"{t['id']} is orphaned: {t['assignee']} went offline ({audit_text(audit, ref)}). "
                     f"Another agent may `hivewire claim {t['id']} --take-over`.",
                     t["id"],
                 )
@@ -4744,6 +4748,8 @@ def cmd_explain(sw: Swarm, a) -> None:
         print(f"  latest checkpoint {latest['id']}: {latest['snapshot']}")
     if t["failure"]:
         print(f"  failure: {t['failure']}")
+    if t["worktree"] and t["state"] not in ("done", "open"):
+        print(f"  progress: {audit_text(progress_audit(sw, t))}")
     for r in sw.db.execute(
         "SELECT * FROM interrupts WHERE task=? AND resumed_at IS NULL ORDER BY id DESC LIMIT 3", (t["id"],)
     ):
@@ -4998,12 +5004,57 @@ def cmd_heartbeat(sw: Swarm, a) -> None:
     print("ok")
 
 
+def retired_agents(sw: Swarm) -> set[str]:
+    """Offline agents that hold nothing: no task, no review and no live execution.
+
+    They stay on the board, as history; views hide them so a long-running pool is not a graveyard.
+    """
+    running = {
+        r[0]
+        for r in sw.db.execute(
+            "SELECT agent FROM executions WHERE state NOT IN ('exited','terminated','failed','reconciled')"
+        )
+    }
+    return {
+        r["name"]
+        for r in sw.db.execute("SELECT * FROM agents WHERE state='offline' AND task IS NULL AND reviewing IS NULL")
+        if r["name"] not in running
+    }
+
+
+def prune_retired(sw: Swarm, a) -> None:
+    """Archive long-gone agents that hold nothing. Rows and history stay; the name becomes free to join again."""
+    who = a.as_ or HUMAN
+    sw.require_coordinator(who)
+    wait = sw.config["swarm"]["reclaim_after_min"] if a.older_than is None else a.older_than
+    names = sorted(n for n in retired_agents(sw) if minutes_since(sw.agent(n)["offline_at"]) > wait)
+    if not names:
+        print(f"nothing to prune: no offline agent holding nothing has been gone longer than {wait} min")
+        return
+    if a.dry_run:
+        print(f"would archive {len(names)} agent(s) offline for over {wait} min: {', '.join(names)}")
+        print("nothing was changed")
+        return
+    with sw.tx():
+        for name in names:
+            sw.update_agent(name, state="left", left_at=iso(), task=None, pid=None, offline_reason="pruned")
+        sw.event("agents_pruned", who, None, f"{len(names)} archived: {', '.join(names)}")
+    print(f"archived {len(names)} agent(s): {', '.join(names)}")
+    print("their rows and history are kept; a name can join again with `join`")
+
+
 def cmd_agents(sw: Swarm, a) -> None:
     with sw.tx():
         sw.sweep()
+    if a.prune:
+        prune_retired(sw, a)
+        return
     coord = sw.coordinator()
+    hidden = set() if a.all else retired_agents(sw)
     print(f"{'agent':14} {'kind':10} {'model':18} {'os':8} {'state':9} {'slot':4} {'task':20} {'seen':>8}  caps")
     for r in sw.db.execute("SELECT * FROM agents WHERE state<>'left' ORDER BY joined_at"):
+        if r["name"] in hidden:
+            continue
         seen = f"{minutes_since(r['heartbeat_at']):.0f}m"
         mark = "*" if r["name"] == coord else " "
         os_name = json.loads(r["env"] or "{}").get("os", "?")
@@ -5011,6 +5062,11 @@ def cmd_agents(sw: Swarm, a) -> None:
         print(
             f"{mark}{r['name']:13} {r['kind'] or '':10} {(r['model'] or '')[:18]:18} {os_name:8} {r['state']:9} "
             f"{r['slot'] or '':<4} {assignment:20} {seen:>8}  {','.join(json.loads(r['caps']))}"
+        )
+    if hidden:
+        print(
+            f"{len(hidden)} offline agents holding nothing are hidden; `hivewire agents --all` lists them, "
+            "`hivewire agents --prune` archives the long-gone ones."
         )
     if coord == HUMAN:
         print("coordinator: a human")
@@ -5154,6 +5210,71 @@ def untouched(sw: Swarm, t) -> bool:
         if not tree.exists() or git("status", "--porcelain", cwd=tree) or has_ignored_work(sw, t, tree):
             return False
     return True
+
+
+def progress_audit(sw: Swarm, t) -> dict:
+    """What a task's recorded steps rest on: commits on its branch, and edits that exist only in the worktree."""
+    recorded = sum(1 for s in json.loads(t["steps"] or "[]") if s.get("done"))
+    ahead = 0
+    if t["branch"] and git("branch", "--list", t["branch"], cwd=sw.main_root, check=False):
+        count = git("rev-list", "--count", f"{t['base_sha'] or sw.target()}..{t['branch']}", cwd=sw.main_root, check=False)
+        ahead = int(count) if count.isdigit() else 0
+    tree = Path(t["worktree"]) if t["worktree"] else None
+    uncommitted: list[str] = []
+    if tree and tree.exists():
+        listing = run(["git", "status", "--porcelain", "-uall"], cwd=tree, check=False).stdout
+        uncommitted = [line[3:] for line in listing.splitlines() if line.strip()]
+    return {"recorded_steps": recorded, "commits_ahead": ahead, "uncommitted": uncommitted,
+            "unbacked": bool(recorded and uncommitted)}
+
+
+def rescue_ref(task_id: str, epoch: int) -> str:
+    return f"refs/swarm/rescue/{re.sub(r'[^A-Za-z0-9._-]', '-', task_id)}/e{epoch}"
+
+
+def rescue_uncommitted(sw: Swarm, t) -> str | None:
+    """Snapshot every uncommitted and untracked file as a commit under refs/swarm/rescue/.
+
+    A temporary index is used, so the worktree, its index and its branch are not touched.
+    Returns the ref, or None when there was nothing to keep or Git refused.
+    """
+    import tempfile
+
+    tree = Path(t["worktree"]) if t["worktree"] else None
+    if not tree or not tree.exists():
+        return None
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index"), "GIT_AUTHOR_NAME": "hivewire",
+                   "GIT_AUTHOR_EMAIL": "hivewire@localhost", "GIT_COMMITTER_NAME": "hivewire",
+                   "GIT_COMMITTER_EMAIL": "hivewire@localhost"}
+            head = run(["git", "rev-parse", "--verify", "HEAD"], cwd=tree, check=False).stdout.strip()
+            if head:
+                run(["git", "read-tree", head], cwd=tree, env=env)
+            run(["git", "add", "-A"], cwd=tree, env=env)
+            snapshot = run(["git", "write-tree"], cwd=tree, env=env).stdout.strip()
+            if head and snapshot == run(["git", "rev-parse", f"{head}^{{tree}}"], cwd=tree).stdout.strip():
+                return None
+            parents = ["-p", head] if head else []
+            commit = run(["git", "commit-tree", snapshot, *parents, "-m", f"hivewire rescue of {t['id']} epoch {t['epoch']}"],
+                         cwd=tree, env=env).stdout.strip()
+        ref = rescue_ref(t["id"], t["epoch"])
+        run(["git", "update-ref", ref, commit], cwd=tree)
+        return ref
+    except (SwarmError, OSError):
+        return None
+
+
+def audit_text(audit: dict, ref: str | None = None) -> str:
+    text = (
+        f"{audit['recorded_steps']} step(s) recorded, {audit['commits_ahead']} commit(s) on the branch, "
+        f"{len(audit['uncommitted'])} uncommitted file(s)"
+    )
+    if audit["unbacked"]:
+        text += ": UNVERIFIED, the recorded steps rest on edits that are not committed"
+        if ref:
+            text += f"; snapshot kept at {ref}"
+    return text
 
 
 def return_if_untouched(sw: Swarm, t, why: str) -> bool:
@@ -5538,6 +5659,17 @@ def claim(sw: Swarm, who: str, task_id: str, force: bool, take_over: bool, adopt
         )
     for line in context:
         print(f"  {line}")
+    if take_over:
+        audit = progress_audit(sw, final_task)
+        if audit["unbacked"]:
+            prefix = rescue_ref(task_id, 0).rsplit("/", 1)[0]
+            kept = git("for-each-ref", "--sort=-creatordate", "--count=1", "--format=%(refname)", prefix, cwd=sw.main_root, check=False)
+            print(f"  UNVERIFIED PROGRESS: {audit_text(audit, kept or None)}.")
+            for name in audit["uncommitted"][:10]:
+                print(f"    uncommitted: {name}")
+            print("  Review these edits and commit them before trusting the recorded steps; submit refuses uncommitted files.")
+            with sw.tx():
+                sw.event("takeover_unverified", who, task_id, audit_text(audit, kept or None))
     if take_over and final_task["plan"]:
         print(f"next: read the retained plan and steps (`hivewire whoami --as {who}`), resolve questions/replan as needed, then `hivewire start --as {who}` before continuing.")
     else:
@@ -8849,6 +8981,37 @@ def start_session_workers(sw: Swarm, a) -> list[str]:
     return errors
 
 
+def spawnable_kinds(sw: Swarm) -> list[str]:
+    """Adapters whose CLI is installed here, in config order, so the viewer can offer real choices."""
+    return [k for k, ad in sw.config["adapters"].items() if ad.get("run") and shutil.which(ad["run"][0])]
+
+
+def ask_worker_start(sw: Swarm) -> tuple[str, str, str]:
+    """Prompt for a worker with a pick-list and defaults; only the CLI choice is needed."""
+    kinds = spawnable_kinds(sw)
+    if not kinds:
+        raise SwarmError("No agent CLI is installed on this machine. `hivewire probe` shows what is missing.")
+    print("START A HEADLESS WORKER (Enter accepts the [default]; Ctrl+C cancels)\n")
+    for i, kind in enumerate(kinds, 1):
+        print(f"  {i}) {kind}")
+    while True:
+        choice = input(f"\nWhich CLI? number or name [1={kinds[0]}]: ").strip().lower() or "1"
+        kind = kinds[int(choice) - 1] if choice.isdigit() and 1 <= int(choice) <= len(kinds) else choice
+        if kind in kinds:
+            break
+        print(f"  '{choice}' is not installed here. Choose one of: {', '.join(kinds)}")
+    task = input("Task ID [next eligible task]: ").strip()
+    default = free_name(sw, kind)
+    while True:
+        name = input(f"Agent name [{default}]: ").strip().lower() or default
+        if not NAME_RE.match(name):
+            print("  Names start with a letter, then 1-31 of a-z, 0-9 or '-' (for example: claude-2).")
+        elif sw.agent(name):
+            print(f"  '{name}' is already in the pool; pick another name.")
+        else:
+            return kind, task, name
+
+
 def cmd_sessions(sw: Swarm, a) -> None:
     """One attachable audit terminal; its lifetime does not own the workers."""
     import io
@@ -8925,12 +9088,10 @@ def cmd_sessions(sw: Swarm, a) -> None:
                 elif key in ("s", "x"):
                     try:
                         with keys.cooked():
-                            print("\n")
+                            sys.stdout.write("\x1b[H\x1b[2J")
                             operation, parameters = None, None
                             if key == "s":
-                                kind = input("CLI kind: ").strip()
-                                task = input("Task ID (blank = next eligible): ").strip()
-                                name = input(f"Agent name (blank = {free_name(sw, kind)}): ").strip() or free_name(sw, kind)
+                                kind, task, name = ask_worker_start(sw)
                                 operation = cmd_spawn
                                 parameters = argparse.Namespace(kind=kind, name=name, task=task,
                                     model="", caps="", unattended=a.unattended, dry_run=False, force=False, as_=a.as_)
@@ -8950,6 +9111,8 @@ def cmd_sessions(sw: Swarm, a) -> None:
                                 message = output.getvalue().strip()[-500:]
                     except (SwarmError, OSError, EOFError) as exc:
                         message = str(exc)
+                    except KeyboardInterrupt:
+                        message = "Cancelled."
                 if key is not None:
                     refresh = 0
                 time.sleep(0.05)
@@ -11007,7 +11170,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("leave", cmd_leave, "leave the pool")
     sp.add_argument("--release", default="", help="handoff note, if you still hold a task")
     add("heartbeat", cmd_heartbeat, "say you are alive")
-    add("agents", cmd_agents, "who is in the pool and how ready they are")
+    sp = add("agents", cmd_agents, "who is in the pool and how ready they are")
+    sp.add_argument("--all", action="store_true", help="include offline agents that hold nothing")
+    sp.add_argument("--prune", action="store_true", help="coordinator/human: archive long-gone agents that hold nothing")
+    sp.add_argument("--older-than", type=float, default=None, metavar="MIN", help="with --prune: minimum minutes offline (default: reclaim_after_min)")
+    sp.add_argument("--dry-run", action="store_true", help="with --prune: show what would be archived")
     sp = add("status", cmd_status, "tasks, locks, questions")
     sp.add_argument("--all", action="store_true")
     add("whoami", cmd_whoami, "your state and your next action")

@@ -286,7 +286,13 @@ def overview(db, ctx, now) -> dict:
     coordinator = _meta(db, "coordinator")
     if cfg["swarm"]["coordinator"] == "human":
         coordinator = "human"
+    running = {r["agent"] for r in _rows(db, "SELECT agent FROM executions WHERE state NOT IN ('exited','terminated','failed','reconciled')")}
+    hidden = 0
     for a in _rows(db, "SELECT * FROM agents WHERE state<>'left' ORDER BY joined_at"):
+        # An offline agent holding no task, review or live execution is history, not part of the team.
+        if a["state"] == "offline" and not a["task"] and not (a["reviewing"] if "reviewing" in a.keys() else None) and a["name"] not in running:
+            hidden += 1
+            continue
         env = _load(a["env"], {})
         card = cards.get(a["task"]) if a["task"] else None
         agents.append(
@@ -400,6 +406,7 @@ def overview(db, ctx, now) -> dict:
             "target": cfg["project"]["target"],
             "max_agents": cfg["swarm"]["max_agents"],
             "live": len(live),
+            "retired": hidden,
             "solo": len(live) == 1,
             "coordinator": coordinator,
             "paused": _meta(db, "paused"),
@@ -1987,7 +1994,7 @@ VIEWS[''] = {
       d.pool.paused ? h('div', { class: 'note' }, 'Paused by ' + d.pool.paused + ': no claims or merges until `resume`.') : null,
       goal ? null : panel(h('div', { class: 'item' }, h('span', { class: 'm' }, 'No goal yet. Start one from a terminal:'), cmd('goal new ID "what you want done"'))),
       h('section', { class: 'panel stats', 'aria-label': 'Summary' },
-        stat('Agents', d.pool.live + '/' + d.pool.max_agents, silent.length ? silent.length + ' silent or offline' : 'all responding', silent.length ? 'var(--bad)' : ''),
+        stat('Agents', d.pool.live + '/' + d.pool.max_agents, (silent.length ? silent.length + ' silent or offline' : 'all responding') + (d.pool.retired ? ' · ' + d.pool.retired + ' earlier hidden' : ''), silent.length ? 'var(--bad)' : ''),
         stat('Merged', d.totals.done + '/' + d.totals.tasks, d.totals.working + ' in progress · ' + d.totals.merge + ' queued'),
         stat('Waiting on you', String(d.needs.length), critical ? critical + ' critical' : 'nothing urgent', d.needs.length ? 'var(--warn)' : ''),
         stat('Blocked', String(blocked.length), blocked.length ? blocked.map((t) => t.id).join(', ') : 'nothing blocked', blocked.length ? 'var(--bad)' : '')),

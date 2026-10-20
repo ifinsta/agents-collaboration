@@ -565,7 +565,11 @@ If you crash, the service marks you offline. If you stay away long enough, your
 task becomes **orphaned**, keeping its branch and worktree, and another agent can
 claim it with `hivewire claim <task> --take-over`. Read the retained plan and steps,
 resolve critical questions and replan if answers changed, then run `hivewire start`
-before continuing. Completed steps and files stay retained. The same start gate
+before continuing. When a holder goes offline the engine audits its recorded steps
+against the branch's commits and the worktree's uncommitted files, snapshots those files under
+`refs/swarm/rescue/<task>/e<epoch>` without touching the worktree, and flags the progress **UNVERIFIED**
+(in `explain` and at `claim --take-over`) when steps rest on uncommitted edits. Review and commit them before
+trusting those steps. Completed steps and files stay retained. The same start gate
 applies to an original owner returning after being marked offline, even during
 reclaim grace. Observed owner loss or process exit settles accounted running time;
 resuming starts a running clock while preserving the deadline, remaining
@@ -581,6 +585,8 @@ The coordinator:
 
 - plans rounds: `hivewire status --all` shows what is open, waiting and why;
 - checks who is ready: `hivewire agents`, and `hivewire send <agent> "free?" --kind question`;
+  `agents` hides offline agents that hold nothing (`--all` shows them); `agents --prune [--older-than MIN] [--dry-run]`
+  archives the long-gone ones, keeping their rows and history;
 - checks which CLIs exist on this machine: `hivewire probe` (installed, version,
   signed in); `hivewire probe --live` also asks each one to reply READY, which
   costs one request each;

@@ -118,7 +118,7 @@ def detail(db, directory: Path, execution: str, *, lines=100) -> dict | None:
 
 def render(snapshot, selected, details, *, width=100, height=30, view=0, scroll=0, message="") -> str:
     width, height = max(20, width), max(8, height)
-    rows = ["SWARM SESSIONS | workers run headlessly; closing this viewer leaves them running"]
+    rows = ["HIVEWIRE SESSIONS | workers run headlessly; closing this viewer leaves them running"]
     sessions = snapshot["sessions"]
     tabs = [f"{'[' if i == selected else ' '}{i+1}:{s['agent']} {s['state']}{']' if i == selected else ' '}" for i, s in enumerate(sessions)]
     # Keep the selected tab visible even when the pool history exceeds the terminal width.
@@ -142,7 +142,8 @@ def render(snapshot, selected, details, *, width=100, height=30, view=0, scroll=
         end = max(min(len(content), room), len(content) - scroll)
         rows.extend(content[max(0, end-room):end])
     else:
-        rows.append("No owned sessions yet. Press s to start a headless worker, or use swarm spawn.")
+        rows += ["No workers yet. Press s, pick a CLI from the list and press Enter: the defaults do the rest.",
+                 "Or from any terminal: hivewire spawn CLI --name NAME --task TASK"]
     rows = rows[:height-2]
     rows += ["" for _ in range(height-2-len(rows))]
     rows += [message, "Tab/Left/Right: session | v: output/audit | PgUp/PgDn: scroll | s: start | x: stop | q: detach"]

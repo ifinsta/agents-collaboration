@@ -2,6 +2,24 @@
 
 ## Unreleased
 
+- Make starting a worker from the session viewer obvious: `s` lists the installed
+  CLIs and defaults the CLI, task and name, explains a bad answer and asks again,
+  and Ctrl+C cancels the prompt rather than the viewer. The empty view names the
+  real `hivewire spawn` command. Hide offline agents that hold nothing from
+  `agents` and the dashboard (`agents --all` shows them); owners of unfinished
+  tasks stay visible and nothing is deleted.
+
+- Add `agents --prune [--older-than MIN] [--dry-run]` for the coordinator or a human:
+  archive agents that have been offline longer than `reclaim_after_min` and hold
+  no task, review or live execution. Rows and history are kept and the name can
+  join again.
+
+- Stop a dead agent's "done" steps from hiding lost work. On orphaning, compare
+  the recorded steps with the branch's commits and the worktree's uncommitted
+  files, snapshot those files under `refs/swarm/rescue/` without touching the
+  worktree, and flag the progress UNVERIFIED in the event, the coordinator
+  message, `explain` and the `claim --take-over` output.
+
 - Open assignment visibility through `hivewire workspace`: reuse a hidden local
   dashboard, open its browser once, and manage agent tabs in one visible terminal.
   Add retryable viewer leases, headless/dry-run modes and explicit browser reopen.

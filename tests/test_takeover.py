@@ -98,6 +98,44 @@ class Takeover(ProcessCase):
         with self.board() as board:
             self.assertEqual(board.db.execute("SELECT count(*) FROM questions WHERE critical=1 AND answer IS NULL AND waived=0").fetchone()[0], 1)
 
+    def test_ec351_dead_owners_uncommitted_work_is_snapshotted_and_flagged_unverified(self):
+        self.owner(progress=True)
+        (self.tree / "src" / "unsaved.txt").write_text("recorded as done but never committed", encoding="utf-8")
+        status_before = self.git("status", "--porcelain", cwd=self.tree)
+        self.loss()
+        # The snapshot leaves the worktree, its index and its branch exactly as the dead owner left them.
+        self.assertEqual(self.git("status", "--porcelain", cwd=self.tree), status_before)
+        self.assertEqual(self.git("rev-parse", "HEAD", cwd=self.tree).strip(), self.head)
+        ref = self.git("for-each-ref", "--format=%(refname)", "refs/swarm/rescue/T5").strip()
+        self.assertTrue(ref.startswith("refs/swarm/rescue/T5/e"), ref)
+        self.assertEqual(self.git("show", f"{ref}:src/unsaved.txt").strip(), "recorded as done but never committed")
+        self.assertEqual(self.git("rev-parse", f"{ref}^").strip(), self.head)
+        with self.board() as sw:
+            detail = sw.db.execute("SELECT detail FROM events WHERE kind='task_orphaned' AND task='T5'").fetchone()[0]
+        self.assertIn("UNVERIFIED", detail)
+        self.assertIn("1 uncommitted file(s)", detail)
+        self.assertIn(ref, detail)
+        explained = self.sw("explain", "T5")
+        self.assertIn("progress: 1 step(s) recorded", explained)
+        self.assertIn("UNVERIFIED", explained)
+        claimed = self.sw("claim", "T5", "--as", "bob", "--take-over")
+        self.assertIn("UNVERIFIED PROGRESS", claimed)
+        self.assertIn("uncommitted: src/unsaved.txt", claimed)
+        self.assertIn(ref, claimed)
+        self.assertEqual((self.tree / "src" / "unsaved.txt").read_text(encoding="utf-8"), "recorded as done but never committed")
+        with self.board() as sw:
+            self.assertEqual(sw.db.execute("SELECT count(*) FROM events WHERE kind='takeover_unverified'").fetchone()[0], 1)
+
+    def test_ec351_fully_committed_work_is_not_flagged_and_leaves_no_snapshot(self):
+        self.owner(progress=True)
+        self.loss()
+        self.assertEqual(self.git("for-each-ref", "refs/swarm/rescue").strip(), "")
+        with self.board() as sw:
+            detail = sw.db.execute("SELECT detail FROM events WHERE kind='task_orphaned' AND task='T5'").fetchone()[0]
+        self.assertNotIn("UNVERIFIED", detail)
+        self.assertIn("0 uncommitted file(s)", detail)
+        self.assertNotIn("UNVERIFIED", self.sw("claim", "T5", "--as", "bob", "--take-over"))
+
     def test_ec317_contracted_takeover_cannot_bypass_unanswered_start_questions(self):
         self.critical_gate()
 

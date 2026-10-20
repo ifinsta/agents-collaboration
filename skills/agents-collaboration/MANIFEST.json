@@ -1,14 +1,14 @@
 {
   "version": "0.4.4",
   "files": {
-    "SKILL.md": "c69686c4787cafa0b229dfbec12761a1ed27baf2465d81bb9d9e556074db18ae",
+    "SKILL.md": "b5c38f11b0dd3c31c68572ba7d9685f39a086a7f6c9b50aaa89bdf42adeeb10e",
     "hivewire.py": "5dd4939a2d9935ff50f3775245983fb8f5e0e7a471d749b749081b70cc906cd9",
-    "swarm_core.py": "2427104b0ee52bc8608e34370fc89cdf63ad8b6aa7d603e917099969ed3d8288",
-    "EDGE-CASES.md": "f6addfc08ddbc8c9479140f6d89b33eeb8bc37b41edf697d3d95c7da773e3d65",
+    "swarm_core.py": "85f9ea5c819d8bd1d58163022ff3857ecc5345f68805e3dcc26fb0a447b5cd40",
+    "EDGE-CASES.md": "8950d4cdfa1e1d70752cd22c02f8610b1b217dafb78a9be872e242a695a904bf",
     "BUS.md": "5a6a1ce6dfa0e79e556ff9945e41223835504e053d3a31a59182d202779e3fc7",
     "BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
-    "swarm_web.py": "ca589e26ce3a0387263fb75c6b0e7e4b034a4cb3b8bd8942df208307d6d27e9c",
-    "swarm_sessions.py": "b457b6145d153b119be3f1ad7de142a4756e443879f971ff981fddbe6c7715de",
+    "swarm_web.py": "8ae9c63b0c32720789e51724abdfc40b5cb97f906a4549f4274d56efd0e15c5b",
+    "swarm_sessions.py": "f2f9cbb0103bfbf0bc198e6b10416329d52901b080af39b2fa947b2b502be140",
     "swarm_workspace.py": "ae0fda61cfbb72f99447f9247e177778ca5dc689ae67d65e649b6a2f7865e2be",
     "swarm_fonts.css": "aa54f1b78f6e332e3bc8708dbcc046f12dd06861393a782a6d5da0a69157df77"
   }
