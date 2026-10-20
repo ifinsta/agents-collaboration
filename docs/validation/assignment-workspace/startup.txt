@@ -1,0 +1,34 @@
+test_real_background_server_starts_authenticates_and_is_reused (test_workspace.HiddenDashboard.test_real_background_server_starts_authenticates_and_is_reused) ... ok
+test_actual_concurrent_call_reuses_the_inflight_request (test_workspace.Workspace.test_actual_concurrent_call_reuses_the_inflight_request) ... ok
+test_closed_viewer_can_reopen_without_duplicating_browser (test_workspace.Workspace.test_closed_viewer_can_reopen_without_duplicating_browser) ... ok
+test_dashboard_background_start_is_hidden_and_has_no_open_switch (test_workspace.Workspace.test_dashboard_background_start_is_hidden_and_has_no_open_switch) ... ok
+test_dry_run_json_is_finite_and_worker_cannot_open_human_views (test_workspace.Workspace.test_dry_run_json_is_finite_and_worker_cannot_open_human_views) ... ok
+test_failed_terminal_and_browser_remain_retryable (test_workspace.Workspace.test_failed_terminal_and_browser_remain_retryable) ... ok
+test_headless_and_explicit_no_open_start_dashboard_without_desktop_side_effects (test_workspace.Workspace.test_headless_and_explicit_no_open_start_dashboard_without_desktop_side_effects) ... ok
+test_pending_concurrent_startup_does_not_open_more_views (test_workspace.Workspace.test_pending_concurrent_startup_does_not_open_more_views) ... ok
+test_platform_plans_keep_spaces_literal_and_use_one_viewer (test_workspace.Workspace.test_platform_plans_keep_spaces_literal_and_use_one_viewer) ... ok
+test_repeated_startup_reuses_viewers_and_does_not_start_agents (test_workspace.Workspace.test_repeated_startup_reuses_viewers_and_does_not_start_agents) ... ok
+test_stale_leases_and_dashboard_failure_do_not_block_terminal_recovery (test_workspace.Workspace.test_stale_leases_and_dashboard_failure_do_not_block_terminal_recovery) ... ok
+test_viewer_detach_releases_only_its_lease (test_workspace.Workspace.test_viewer_detach_releases_only_its_lease) ... ok
+test_ec345_detach_and_rejoin_preserve_the_same_live_worker_and_work (test_sessions.SessionLifetime.test_ec345_detach_and_rejoin_preserve_the_same_live_worker_and_work) ... ok
+test_ec345_headless_manager_starts_workers_and_normal_stop_retains_the_log (test_sessions.SessionLifetime.test_ec345_headless_manager_starts_workers_and_normal_stop_retains_the_log) ... ok
+test_ec345_closed_sessions_stay_visible_with_exit_and_task_audit (test_sessions.SessionViews.test_ec345_closed_sessions_stay_visible_with_exit_and_task_audit) ... ok
+test_ec345_json_never_enters_a_key_loop_and_pipes_do_not_start_workers (test_sessions.SessionViews.test_ec345_json_never_enters_a_key_loop_and_pipes_do_not_start_workers) ... ok
+test_ec346_forged_paths_and_terminal_escape_sequences_do_not_escape_the_view (test_sessions.SessionViews.test_ec346_forged_paths_and_terminal_escape_sequences_do_not_escape_the_view) ... ok
+test_ec346_linked_captures_are_not_served (test_sessions.SessionViews.test_ec346_linked_captures_are_not_served) ... skipped 'creating file symlinks requires host permission'
+test_ec346_log_excerpt_is_bounded_and_follow_cursors_do_not_repeat (test_sessions.SessionViews.test_ec346_log_excerpt_is_bounded_and_follow_cursors_do_not_repeat) ... ok
+test_ec347_captured_helpers_use_no_window_on_windows (test_sessions.SessionViews.test_ec347_captured_helpers_use_no_window_on_windows) ... ok
+test_dashboard_renders_once (test_swarm.Console.test_dashboard_renders_once) ... ok
+test_ec148_git_ignored_local_files_follow_into_worktrees (test_swarm.Console.test_ec148_git_ignored_local_files_follow_into_worktrees) ... ok
+test_ec149_the_coordinator_opens_the_workspace_without_asking (test_swarm.Console.test_ec149_the_coordinator_opens_the_workspace_without_asking) ... ok
+test_ec150_console_observes_when_a_monitor_runs (test_swarm.Console.test_ec150_console_observes_when_a_monitor_runs) ... ok
+test_ec151_a_pane_command_with_a_separator_is_refused (test_swarm.Console.test_ec151_a_pane_command_with_a_separator_is_refused) ... ok
+test_ec152_every_platform_gets_a_layout (test_swarm.Console.test_ec152_every_platform_gets_a_layout) ... ok
+test_ec153_ec155_launch_prepares_nothing_on_a_dry_run (test_swarm.Console.test_ec153_ec155_launch_prepares_nothing_on_a_dry_run) ... ok
+test_ec154_agent_panes_get_distinct_names (test_swarm.Console.test_ec154_agent_panes_get_distinct_names) ... ok
+test_ec158_version_and_update (test_swarm.Console.test_ec158_version_and_update) ... ok
+
+----------------------------------------------------------------------
+Ran 29 tests in 71.464s
+
+OK (skipped=1)

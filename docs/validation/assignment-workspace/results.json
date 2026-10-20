@@ -1,0 +1,71 @@
+{
+  "ok": true,
+  "checked_at": "2026-10-20T16:06:47.903964+00:00",
+  "platform": "Windows-11-10.0.22621-SP0",
+  "python": "3.12.2",
+  "selected_tests": 94,
+  "passed": 93,
+  "skipped": 1,
+  "groups": [
+    {
+      "group": "startup",
+      "modules": [
+        "test_workspace",
+        "test_sessions",
+        "test_swarm.Console"
+      ],
+      "run": 29,
+      "passed": 28,
+      "skipped": 1
+    },
+    {
+      "group": "installation",
+      "modules": [
+        "test_installer",
+        "test_hivewire"
+      ],
+      "run": 27,
+      "passed": 27,
+      "skipped": 0
+    },
+    {
+      "group": "dashboard",
+      "modules": [
+        "test_web_dashboard",
+        "test_web_actions"
+      ],
+      "run": 38,
+      "passed": 38,
+      "skipped": 0
+    }
+  ],
+  "live_windows_viewer": {
+    "viewer_claimed": true,
+    "viewer_alive": true,
+    "heartbeat_recent": true
+  },
+  "repeat_startup": {
+    "dashboard": "ready",
+    "terminal": "already running",
+    "browser": "already opened",
+    "warnings": []
+  },
+  "source_sha256_lf": {
+    "skills/agents-collaboration/hivewire.py": "5dd4939a2d9935ff50f3775245983fb8f5e0e7a471d749b749081b70cc906cd9",
+    "skills/agents-collaboration/swarm_core.py": "2427104b0ee52bc8608e34370fc89cdf63ad8b6aa7d603e917099969ed3d8288",
+    "skills/agents-collaboration/swarm_workspace.py": "ae0fda61cfbb72f99447f9247e177778ca5dc689ae67d65e649b6a2f7865e2be",
+    "skills/agents-collaboration/swarm_sessions.py": "b457b6145d153b119be3f1ad7de142a4756e443879f971ff981fddbe6c7715de",
+    "skills/agents-collaboration/swarm_web.py": "ca589e26ce3a0387263fb75c6b0e7e4b034a4cb3b8bd8942df208307d6d27e9c",
+    "skills/agents-collaboration/SKILL.md": "c69686c4787cafa0b229dfbec12761a1ed27baf2465d81bb9d9e556074db18ae",
+    "skills/agents-collaboration/EDGE-CASES.md": "f6addfc08ddbc8c9479140f6d89b33eeb8bc37b41edf697d3d95c7da773e3d65",
+    "skills/agents-collaboration/MANIFEST.json": "f73d08c9c2e016bd68ae04a24ff22f6f1493611ffeaa27e5091d7cf95d400680",
+    "scripts/make_manifest.py": "c4334e255da2955b7866514a6d6d89575b44d3003aaae60700a0b34918ecd602",
+    "tests/test_workspace.py": "adc9f5671003a3a3a0db3fda5f69f4e6d2373c6c29a7777594ac2edcf843a6ef",
+    "tests/test_sessions.py": "a4d23d93de19f5eab293f52c3caee732d82707cf778593c072229df15576bdc6",
+    "tests/test_swarm.py": "ae1aa1233dd8943ac7cacaa4eed3d5caa1678239dcbe84708379b53a8afd6b3b",
+    "tests/test_installer.py": "c1b52c6875e245b4e50e1b00cc79a0b85652985094a3a1361761edd78db5707c",
+    "tests/test_hivewire.py": "2396628461738424107a06e7071ec731f60b4028a7607b48b18d692b601820b8",
+    "tests/test_web_dashboard.py": "00e2261fe646f064d3dc80b3157b722a03613675205a2a074da96b7cb640506f",
+    "tests/test_web_actions.py": "baf6b0cbb9d44ce54108eceff442956d523d5977430d758d8aff3062cc9f84d7"
+  }
+}

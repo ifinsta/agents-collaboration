@@ -47,6 +47,7 @@ by the retained local results.
 | [Transition audit](transition-crash-audit.md) | Selected race/crash evidence and historical counterexamples |
 | [Workforce trials](workforce-benchmark.md) | Scripted mechanics and mixed live-agent results; no productivity claim |
 | [Managed-session validation](validation/managed-sessions/report.md) | Complete 425-case Linux run, 94 selected Windows cases and browser/terminal checks |
+| [Assignment workspace startup](validation/assignment-workspace/report.md) | Live Windows viewer startup/reuse, hidden-server integration, 94 selected cases with one skip |
 | [Pre-push validation](validation/github-push/report.md) | Terminal-output fix, synchronized liveness fixture, retained full-run failures and final CI acceptance scope |
 | [Documentation alignment](validation/markdown-alignment/report.md) | File inventory, link/command checks and focused installer/simulation evidence |
 | [Generated simulation](simulation.md) | Scripted real-Git workflow, not a live-provider benchmark |
