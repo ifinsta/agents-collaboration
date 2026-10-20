@@ -20,6 +20,12 @@
   worktree, and flag the progress UNVERIFIED in the event, the coordinator
   message, `explain` and the `claim --take-over` output.
 
+- Fix `next` aborting with "fatal: not a git repository" for every agent. A finished
+  task whose worktree removal stopped halfway left a folder without `.git`; cleanup
+  ran Git inside it and the error ended the command. Such a folder is now removed when
+  empty, kept and reported when it holds files, and a failing cleanup is reported
+  without withholding the next task.
+
 - Open assignment visibility through `hivewire workspace`: reuse a hidden local
   dashboard, open its browser once, and manage agent tabs in one visible terminal.
   Add retryable viewer leases, headless/dry-run modes and explicit browser reopen.

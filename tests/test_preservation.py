@@ -13,6 +13,59 @@ import test_swarm as fixtures
 core = fixtures.swarm_module
 
 
+class LeftoverWorktree(HardeningCase):
+    """A removal that stops halfway leaves a folder Git no longer knows; it must never break other commands."""
+
+    def leftover(self, *, with_file):
+        self.config("[merge]\ncleanup = false")
+        self.join("ann")
+        tree = self.to_ready("ann", "T1")
+        self.sw("merge", "--as", "ann")
+        # What a Windows removal that hit a locked folder leaves: Git's side is gone, the folder is not.
+        self.git("worktree", "remove", "--force", str(tree))
+        tree.mkdir()
+        if with_file:
+            (tree / "kept.txt").write_text("not Git's to delete", encoding="utf-8")
+        with self.board() as sw, sw.tx():
+            sw.update_task("T1", cleanup_pending=1)
+        self.assertFalse((tree / ".git").exists())
+        return tree
+
+    def test_ec352_next_survives_an_empty_leftover_folder_and_removes_it(self):
+        tree = self.leftover(with_file=False)
+        self.join("bob")
+        claimed = self.sw("next", "--as", "bob")
+        self.assertIn("claimed", claimed)
+        self.assertFalse(tree.exists())
+        self.assertEqual(self.task("T1")["cleanup_pending"], 0)
+        self.assertFalse(self.git("branch", "--list", "swarm/T1").strip(), "the merged branch is deleted too")
+
+    def test_ec352_a_leftover_folder_with_files_is_kept_and_reported_never_deleted(self):
+        tree = self.leftover(with_file=True)
+        self.join("bob")
+        self.assertIn("claimed", self.sw("next", "--as", "bob"))
+        self.assertEqual((tree / "kept.txt").read_text(encoding="utf-8"), "not Git's to delete")
+        self.assertEqual(self.task("T1")["cleanup_pending"], 0)
+        with self.board() as sw:
+            detail = sw.db.execute("SELECT detail FROM events WHERE kind='cleanup_skipped' AND task='T1'").fetchone()[0]
+        self.assertIn("no longer a Git worktree", detail)
+
+    def test_ec352_doctor_fix_and_a_failing_cleanup_do_not_abort_next(self):
+        tree = self.leftover(with_file=True)
+        self.json_command("doctor", "--fix", "--json")
+        self.assertTrue((tree / "kept.txt").exists())
+        with self.board() as sw, sw.tx():
+            sw.update_task("T1", cleanup_pending=1)
+        self.join("bob")
+        with mock.patch.object(core, "cleanup", side_effect=core.SwarmError("simulated failure")):
+            with self.board() as sw:
+                out = io.StringIO()
+                with mock.patch("sys.stdout", out):
+                    core.cmd_next(sw, mock.Mock(as_="bob"))
+        self.assertIn("cleanup of T1 skipped: simulated failure", out.getvalue())
+        self.assertTrue(self.task("T2")["assignee"] == "bob" or self.task("T3")["assignee"] == "bob")
+
+
 class IgnoredWork(HardeningCase):
     def ignore(self, pattern):
         path = self.root / ".gitignore"

@@ -5158,6 +5158,15 @@ def worktree_activity(sw: Swarm, t) -> str | None:
     return None
 
 
+def is_checkout(path: Path) -> bool:
+    """A directory Git still treats as a worktree has a .git file or folder; a leftover has neither.
+
+    A removal that stops halfway (on Windows a folder in use cannot be deleted) leaves such a leftover behind, and
+    every Git command run inside it fails with "not a git repository".
+    """
+    return (path / ".git").exists()
+
+
 def has_ignored_work(sw: Swarm, t, path: Path) -> bool:
     """Ignored files are local work too; only an exact archived brief is disposable."""
     # git() strips human-output whitespace, which is meaningful in NUL-delimited
@@ -5207,7 +5216,7 @@ def untouched(sw: Swarm, t) -> bool:
             return False
     tree = Path(t["worktree"]) if t["worktree"] else None
     if tree:
-        if not tree.exists() or git("status", "--porcelain", cwd=tree) or has_ignored_work(sw, t, tree):
+        if not tree.exists() or not is_checkout(tree) or git("status", "--porcelain", cwd=tree) or has_ignored_work(sw, t, tree):
             return False
     return True
 
@@ -5221,7 +5230,7 @@ def progress_audit(sw: Swarm, t) -> dict:
         ahead = int(count) if count.isdigit() else 0
     tree = Path(t["worktree"]) if t["worktree"] else None
     uncommitted: list[str] = []
-    if tree and tree.exists():
+    if tree and tree.exists() and is_checkout(tree):
         listing = run(["git", "status", "--porcelain", "-uall"], cwd=tree, check=False).stdout
         uncommitted = [line[3:] for line in listing.splitlines() if line.strip()]
     return {"recorded_steps": recorded, "commits_ahead": ahead, "uncommitted": uncommitted,
@@ -5241,7 +5250,7 @@ def rescue_uncommitted(sw: Swarm, t) -> str | None:
     import tempfile
 
     tree = Path(t["worktree"]) if t["worktree"] else None
-    if not tree or not tree.exists():
+    if not tree or not tree.exists() or not is_checkout(tree):
         return None
     try:
         with tempfile.TemporaryDirectory() as tmp:
@@ -5429,7 +5438,11 @@ def cmd_next(sw: Swarm, a) -> sqlite3.Row:
             )
         pick = options[0] if options else left_behind[0]
     for row in pending:  # cleanup separately checks process activity and retained local work
-        cleanup(sw, sw.task(row["id"]))
+        try:
+            cleanup(sw, sw.task(row["id"]))
+        except (SwarmError, OSError) as exc:
+            # Housekeeping for a finished task is never a reason to withhold this agent's next task.
+            print(f"cleanup of {row['id']} skipped: {exc}; `hivewire doctor` shows it")
     if not options:
         print(
             f"No open task; {pick['id']} was left behind by {pick['assignee']} with work in it. Taking it over: "
@@ -7091,7 +7104,18 @@ def cleanup(sw: Swarm, t: sqlite3.Row) -> str:
         tip = git("rev-parse", f"refs/heads/{t['branch']}", cwd=sw.main_root)
         if not landed_in_target(sw, tip):
             return "cleanup deferred: task branch has unmerged commits; inspect and preserve them before retrying"
-    if path and path.exists():
+    if path and path.exists() and not is_checkout(path):
+        # Git already forgot this worktree, so there is nothing left for it to protect or to inspect.
+        if any(path.iterdir()):
+            kept = f"{path} is no longer a Git worktree and still holds files; check them and delete the folder by hand"
+            notes.append(f"leftover kept: {kept}")
+        else:
+            try:
+                path.rmdir()  # only ever removes an empty directory
+            except OSError as exc:
+                return f"removal deferred ({exc}); `hivewire doctor --fix` retries"
+            notes.append("empty leftover folder removed")
+    elif path and path.exists():
         current = git("rev-parse", "--abbrev-ref", "HEAD", cwd=path, check=False)
         if t["branch"] and current not in (t["branch"], "HEAD", ""):
             # The directory was reused for other work after this task merged (someone switched its branch). It is not

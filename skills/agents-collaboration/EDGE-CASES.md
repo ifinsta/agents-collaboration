@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 351 cases. 266 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
+Totals: 352 cases. 267 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
 
 ## A. Joining, identity and liveness
 
@@ -543,6 +543,7 @@ half a second to a second per command, and agents call it for every step.
 | EC-349 | Agents that went offline long ago stay in every listing, so a long-running pool shows a graveyard and hides who is working. | `agents` and the dashboard hide offline agents that hold no task, no review and no live or uncertain execution, and say how many are hidden; `agents --all` lists them. An offline agent that still holds a task stays visible, so its silent owner is never hidden. Nothing is deleted from the board. | Tested |
 | EC-350 | Dead agents accumulate forever: nothing removes them, so every listing grows with history nobody needs. | `agents --prune` (coordinator or human only; `--dry-run` previews) archives agents that are offline for longer than `reclaim_after_min` (or `--older-than MIN`) and hold no task, no review and no live or uncertain execution. Archiving sets them to `left` with reason `pruned` and records one event; rows, events and messages stay, so history and names in old events remain true, and the name can join again. A recently silent agent that may still resume, or the owner of unfinished work, is never archived. | Tested |
 | EC-351 | A dead agent's steps are marked done but the work behind them exists only as uncommitted edits, so cleaning the worktree loses it while the board still says done. | When a holder is orphaned, the engine audits its recorded steps against the branch's commits and the worktree's uncommitted files, and snapshots every uncommitted and untracked file as a commit under `refs/swarm/rescue/TASK/eEPOCH` using a temporary index, leaving the worktree, index and branch untouched. The orphaning event and coordinator message state the counts and flag the progress UNVERIFIED when steps rest on uncommitted edits; `explain` shows the same audit; `claim --take-over` prints an UNVERIFIED PROGRESS notice with the files and snapshot ref and records `takeover_unverified`. Committed work is not flagged and leaves no snapshot. The successor must still review and commit the edits: `submit` refuses uncommitted files. | Tested |
+| EC-352 | `next` fails for every agent with 'fatal: not a git repository' because one finished task's worktree folder survived a removal that stopped halfway (on Windows a folder in use cannot be deleted), and housekeeping for that task runs before anyone's next task is chosen. | A folder with no `.git` is a leftover, not a worktree. Cleanup removes it only when it is empty (`rmdir`, which cannot delete files), keeps and reports it when it still holds files, and defers when the folder is locked; the task's merged branch is deleted either way. A failing cleanup of someone else's finished task is reported on one line and never withholds the next task. Returning an untouched task, the progress audit and the rescue snapshot treat such a folder as unknown contents and leave it alone. | Tested |
 
 ## What would close the open ones
 
