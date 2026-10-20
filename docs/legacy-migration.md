@@ -40,5 +40,5 @@ stay `unconfigured`; old closures without retained proof stay
 Vendor-specific native context injection still requires its configured bridge;
 local wake hints do not preempt an unsupported model request.
 
-[Validation evidence](validation/legacy-cleanup/report.md) records the complete
+Validation evidence (removed from the tree; kept in git history) recorded the complete
 Linux suite and focused Windows checks at one unchanged source fingerprint.

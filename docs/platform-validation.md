@@ -62,13 +62,17 @@ A Linux container cannot establish macOS or native Windows behavior.
 |---|---|
 | [Managed sessions](validation/managed-sessions/report.md) | Complete 425-case Linux run; 94 selected Windows cases with three skips; browser and terminal checks |
 | [Documentation alignment](validation/markdown-alignment/report.md) | Later Windows installer/bus checks and a regenerated scripted session; focused scope only |
-| [Legacy cleanup](validation/legacy-cleanup/report.md) | Complete 379-case Linux run; 48 selected Windows cases with two skips |
-| [Adapter dispatch](validation/adapter-dispatch/report.md) | Earlier complete 374-case Linux run and 20 focused Windows checks |
-| [Standard bus](validation/standard-bus/report.md) | Overlapping focused bus/communication/installer scopes at schema 11 |
-| [Candidate matrix](validation/candidate-matrix/report.md) | Staged schema-10 coverage across five runtimes; not one complete command at its final source |
-| [Acceptance timebox](validation/final-source-timebox/report.md) | Additional memory crash and installed-option checks; incomplete broad runs retained |
-| [Candidate agent trials](validation/candidate-agent-trials/report.md) | Mixed real-agent outcomes, including failed acceptance and timeouts |
-| [Earlier live trials](validation/live-agent-trials/report.md) | Small matched real-agent sample; no productivity conclusion |
+
+Older snapshots were removed from the tree and are kept in git history (`git log --stat -- docs/validation`).
+What each established, at its own source and runtime:
+
+- Legacy cleanup: Complete 379-case Linux run; 48 selected Windows cases with two skips
+- Adapter dispatch: Earlier complete 374-case Linux run and 20 focused Windows checks
+- Standard bus: Overlapping focused bus/communication/installer scopes at schema 11
+- Candidate matrix: Staged schema-10 coverage across five runtimes; not one complete command at its final source
+- Acceptance timebox: Additional memory crash and installed-option checks; incomplete broad runs retained
+- Candidate agent trials: Mixed real-agent outcomes, including failed acceptance and timeouts
+- Earlier live trials: Small matched real-agent sample; no productivity conclusion
 
 Earlier startup, claim, allocation and takeover artifacts are referenced by the
 [implementation history](resilient-workforce.md#verification-history) and

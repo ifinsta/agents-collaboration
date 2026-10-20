@@ -57,9 +57,13 @@ Local checks do not establish the full required platform matrix.
 
 ## Historical material
 
-The [original proposal](../agents-collaboration-resilient-workforce-design.md)
+The original proposal (removed from the tree; kept in git history)
 records the starting design and acceptance targets. [CHANGELOG.md](../CHANGELOG.md)
 records development and release history. Reports under `validation/` apply to
-their own source hashes and runtimes; failed or incomplete attempts stay retained.
+their own source hashes and runtimes. The reports for the managed-session run, the pre-push run, the
+documentation alignment and the canvas check are kept with every file they cite. Raw logs, result files,
+intermediate runs and the older reports that other documents still describe were removed to keep the
+repository small; the prose in those documents stands as the record, and the files themselves remain in
+git history (`git log --stat -- docs/validation`).
 The implementation guide's verification history describes earlier stages, not
 the current suite or a hosted CI pass.

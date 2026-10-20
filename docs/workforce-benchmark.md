@@ -81,7 +81,7 @@ claim about coordination, model quality, spend or real-team performance.
 
 ## Executed live trials and default runner
 
-[Two matched real-agent trials](validation/live-agent-trials/report.md) now record
+Two matched real-agent trials (removed from the tree; kept in git history) recorded
 12 independently verified task outcomes, one uncoordinated retry, no deadline
 misses and zero human interventions during the trials. Their free provider
 reported USD zero; aggregate tokens stay unknown. Earlier quota/model/output-cap
@@ -104,8 +104,8 @@ each matched trial. The [official CLI reference](https://opencode.ai/docs/cli/)
 describes JSON run output; native result hashes/counters remain inspectable in
 the trial report.
 
-The [candidate-baseline trials](validation/candidate-agent-trials/report.md)
-include both failures and successes. GLM's pair verified 11 of 12 outcomes; one
+The candidate-baseline trials (removed from the tree; kept in git history)
+included both failures and successes. GLM's pair verified 11 of 12 outcomes; one
 formatter failed the independent negative-input check and stayed unintegrated.
 MiniMax trials timed out and retained their assignment/lock. These later results
 must be considered alongside the earlier passing pair. The JSON-receipt follow-up

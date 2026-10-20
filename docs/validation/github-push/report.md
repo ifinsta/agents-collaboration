@@ -50,7 +50,7 @@ result. Evidence files and this report are outside the runner's input inventory.
 - All 284 staged relative documentation links resolved before adding this report.
 - The staged source and retained evidence had no matches for the credential
   patterns checked before staging; the frozen source ZIP was checked as well.
-- [Canvas acceptance](../canvas-live/report.md) retains its own source hashes,
+- Canvas acceptance (removed from the tree; kept in git history) retained its own source hashes,
   browser interaction checks and 57 Windows dashboard/action/installer results.
   It precedes this POSIX terminal fix; it is not relabelled as a new full-platform
   result.

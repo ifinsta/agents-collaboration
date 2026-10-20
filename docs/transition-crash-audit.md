@@ -11,8 +11,8 @@ coverage is still unestablished. Historical counts are not cumulative acceptance
 
 The full frozen 326-test baseline finished with 325 passes and the same recovery
 fixture failure on each of three runtimes. The fixture now requires start and
-submit after owner resume. Its [raw results and inside-Git counterexample](validation/pre-allocation-baseline/results.json)
-are retained separately: a real smudge filter paused checkout, the actual calling
+submit after owner resume. Its raw results and inside-Git counterexample (removed from the tree; kept in git history)
+were retained separately: a real smudge filter paused checkout, the actual calling
 CLI was killed, a successor claimed and edited the worktree, and the old Git
 writer subsequently removed it. This was an actual data-loss failure, not a
 passing boundary test.
@@ -25,7 +25,7 @@ both sides of covered plan/start/step/submit, question/answer, pause/resume and
 contract publication. EC-326–328 cover foreground terminal groups, descendants,
 caller OS-kill, creation-commit rollback and real POSIX controlling-terminal I/O.
 
-The [candidate syntax inventory](validation/transition-inventory.json) records
+The candidate syntax inventory (removed from the tree; kept in git history) recorded
 129 explicit transaction contexts and 53 failpoint call sites, including the two
 generic changed-transaction hooks. `sw.tx()` names those hooks from its caller;
 explicit labels distinguish publication from earlier read/heartbeat commits.
@@ -65,8 +65,8 @@ neither prove coverage nor identify 103 missing state transitions.
 
 The allocation audit reproduced a concrete bug: a delayed old allocation error
 released Bob's newer claim and cleared the task while Bob still referred to it.
-[The reproduction and baseline results](validation/schema9-baseline/results.json)
-retain source hashes and full logs. The repair checks owner/epoch before cleanup
+The reproduction and baseline results (removed from the tree; kept in git history)
+retained source hashes and full logs. The repair checks owner/epoch before cleanup
 or publication, serializes local copies with ownership, and preserves planned
 paths and partial files. Its five race tests establish those covered paths;
 they are not a substitute for the missing kill points above.
@@ -119,8 +119,8 @@ claimed T2 before the old launch finalized. Old finalization cleared that
 replacement PID and again marked its agent offline. T2's task row itself stayed
 unchanged in both trials, leaving an inconsistent agent/task pair.
 
-[Recorded observations](validation/startup-baseline/interactive-launch-reproduction.json)
-contain the original source hash and before/after task/agent assertions. The
+Recorded observations (removed from the tree; kept in git history)
+contained the original source hash and before/after task/agent assertions. The
 fixtures used the existing fake adapter and real local Python children; no
 provider request was sent. These observations establish the original defect,
 not a passing acceptance result.
@@ -150,12 +150,12 @@ At core `3ce4f8ae09924a5dbf29aa8a4f03f84cb87735919a908ac06498922156161c45`,
 additional real-Git/CLI probes with actual registered owner-process loss
 reproduced two defects before the subsequent repair:
 
-- [Start-gate reproduction](validation/claim-crashes/takeover-start-gate-reproduction.json):
+- Start-gate reproduction (removed from the tree; kept in git history):
   the original `start` refused an unanswered critical question. After takeover,
   the task became `in_progress` and the successor recorded step 1 while that
   question remained open. No task integration/completion bypass was established
   by this probe; it establishes a missing start/permission gate.
-- [Running-clock reproduction](validation/claim-crashes/takeover-clock-reproduction.json):
+- Running-clock reproduction (removed from the tree; kept in git history):
   a previously running task resumed as `in_progress` with a new active contract,
   but `active_since` remained null even after a step. Accounted running seconds
   stayed zero. The absolute deadline was preserved and the new deliberation
@@ -171,7 +171,7 @@ headless/interactive exit, remaining allowance and elapsed expiry. The original
 reproductions remain retained as evidence of the prior defect. These selected
 repairs do not establish every transition or clock/control interleaving.
 
-The [repair's executed results](validation/takeover-repair/results.json) contain
+The repair's executed results (removed from the tree; kept in git history) contained
 99 passing affected checks on Windows Python 3.12 and 76 each on Windows Python
 3.11/Linux Python 3.13. They bind the repaired core and 32 unchanged inputs.
 The old reproduction artifacts are retained unchanged, separate from this
@@ -183,6 +183,6 @@ message/control acknowledgement/completion/resume. Complete board snapshots
 remain atomic; resuming pause requires start again. A submission test separately
 allows its legitimate preflight heartbeat while checking exact publication
 rollback. These test-only corrections and new cases passed on all five available
-runtimes; [per-case evidence](validation/candidate-matrix/results.json) preserves
+runtimes; per-case evidence (removed from the tree; kept in git history) preserves
 the original baseline failures and source lineage. Broad branch/external-effect
 coverage is still not inferred from injection capability.

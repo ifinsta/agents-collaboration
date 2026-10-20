@@ -53,7 +53,7 @@ after the focused runs required another manifest refresh; its hash differs from
 the test records. These focused checks do not validate that later edit or replace
 the outstanding consolidated Windows/Linux/macOS candidate acceptance, broader
 transition/adapter coverage, or representative usefulness trials. The earlier
-379-case Linux run remains a separate [broad snapshot](../legacy-cleanup/report.md).
+379-case Linux run remains a separate broad snapshot (removed from the tree; kept in git history).
 No release, remote publication or hosted CI execution is claimed here.
 
 ## File-by-file review
@@ -63,7 +63,7 @@ No release, remote publication or hosted CI execution is claimed here.
 | [.github/ISSUE_TEMPLATE/bug_report.md](../../../.github/ISSUE_TEMPLATE/bug_report.md) | Governance/contribution guidance | Aligned |
 | [.github/ISSUE_TEMPLATE/edge_case.md](../../../.github/ISSUE_TEMPLATE/edge_case.md) | Governance/contribution guidance | Reviewed; retained |
 | [.github/PULL_REQUEST_TEMPLATE.md](../../../.github/PULL_REQUEST_TEMPLATE.md) | Governance/contribution guidance | Aligned |
-| [agents-collaboration-resilient-workforce-design.md](../../../agents-collaboration-resilient-workforce-design.md) | Original proposal | Aligned |
+| agents-collaboration-resilient-workforce-design.md (removed from the tree; kept in git history) | Original proposal | Aligned |
 | [CHANGELOG.md](../../../CHANGELOG.md) | Development/release history | Aligned |
 | [CODE_OF_CONDUCT.md](../../../CODE_OF_CONDUCT.md) | Governance/contribution guidance | Reviewed; retained |
 | [CONTRIBUTING.md](../../../CONTRIBUTING.md) | Governance/contribution guidance | Aligned |
@@ -79,13 +79,13 @@ No release, remote publication or hosted CI execution is claimed here.
 | [docs/simulation.md](../../../docs/simulation.md) | Generated workflow | Aligned |
 | [docs/transition-crash-audit.md](../../../docs/transition-crash-audit.md) | Current guidance | Aligned |
 | [docs/usage-budgets.md](../../../docs/usage-budgets.md) | Current guidance | Aligned |
-| [docs/validation/adapter-dispatch/report.md](../../../docs/validation/adapter-dispatch/report.md) | Historical source report | Aligned |
-| [docs/validation/candidate-agent-trials/report.md](../../../docs/validation/candidate-agent-trials/report.md) | Historical source report | Aligned |
-| [docs/validation/candidate-matrix/report.md](../../../docs/validation/candidate-matrix/report.md) | Historical source report | Aligned |
-| [docs/validation/final-source-timebox/report.md](../../../docs/validation/final-source-timebox/report.md) | Historical source report | Aligned |
-| [docs/validation/legacy-cleanup/report.md](../../../docs/validation/legacy-cleanup/report.md) | Historical source report | Aligned |
-| [docs/validation/live-agent-trials/report.md](../../../docs/validation/live-agent-trials/report.md) | Historical source report | Aligned |
-| [docs/validation/standard-bus/report.md](../../../docs/validation/standard-bus/report.md) | Historical source report | Aligned |
+| docs/validation/adapter-dispatch/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/candidate-agent-trials/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/candidate-matrix/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/final-source-timebox/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/legacy-cleanup/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/live-agent-trials/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
+| docs/validation/standard-bus/report.md (removed from the tree; kept in git history) | Historical source report | Aligned |
 | [docs/web-dashboard.md](../../../docs/web-dashboard.md) | Current guidance | Reviewed; arrived during audit |
 | [docs/workforce-benchmark.md](../../../docs/workforce-benchmark.md) | Current guidance | Aligned |
 | [docs/workforce-conformance.md](../../../docs/workforce-conformance.md) | Current guidance | Aligned |

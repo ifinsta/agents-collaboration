@@ -1,7 +1,7 @@
 # Resilient workforce implementation
 
 This tracks the incremental implementation of
-[the workforce proposal](../agents-collaboration-resilient-workforce-design.md).
+the workforce proposal (removed from the tree; kept in git history).
 The proposal remains the target, rather than a claim that every stage has shipped.
 The [conformance audit](workforce-conformance.md) maps each requirement and
 resilience invariant to current evidence and unfinished work.
@@ -564,7 +564,7 @@ No paid provider calls or real-agent trials were made.
 The complete schema-9 baseline then ran with resource warnings treated as errors
 on three runtimes. All 53 source input hashes matched before/after the runs;
 the core remained at `a3440fdac603486c44112f586151b14efea276bdcc557d610c0d6d24d7592904`.
-[Logs, hashes and input manifest](validation/schema9-baseline/results.json) are retained.
+Logs, hashes and input manifest (removed from the tree; kept in git history) were retained.
 
 | Complete baseline environment | Observed result |
 |---|---|
@@ -666,8 +666,8 @@ passed these final focused sets with resource warnings treated as errors:
 
 All sets include the 15 new cases, console/menu workflows, doctor/storage and
 the stopped-coordinator startup check. Windows 3.12 additionally checks startup
-cost and the published simulation. The [raw logs and source fingerprints](validation/interactive-fences/results.json)
-also retain the earlier 60-test run's launcher caller-argument regression and its
+cost and the published simulation. The raw logs and source fingerprints (removed from the tree; kept in git history)
+also retained the earlier 60-test run's launcher caller-argument regression and its
 repair; that earlier run was not a pass. These focused results do not prove the
 whole 300-test candidate, macOS, full interactive process supervision or every
 transition crash window. The separate frozen 285-test full runs use the earlier
@@ -679,8 +679,8 @@ startup source and subsequently passed all 285 tests on each runtime:
 | Windows, Python 3.11.14 | 285 passed, 1875.508 seconds |
 | Linux container, Python 3.13.16 | 285 passed, 1918.790 seconds |
 
-The [complete logs and input hashes](validation/startup-baseline/results.json)
-bind these runs to core
+The complete logs and input hashes (removed from the tree; kept in git history)
+bound these runs to core
 `f350cb33f63dce6cad064d28b91db23da5caf8950e93166138ab0eb0a3a39f3c`.
 All 61 frozen input files matched before and after execution. The full runs
 predate the interactive/SQLite rollback repairs and claim OS-kill additions;
@@ -701,8 +701,8 @@ passed the new suite plus existing allocation/contract checks:
 | Windows, Python 3.11.14 | 39 passed, 220.611 seconds |
 | Linux container, Python 3.13.16 | 39 passed, 238.499 seconds |
 
-[Raw logs and source fingerprints](validation/claim-crashes/results.json)
-retain all results, including the earlier fixtures' missing-reservation
+Raw logs and source fingerprints (removed from the tree; kept in git history)
+retained all results, including the earlier fixtures' missing-reservation
 failures. All 31 recorded final inputs matched before/after the passing runs.
 The initial Windows 3.12 run also passed the simulation/startup-cost checks,
 but its three fixture failures mean that overall run was not a pass. The
@@ -735,8 +735,8 @@ passed the affected suites with resource warnings treated as errors:
 All sets include the 11 new cases and existing contract, process, interactive
 and claim OS-kill tests. Windows 3.12 additionally checks liveness,
 doctor/storage, allocation races, startup cost and the updated simulation.
-[Raw logs and source fingerprints](validation/takeover-repair/results.json)
-retain the exact scope; all 32 recorded inputs matched before/after. This is
+Raw logs and source fingerprints (removed from the tree; kept in git history)
+retained the exact scope; all 32 recorded inputs matched before/after. This is
 focused evidence for the repaired paths, not a full 326-test, macOS or remote CI
 pass. Full interactive supervision and the remaining proposal gates stay owed.
 
@@ -782,8 +782,8 @@ after its calling CLI died and removed a successor's files. Allocation intent no
 commits before owned Git creation, and pending writers block reuse, work,
 checkpoints and cleanup. `allocation show/prepare/reconcile` exposes retained
 state and explicitly labeled human cessation attestation. The original
-[counterexample and complete 326-test baseline](validation/pre-allocation-baseline/results.json)
-are retained; that baseline passed 325/326 on each of Windows 3.11/3.12 and Linux
+counterexample and complete 326-test baseline (removed from the tree; kept in git history)
+were retained; that baseline passed 325/326 on each of Windows 3.11/3.12 and Linux
 3.13. Its same merge-recovery fixture failure is repaired by explicitly starting
 and submitting after owner resume, preserving the start/replan requirement.
 
@@ -802,7 +802,7 @@ question history has explicit cursors. Changed transactions expose named before
 and after commit fault hooks. Seven new actual CLI-kill tests exercise plan,
 start, progress, submit, question/answer, pause/resume and contract publication.
 
-Two [matched real-agent trials](validation/live-agent-trials/report.md) used
+Two matched real-agent trials (removed from the tree; kept in git history) used
 OpenCode 2.0.32 with the same selected free model, settings and fixed acceptance
 checks across solo, uncoordinated and coordinated modes. All 12 task outcomes
 passed. One uncoordinated retry was needed in the second trial. No trial missed
@@ -812,7 +812,7 @@ hashes are retained. This tiny sample under concurrent validation load supports
 no causal productivity or scaling claim. Final-source reruns have separate
 candidate evidence.
 
-[Completed staged validation](validation/candidate-matrix/report.md) covers 354
+Completed staged validation (removed from the tree; kept in git history) covers 354
 distinct snapshot cases per runtime on Windows Python 3.11/3.12/3.13 and Linux
 Python 3.11/3.13. Windows has two POSIX-only skips; there are no unresolved
 failures. The full 348-case baseline retained its original fixture failures;
@@ -820,8 +820,8 @@ corrected/new cases and the final 14-case JSON/latency follow-up have separate
 frozen inputs and terminal results. This is not a consolidated full pass at the
 final source SHA. No macOS run is claimed.
 
-[The candidate's real-agent trials](validation/candidate-agent-trials/report.md)
-include two matched pairs on free models. Results are mixed: timeouts and a
+The candidate's real-agent trials (removed from the tree; kept in git history)
+included two matched pairs on free models. Results are mixed: timeouts and a
 formatter that failed the negative-input check remain failures. GLM trial 1
 passed all six outcomes; trial 2 verified five of six. Unfinished work and locks
 were retained, and failed implementation was not promoted to a verified result.

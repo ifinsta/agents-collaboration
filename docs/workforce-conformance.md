@@ -1,6 +1,6 @@
 # Workforce proposal conformance
 
-This maps the [original proposal](../agents-collaboration-resilient-workforce-design.md)
+This maps the original proposal (removed from the tree; kept in git history)
 to the current source. It is an evidence map, not a claim that every acceptance
 gate passed. Source remains unreleased. See the [documentation index](README.md),
 [latest recorded broad runtime snapshot](validation/managed-sessions/report.md) and
