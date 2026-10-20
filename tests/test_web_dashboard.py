@@ -165,6 +165,22 @@ class Payloads(WebCase):
         self.assertIsNone(detail["recipients"][0]["acked_at"])
         self.assertEqual(detail["thread"][0]["id"], warning["id"])
 
+    def test_inbox_reports_read_and_unread_state_per_recipient(self):
+        self.sw("--as", "ann", "send", "bob", "Please review T1", "--kind", "review_request")
+        self.sw("--as", "bob", "send", "ann", "Which port should the probe use?", "--kind", "decision")
+        self.sw("--as", "bob", "inbox")
+        inbox = self.api("/api/inbox")
+        review = [m for m in inbox["messages"] if m["kind"] == "review_request"][0]
+        decision = [m for m in inbox["messages"] if m["kind"] == "decision"][0]
+        self.assertEqual(review["recipients"], {"total": 1, "read": 1, "acked": 0, "unread": 0})
+        self.assertEqual(decision["recipients"], {"total": 1, "read": 0, "acked": 0, "unread": 1})
+        self.assertEqual(inbox["tabs"]["unread"], 1)
+        self.assertEqual([m["id"] for m in self.api("/api/inbox?tab=unread")["messages"]], [decision["id"]])
+        self.assertIsNotNone(self.api(f"/api/message/{review['id']}")["recipients"][0]["read_at"])
+        unread = self.api(f"/api/message/{decision['id']}")["recipients"][0]
+        self.assertIsNone(unread["read_at"])
+        self.assertIsNone(unread["acked_at"], "reading is an observation, not an acknowledgement")
+
     def test_decisions_show_open_and_settled_questions(self):
         self.sw("--as", "bob", "claim", "T2")
         self.sw("--as", "bob", "ask", "Which port should the probe use?", "--to", "human")

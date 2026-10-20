@@ -116,7 +116,10 @@ an execution-time bound.
 
 `inbox` observes pending messages; it never acquires a receipt or acknowledges
 processing. Default inbox excludes bus-claimed messages; `inbox --all --json`
-provides observation/replay without ownership. Only `bus ack` with a valid receipt
+provides observation/replay without ownership. `inbox --id MESSAGE` observes one
+message addressed to the reader, including one already acknowledged, and records
+the same read observation; the dashboard uses it when the human opens a message.
+Only `bus ack` with a valid receipt
 acknowledges transport delivery. Replies retain the parent thread without
 acknowledging it. Read timestamps establish an observation, not proof that a
 process printed or understood the payload. The old plain `ack` command and

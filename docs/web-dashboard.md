@@ -90,6 +90,7 @@ The page is a tool, not only a view. These actions run as **you** (the human), f
 | Overview, Decisions | Answer or waive a question | `hivewire answer` / `hivewire waive` |
 | Overview, Decisions | Approve an architecture brief (after a confirmation) | `hivewire goal architecture GOAL --approve` |
 | Inbox | Reply to a message, with its kind | `hivewire send AGENT TEXT --kind KIND --reply-to ID` |
+| Inbox | Open a message addressed to you (records that you read it, without acknowledging it) | `hivewire inbox --id ID --as human` |
 | Inbox | Acknowledge a message addressed to you | `hivewire bus receive` then `hivewire bus ack`, with its receipt |
 | Team, Inbox | Review inboxes now | `hivewire steward --once` |
 | Team, steward inspector | Start an LLM reviewer (after a confirmation) | `hivewire add INBOX-n ...` then `hivewire spawn CLI --name NAME --task INBOX-n` |
@@ -97,13 +98,15 @@ The page is a tool, not only a view. These actions run as **you** (the human), f
 Each action runs the real `hivewire` command in that board's repository, so the engine's own checks, refusals and
 events apply exactly as in a terminal; a refusal is shown under the button. Everything else (interrupts,
 take-overs, incident decisions, dead letters) still shows the command to copy. A reply never acknowledges a
-message, and you can acknowledge only messages addressed to you. While you type, the live refresh pauses so your
+message, and you can acknowledge only messages addressed to you. Opening a message addressed to you records a
+read observation for your copy; it does not acknowledge or otherwise claim the message. A message stays in the
+Unread filter until every recipient has opened it. While you type, the live refresh pauses so your
 text is never redrawn away; drafts survive a refresh. `--read-only` turns all actions off and the top bar then
 says "Read-only" instead of "Acting as you".
 
 ## The inbox steward
 
-Coordination stalls when messages sit unread. The steward is a built-in participant (not an LLM, and it takes no
+Coordination stalls when messages sit unacknowledged. The steward is a built-in participant (not an LLM, and it takes no
 agent slot) that reviews every inbox:
 
 - A message an agent has left unacknowledged for 10 minutes (`--remind-after-min`) gets one reminder to that agent,
@@ -134,7 +137,7 @@ See [managed sessions](managed-sessions.md) for lifetime and capture limits.
 |---|---|
 | Overview | A summary strip (agents online, tasks merged, waiting on you, blocked), a team table (status, task, step, contract clock, last seen), a work table, a "waiting on you" list (answer or waive a question, approve a brief, in place) and a plain-language activity log |
 | Team | A canvas of the team in lanes (Governance, Orchestration, Execution, Assurance, Integration) with solid, dotted and dashed lines between agents, and an inspector for the selected one. See [the team canvas](#the-team-canvas) |
-| Inbox | Every message with its kind, priority and acknowledgement state; filters for questions, decisions, warnings, reviews and dead letters; a thread view; per-recipient delivery, receipt lease and envelope fields |
+| Inbox | Every message with its kind, priority, read/unread count and acknowledgement state; filters for unread, questions, decisions, warnings, reviews and dead letters; a thread view that renders the author's Markdown (lists, tables and code blocks stay aligned); per-recipient read and acknowledgement timestamps, receipt lease and envelope fields |
 | Decisions | Open questions, architecture briefs awaiting approval, contracts being negotiated with their decision window, incident reviews, interrupts, and what was recently settled |
 | Tasks, Task | A table of every task, and per task: the plan as an ordered timeline with the evidence for each step, scope and locks, contract clock against its terms, checkpoints, the holder, open questions and the task's own events |
 

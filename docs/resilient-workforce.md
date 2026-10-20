@@ -193,6 +193,7 @@ producers use typed messages; historical read-once records remain inspectable.
 ```text
 hivewire send bob "Review the fixture decision" --as ann --kind decision --priority critical --key fixture-1 --task T1 --epoch 1
 hivewire inbox --as bob --json
+hivewire inbox --as human --id 42 --json
 hivewire bus receive --as bob --consumer bob:boot-1 --json
 hivewire bus ack 42 --as bob --consumer bob:boot-1 --token TOKEN --json
 hivewire inbox --as bob --all --after 40 --limit 100 --json
@@ -214,7 +215,9 @@ require another acknowledgement. Plain `send` defaults to reliable `status`; `--
 removed. Only `bus ack` with a consumer receipt acknowledges delivery. `--all` replays history; `--after` restricts that
 explicit replay window and does not acknowledge earlier messages. Use the
 leased `bus receive` batch for standalone processing, or the supervised
-`SWARM_BUS_INBOX` receipts. An observational inbox read is not a processing lease. Broadcast
+`SWARM_BUS_INBOX` receipts. An observational inbox read is not a processing lease;
+`inbox --id ID` records that same observation for one addressed message, including
+one already acknowledged, and never acknowledges or claims it. Broadcast
 recipients are frozen at send time; joining later does not grant receipt or
 acknowledgement rights for an earlier broadcast. Read/ack state is per recipient.
 

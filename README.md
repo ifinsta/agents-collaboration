@@ -47,7 +47,7 @@ activity. Pan, zoom, search and fit are on the canvas.
 
 | Inbox | Task |
 |---|---|
-| ![Inbox: a decision awaiting acknowledgement, with a reply box](docs/images/dashboard-inbox.png) | ![Task: plan, evidence and relationships](docs/images/dashboard-task.png) |
+| ![Inbox: an unread decision with its read state and a reply box](docs/images/dashboard-inbox.png) | ![Task: plan, evidence and relationships](docs/images/dashboard-task.png) |
 
 The inbox lets you reply to and acknowledge messages. The **inbox steward** reminds
 agents of messages left unacknowledged for ten minutes and escalates to the

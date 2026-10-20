@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+- Show read versus unread in the web inbox: each message counts opened recipient
+  copies, an Unread filter finds messages with an unopened copy, the recipient
+  table shows per-agent read and acknowledgement timestamps, and opening a message
+  addressed to the human records a read observation without acknowledging it.
+  Message bodies render their Markdown (headings, lists, tables and code blocks)
+  as aligned blocks instead of raw markers. Add `inbox --id MESSAGE` for observing
+  one addressed message.
+
 - Make starting a worker from the session viewer obvious: `s` lists the installed
   CLIs and defaults the CLI, task and name, explains a bad answer and asks again,
   and Ctrl+C cancels the prompt rather than the viewer. The empty view names the

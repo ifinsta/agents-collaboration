@@ -110,8 +110,20 @@ def build(target: Path) -> Path:
     swarm("--as", "ola", "send", "quinn", "Can you review the readiness test when you have a minute?", "--kind", "review_request")
     swarm("--as", "bo", "send", "quinn", "Port 4104 was taken by another process; use the slot ports.", "--kind", "experience")
     swarm("--as", "quinn", "send", "ola", "Looks good. One nit on the cache test name.", "--kind", "status")
-    swarm("--as", "ann", "send", "human", "I lean 503 here. A cold cache means we cannot confirm the database.", "--kind", "decision")
+    swarm(
+        "--as", "ann", "send", "human",
+        "I lean **503** here. A cold cache means we cannot confirm the database.\n\n"
+        "| Probe state | Response |\n|---|---|\n"
+        "| warm | `200 OK` |\n| cold | `503` + `Retry-After: 5` |\n\n"
+        "Keep the load balancer honest:\n\n"
+        "1. Return `503` only while the cache is cold\n"
+        "2. Ask the client to back off for five seconds\n"
+        "3. Log the reason once per probe\n\n"
+        "```text\nGET /ready -> 503\nRetry-After: 5\n```",
+        "--kind", "decision",
+    )
     swarm("--as", "ola", "send", "human", "Careful: the probe restarts the service on a 503.", "--kind", "warning", "--priority", "critical")
+    swarm("--as", "quinn", "inbox")  # quinn has read the two messages above; neither is acknowledged
     swarm("goal", "new", "health", "Ship a health endpoint operators can rely on")
 
     now = datetime.now(UTC).replace(microsecond=0)

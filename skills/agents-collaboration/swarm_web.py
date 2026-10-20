@@ -430,35 +430,52 @@ def inbox(db, ctx, now, query) -> dict:
     where, args = "1=1", []
     if tab == "dead_letter":
         where = "ack_state='dead_letter'"
+    elif tab == "unread":
+        where = (
+            "EXISTS (SELECT 1 FROM message_recipients r WHERE r.msg=messages.id "
+            "AND r.delivered_at IS NULL AND r.acked_at IS NULL)"
+        )
     elif tab in TABS:
         where = f"{kind} IN ({','.join('?' * len(TABS[tab]))})"
         args = list(TABS[tab])
-    messages = []
-    for m in _rows(db, f"SELECT *, {kind} AS k FROM messages WHERE {where} ORDER BY id DESC LIMIT 150", args):
-        got = db.execute(
-            "SELECT COUNT(*), SUM(CASE WHEN acked_at IS NOT NULL THEN 1 ELSE 0 END) FROM message_recipients WHERE msg=?",
-            (m["id"],),
-        ).fetchone()
-        messages.append(
-            {
-                "id": m["id"],
-                "sender": m["sender"],
-                "recipient": m["recipient"],
-                "kind": m["k"],
-                "task": m["task"],
-                "priority": m["priority"] or "normal",
-                "ack_state": m["ack_state"] or "pending",
-                "created_at": m["created_at"],
-                "age_s": round(_age(m["created_at"], now) or 0),
-                "preview": _clip(" ".join((m["body"] or "").split()), PREVIEW_LIMIT),
-                "recipients": [got[1] or 0, got[0] or 0],
-            }
-        )
+    rows = _rows(db, f"SELECT *, {kind} AS k FROM messages WHERE {where} ORDER BY id DESC LIMIT 150", args)
+    stats = {}
+    ids = [m["id"] for m in rows]
+    if ids:
+        marks = ",".join("?" * len(ids))
+        for row in db.execute(
+            "SELECT msg, COUNT(*), SUM(CASE WHEN acked_at IS NOT NULL THEN 1 ELSE 0 END), "
+            "SUM(CASE WHEN delivered_at IS NOT NULL OR acked_at IS NOT NULL THEN 1 ELSE 0 END) "
+            f"FROM message_recipients WHERE msg IN ({marks}) GROUP BY msg",
+            ids,
+        ):
+            total, acked, read = row[1], row[2] or 0, row[3] or 0
+            stats[row[0]] = {"total": total, "read": read, "acked": acked, "unread": max(0, total - read)}
+    messages = [
+        {
+            "id": m["id"],
+            "sender": m["sender"],
+            "recipient": m["recipient"],
+            "kind": m["k"],
+            "task": m["task"],
+            "priority": m["priority"] or "normal",
+            "ack_state": m["ack_state"] or "pending",
+            "created_at": m["created_at"],
+            "age_s": round(_age(m["created_at"], now) or 0),
+            "preview": _clip(" ".join((m["body"] or "").split()), PREVIEW_LIMIT),
+            "recipients": stats.get(m["id"], {"total": 0, "read": 0, "acked": 0, "unread": 0}),
+        }
+        for m in rows
+    ]
     tabs = {"all": db.execute("SELECT COUNT(*) FROM messages").fetchone()[0]}
     for name, kinds in TABS.items():
         tabs[name] = db.execute(
             f"SELECT COUNT(*) FROM messages WHERE {kind} IN ({','.join('?' * len(kinds))})", kinds
         ).fetchone()[0]
+    tabs["unread"] = db.execute(
+        "SELECT COUNT(*) FROM messages m WHERE EXISTS (SELECT 1 FROM message_recipients r "
+        "WHERE r.msg=m.id AND r.delivered_at IS NULL AND r.acked_at IS NULL)"
+    ).fetchone()[0]
     tabs["dead_letter"] = db.execute("SELECT COUNT(*) FROM messages WHERE ack_state='dead_letter'").fetchone()[0]
     return {"tab": tab, "tabs": tabs, "messages": messages, "command": ctx["command"]}
 
@@ -503,6 +520,7 @@ def message(db, ctx, now, msg_id) -> dict | None:
                 "agent": r["agent"],
                 "delivered_at": r["delivered_at"],
                 "acked_at": r["acked_at"],
+                "read_at": r["delivered_at"] or r["acked_at"],
                 "claim": None
                 if not claim
                 else {
@@ -1397,6 +1415,8 @@ def perform(entry: dict, body: dict) -> dict:
         if body.get("reply_to") is not None:
             argv += ["--reply-to", _id(body.get("reply_to"), "The message replied to")]
         return run_cli(entry, [*argv, "--", to, _text(body.get("text"), "The message")])
+    if action == "read":
+        return run_cli(entry, ["inbox", "--id", _id(body.get("message"), "The message"), "--as", "human"])
     if action == "ack":
         return acknowledge(entry, int(_id(body.get("message"), "The message")))
     if action == "approve":
@@ -1582,7 +1602,9 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .msg:first-child{border-top:0}
 .msg:hover{background:var(--surface-soft);text-decoration:none}
 .msg.sel{background:var(--accentbg)}
-.drow{display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(90px,1fr) minmax(80px,.8fr) minmax(90px,.8fr);gap:8px;padding:4px 0;border-top:1px solid var(--line2)}
+.msg.unread{box-shadow:inset 2px 0 0 var(--accent)}
+.unread-dot{width:5px;height:5px;border-radius:50%;background:var(--accent);display:inline-block;flex:none;margin-right:5px;vertical-align:middle}
+.drow{display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(110px,1fr) minmax(110px,1fr);gap:8px;padding:4px 0;border-top:1px solid var(--line2)}
 .step{display:flex;gap:8px}
 .step .rail{display:flex;flex-direction:column;align-items:center}
 .step .rail i{flex:1;width:1.5px;background:var(--line);margin:3px 0}
@@ -1593,6 +1615,26 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .kv{display:grid;grid-template-columns:92px 1fr;gap:3px 10px}
 .kv>span:nth-child(odd){color:var(--mute)}
 .break{overflow-wrap:anywhere}.pre{white-space:pre-wrap;overflow-wrap:anywhere}
+.md{display:flex;flex-direction:column;gap:7px;max-width:720px;min-width:0;line-height:1.55;overflow-wrap:anywhere}
+.md>*{margin:0}
+.md-p{white-space:normal}
+.md-h{font-weight:600;line-height:1.3}
+.md-h1{font-size:17px}.md-h2{font-size:15px}.md-h3,.md-h4,.md-h5,.md-h6{font-size:13.5px}
+.md-list{margin:0;padding-left:22px;display:flex;flex-direction:column;gap:3px}
+.md-list .md-list{margin-top:3px;padding-left:20px}
+.md-list li{padding-left:1px}
+.md-li-body{min-width:0}
+.md-quote{border-left:2px solid var(--line-strong);padding:2px 0 2px 10px;color:var(--mute)}
+.md-quote .md{max-width:none}
+.md-pre{background:var(--surface-soft);border:1px solid var(--line2);border-radius:3px;padding:7px 9px;overflow-x:auto;max-width:100%}
+.md-pre code{display:block;white-space:pre;font-family:var(--font-mono);font-size:11.5px;line-height:1.5;color:var(--ink-soft)}
+.md-code{font-family:var(--font-mono);font-size:.92em;background:var(--surface-soft);border:1px solid var(--line2);border-radius:2px;padding:0 3px;overflow-wrap:anywhere}
+.md-hr{border:0;border-top:1px solid var(--line2);margin:2px 0}
+.md-tablewrap{overflow-x:auto;max-width:100%}
+.md-table{border-collapse:collapse;width:100%;font-size:12px;line-height:1.45;font-variant-numeric:tabular-nums}
+.md-table th,.md-table td{border:1px solid var(--line2);padding:4px 7px;vertical-align:top;text-align:left;overflow-wrap:anywhere}
+.md-table th{background:var(--surface-soft);font-weight:600;font-family:var(--font-mono);font-size:10.5px;letter-spacing:.03em;text-transform:uppercase;color:var(--mute)}
+.md-link{color:var(--accentink);text-decoration:underline;text-underline-offset:2px}
 .board{position:relative;overflow:auto;border:1px solid var(--line);border-radius:4px;background-color:var(--bg);background-image:radial-gradient(circle,var(--line-strong) .8px,transparent 1px);background-size:20px 20px;overscroll-behavior:contain;cursor:grab;touch-action:pan-x pan-y}
 .board.panning{cursor:grabbing;user-select:none}.board:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
 .canvas-plane{position:absolute;left:0;top:0;transform-origin:0 0}
@@ -1680,7 +1722,7 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .rbtn{width:44px;height:44px}
 .seg button,.switch,select.field{height:36px}
 .cmd{flex-wrap:wrap}
-.drow{grid-template-columns:1fr 1fr}
+.drow{grid-template-columns:minmax(0,1.2fr) minmax(0,1fr) minmax(0,1fr)}
 .filters{flex-wrap:nowrap;overflow-x:auto;max-width:100%}
 .filters a{min-height:36px;white-space:nowrap}
 .grid{grid-template-columns:1fr}
@@ -1802,6 +1844,189 @@ function ago(s) {
 }
 function mmss(s) { s = Math.max(0, Math.round(s)); return Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0'); }
 function clockTime(iso) { const d = new Date(iso); return isNaN(d) ? '--:--' : d.toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit' }); }
+
+// ---- a small Markdown reader for message bodies: every span becomes a text node, never markup from the board
+function mdInline(text, links) {
+  const out = [];
+  const re = /(`+)([^`\n]*?)\1|\*\*\*(?=\S)([^*\n]*?\S)\*\*\*|\*\*(?=\S)([^*\n]*?\S)\*\*|~~(?=\S)([^~\n]*?\S)~~|\*(?=\S)([^*\n]*?\S)\*|\[([^\]\n]+)\]\(([^)\s]+)\)/g;
+  let last = 0, m;
+  while ((m = re.exec(text))) {
+    if (m.index > last) out.push(text.slice(last, m.index));
+    if (m[1]) out.push(h('code', { class: 'md-code' }, m[2].trim() || ' '));
+    else if (m[3]) out.push(h('strong', null, h('em', null, ...mdInline(m[3], links))));
+    else if (m[4]) out.push(h('strong', null, ...mdInline(m[4], links)));
+    else if (m[5]) out.push(h('del', null, ...mdInline(m[5], links)));
+    else if (m[6]) out.push(h('em', null, ...mdInline(m[6], links)));
+    else if (m[7] && links !== false) {
+      out.push(/^(?:https?|mailto):/i.test(m[8])
+        ? h('a', { class: 'md-link', href: m[8], target: '_blank', rel: 'noreferrer noopener' }, ...mdInline(m[7], false))
+        : h('span', { class: 'md-link', title: m[8] }, ...mdInline(m[7], false)));
+    } else if (m[7]) out.push(m[0]);
+    last = re.lastIndex;
+  }
+  if (last < text.length) out.push(text.slice(last));
+  return out;
+}
+function mdPlain(text) {
+  return String(text == null ? '' : text)
+    .replace(/^ {0,3}(?:#{1,6}|>|[-*+]|\d+[.)])\s+/, '')
+    .replace(/`([^`]*)`/g, '$1')
+    .replace(/\*\*\*([^*]+)\*\*\*/g, '$1')
+    .replace(/\*\*([^*]+)\*\*/g, '$1')
+    .replace(/~~([^~]+)~~/g, '$1')
+    .replace(/\*([^*]+)\*/g, '$1')
+    .replace(/\[([^\]]+)\]\([^)]*\)/g, '$1')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+function mdIndent(line) { return /^ */.exec(line)[0].length; }
+function mdHr(line) { return /^ {0,3}(?:(?:\* *){3,}|(?:- *){3,}|(?:_ *){3,})$/.test(line); }
+function mdFence(line) { const m = /^ {0,3}(`{3,}|~{3,})(.*)$/.exec(line); return m ? { ch: m[1][0], len: m[1].length } : null; }
+function mdFenceClose(line, f) { const m = /^ {0,3}(`{3,}|~{3,})\s*$/.exec(line); return !!m && m[1][0] === f.ch && m[1].length >= f.len; }
+function mdCells(line) {
+  let s = line.trim();
+  if (s.startsWith('|')) s = s.slice(1);
+  if (s.endsWith('|')) s = s.slice(0, -1);
+  const cells = [];
+  let cur = '', escaped = false;
+  for (const ch of s) {
+    if (escaped) { cur += ch; escaped = false; }
+    else if (ch === '\\') escaped = true;
+    else if (ch === '|') { cells.push(cur.trim()); cur = ''; }
+    else cur += ch;
+  }
+  cells.push(cur.trim());
+  return cells;
+}
+function mdTableAt(lines, i) {
+  if (i + 1 >= lines.length || !lines[i].includes('|')) return false;
+  const head = mdCells(lines[i]), sep = mdCells(lines[i + 1]);
+  return head.length > 1 && head.length === sep.length && sep.every((c) => /^:?-+:?$/.test(c));
+}
+function mdList(lines) {
+  const marks = lines.filter((l) => /^ *(?:[-*+]|\d+[.)]) +/.test(l));
+  const base = Math.min(...marks.map(mdIndent));
+  const rows = lines.map((l) => l.slice(Math.min(base, mdIndent(l))));
+  let root = null;
+  const stack = [];
+  for (const raw of rows) {
+    if (!raw.trim()) continue;
+    const m = /^( *)([-*+]|\d+[.)]) +(.*)$/.exec(raw);
+    if (m) {
+      const indent = m[1].length, ordered = /^\d/.test(m[2]), num = parseInt(m[2], 10);
+      while (stack.length > 1 && indent < stack[stack.length - 1].indent) stack.pop();
+      let top = stack[stack.length - 1];
+      if (!top) {
+        root = h(ordered ? 'ol' : 'ul', { class: 'md-list' });
+        if (ordered && num !== 1) root.setAttribute('start', String(num));
+        stack.push({ indent, list: root, item: null });
+        top = stack[stack.length - 1];
+      } else if (indent > top.indent && top.item) {
+        const list = h(ordered ? 'ol' : 'ul', { class: 'md-list' });
+        if (ordered && num !== 1) list.setAttribute('start', String(num));
+        top.item.li.append(list);
+        stack.push({ indent, list, item: null });
+        top = stack[stack.length - 1];
+      }
+      const li = h('li'), body = h('div', { class: 'md-li-body' }, ...mdInline(m[3]));
+      li.append(body);
+      top.list.append(li);
+      top.item = { li, body };
+    } else if (stack.length) {
+      const indent = mdIndent(raw);
+      while (stack.length > 1 && indent < stack[stack.length - 1].indent) stack.pop();
+      const top = stack[stack.length - 1];
+      if (top.item && raw.trim()) top.item.body.append(' ', ...mdInline(raw.trim()));
+    }
+  }
+  return root || h('div');
+}
+function markdown(text) {
+  const root = h('div', { class: 'md' });
+  const lines = String(text == null ? '' : text).replace(/\r\n?/g, '\n').replace(/\t/g, '    ').split('\n');
+  const blank = (s) => !s.trim();
+  const start = (i) => {
+    const l = lines[i];
+    return !!mdFence(l) || /^ {0,3}#{1,6} +/.test(l) || mdHr(l) || /^ {0,3}>/.test(l) || /^ *(?:[-*+]|\d+[.)]) +/.test(l) || mdTableAt(lines, i);
+  };
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+    if (blank(line)) { i++; continue; }
+    const fence = mdFence(line);
+    if (fence) {
+      const body = [];
+      i++;
+      while (i < lines.length && !mdFenceClose(lines[i], fence)) { body.push(lines[i]); i++; }
+      if (i < lines.length) i++;
+      root.append(h('div', { class: 'md-pre' }, h('code', null, body.join('\n'))));
+      continue;
+    }
+    const head = /^ {0,3}(#{1,6}) +(.*?)\s*#*\s*$/.exec(line);
+    if (head) { root.append(h('h' + head[1].length, { class: 'md-h md-h' + head[1].length }, ...mdInline(head[2]))); i++; continue; }
+    if (mdHr(line)) { root.append(h('hr', { class: 'md-hr' })); i++; continue; }
+    if (/^ {0,3}>/.test(line)) {
+      const quote = [];
+      while (i < lines.length) {
+        if (/^ {0,3}>/.test(lines[i])) { quote.push(lines[i].replace(/^ {0,3}> ?/, '')); i++; }
+        else if (blank(lines[i]) && /^ {0,3}>/.test(lines[i + 1] || '')) { quote.push(''); i++; }
+        else break;
+      }
+      root.append(h('blockquote', { class: 'md-quote' }, markdown(quote.join('\n'))));
+      continue;
+    }
+    if (mdTableAt(lines, i)) {
+      const headCells = mdCells(lines[i]);
+      const align = mdCells(lines[i + 1]).map((c) => c.startsWith(':') && c.endsWith(':') ? 'center' : c.endsWith(':') ? 'right' : c.startsWith(':') ? 'left' : '');
+      const table = h('table', { class: 'md-table' });
+      const header = h('tr');
+      headCells.forEach((c, k) => header.append(h('th', align[k] ? { style: { 'text-align': align[k] } } : null, ...mdInline(c))));
+      table.append(h('thead', null, header));
+      const tbody = h('tbody');
+      i += 2;
+      while (i < lines.length && lines[i].includes('|') && !blank(lines[i])) {
+        const cells = mdCells(lines[i]), row = h('tr');
+        headCells.forEach((_, k) => row.append(h('td', align[k] ? { style: { 'text-align': align[k] } } : null, ...mdInline(cells[k] || ''))));
+        tbody.append(row);
+        i++;
+      }
+      table.append(tbody);
+      root.append(h('div', { class: 'md-tablewrap' }, table));
+      continue;
+    }
+    if (/^ *(?:[-*+]|\d+[.)]) +/.test(line)) {
+      const base = mdIndent(line), ordered = /^ *\d/.test(line), block = [line];
+      i++;
+      while (i < lines.length) {
+        const l = lines[i];
+        if (/^ *(?:[-*+]|\d+[.)]) +/.test(l)) {
+          if (mdIndent(l) <= base && /^ *\d/.test(l) !== ordered) break;
+          block.push(l); i++; continue;
+        }
+        if (blank(l)) {
+          let k = i + 1;
+          while (k < lines.length && blank(lines[k])) k++;
+          if (k < lines.length && (mdIndent(lines[k]) > base || /^ *(?:[-*+]|\d+[.)]) +/.test(lines[k]))) {
+            if (/^ *(?:[-*+]|\d+[.)]) +/.test(lines[k]) && mdIndent(lines[k]) <= base && /^ *\d/.test(lines[k]) !== ordered) break;
+            block.push(''); i++; continue;
+          }
+          break;
+        }
+        if (mdIndent(l) > base) { block.push(l); i++; continue; }
+        break;
+      }
+      root.append(mdList(block));
+      continue;
+    }
+    const para = [line.trim()];
+    i++;
+    while (i < lines.length && !blank(lines[i]) && !start(i)) { para.push(lines[i].trim()); i++; }
+    const p = h('p', { class: 'md-p' });
+    para.forEach((ln, k) => { if (k) p.append(h('br')); p.append(...mdInline(ln)); });
+    root.append(p);
+  }
+  return root;
+}
 const COLOR = { good: 'var(--good)', warn: 'var(--warn)', bad: 'var(--bad)', info: 'var(--info)', mute: 'var(--mute)' };
 const LABEL = { open: 'Queued', draft: 'Proposed', claimed: 'Working', planning: 'Working', awaiting_answers: 'Needs an answer', in_progress: 'Working',
   needs_rebase: 'Needs rebase', gates_failed: 'Gates failed', ready_to_merge: 'In merge queue', merge_blocked: 'Merge blocked', orphaned: 'Orphaned',
@@ -1867,6 +2092,14 @@ async function act(body, btn, out, draftKey, done) {
     flash(done || 'Done.');
     lastSig = ''; tick();
   } else { out.className = 'small err'; out.textContent = r.error || 'Refused.'; }
+}
+const readMarks = new Set();
+function markRead(id) {
+  if (!canAct || readMarks.has(id)) return;
+  readMarks.add(id);
+  post({ action: 'read', message: id }).then((r) => {
+    if (r.ok) { lastSig = ''; tick(); }
+  }).catch(() => readMarks.delete(id));
 }
 function button(label, primary, onClick) {
   const b = h('button', { class: 'btn sm' + (primary ? ' pri' : ''), type: 'button' }, label);
@@ -2436,9 +2669,17 @@ VIEWS.team = {
 };
 
 // ---- inbox
-const FILTERS = [['all', 'All'], ['question', 'Questions'], ['decision', 'Decisions'], ['warning', 'Warnings'], ['review', 'Reviews'], ['dead_letter', 'Dead letters']];
+const FILTERS = [['all', 'All'], ['unread', 'Unread'], ['question', 'Questions'], ['decision', 'Decisions'], ['warning', 'Warnings'], ['review', 'Reviews'], ['dead_letter', 'Dead letters']];
 const KIND_TEXT = { question: 'Question', decision: 'Decision', warning: 'Warning', experience: 'Lesson', review_request: 'Review request', review_result: 'Review result', status: 'Status', handoff: 'Handoff', interrupt: 'Interrupt', ack: 'Acknowledgement' };
 const ACK = { pending: ['pending', 'var(--warn)'], acked: ['acknowledged', 'var(--mute)'], dead_letter: ['dead letter', 'var(--bad)'], expired: ['expired', 'var(--mute)'], resolved: ['resolved', 'var(--mute)'] };
+function readCounts(rs) {
+  const acked = rs.filter((r) => r.acked_at).length, read = rs.filter((r) => r.read_at).length;
+  return { total: rs.length, read, acked, unread: Math.max(0, rs.length - read) };
+}
+function readPhrase(c) {
+  if (!c.total) return 'no receipts';
+  return c.unread ? c.unread + (c.total > 1 ? ' of ' + c.total : '') + ' unread' : 'read by all';
+}
 function composer(det) {
   const m = det.message, other = m.sender === 'human' ? m.recipient : m.sender;
   if (['swarm', 'steward', '*'].includes(other)) return null;
@@ -2452,40 +2693,56 @@ function composer(det) {
 }
 VIEWS.inbox = {
   async load(p) {
-    const tab = p[1] || 'all';
+    const tab = p[1] || 'all', chosen = /^\d+$/.test(p[2] || '');
     const list = await get('/api/inbox?tab=' + encodeURIComponent(tab));
-    const id = /^\d+$/.test(p[2] || '') ? p[2] : list.messages.length ? String(list.messages[0].id) : null;
+    const id = chosen ? p[2] : list.messages.length ? String(list.messages[0].id) : null;
     list.detail = id ? await get('/api/message/' + id).catch(() => null) : null;
     list.selected = id;
+    const mine = list.detail && list.detail.recipients.find((r) => r.agent === 'human');
+    if (chosen && id && canAct && mine && !mine.read_at) markRead(Number(id));
     return list;
   },
   render(d) {
     const list = h('section', { class: 'panel list', 'data-keep': 'inbox-list:' + d.tab, style: { flex: '1 1 360px', 'max-width': '440px', 'min-width': 0, overflow: 'hidden' } },
-      d.messages.length ? d.messages.map((m) => { const a = ACK[m.ack_state] || [m.ack_state, 'var(--mute)']; const unread = m.ack_state === 'pending';
-        return link('#/inbox/' + d.tab + '/' + m.id, { class: 'msg' + (String(m.id) === d.selected ? ' sel' : '') },
-          h('div', { class: 'row between', style: { 'align-items': 'baseline', gap: '8px' } }, h('span', { class: 'break', style: { 'font-weight': unread ? 600 : 400 } }, nameText(m.sender), h('span', { class: 'dim' }, ' → ' + nameText(m.recipient))), h('span', { class: 'dim small', style: { 'white-space': 'nowrap' } }, ago(m.age_s))),
-          h('div', { style: { 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis', color: unread ? 'var(--text)' : 'var(--mute)' } }, m.preview || '(empty)'),
-          h('div', { class: 'small m', style: { color: m.priority === 'critical' ? 'var(--bad)' : a[1] } }, (m.priority === 'critical' ? 'Critical ' : '') + (KIND_TEXT[m.kind] || m.kind).toLowerCase() + ' · ' + a[0] + (m.task ? ' · ' + m.task : ''))); }) : [empty('No messages here.')]);
+      d.messages.length ? d.messages.map((m) => {
+        const a = ACK[m.ack_state] || [m.ack_state, 'var(--mute)'];
+        const rc = m.recipients || { total: 0, read: 0, acked: 0, unread: 0 }, unread = rc.unread > 0;
+        return link('#/inbox/' + d.tab + '/' + m.id, { class: 'msg' + (String(m.id) === d.selected ? ' sel' : '') + (unread ? ' unread' : '') },
+          h('div', { class: 'row between', style: { 'align-items': 'baseline', gap: '8px' } },
+            h('span', { class: 'break', style: { 'font-weight': unread ? 600 : 400 } }, unread ? h('span', { class: 'unread-dot', 'aria-hidden': 'true' }) : null, nameText(m.sender), h('span', { class: 'dim' }, ' → ' + nameText(m.recipient))),
+            h('span', { class: 'dim small', style: { 'white-space': 'nowrap' } }, ago(m.age_s))),
+          h('div', { style: { 'white-space': 'nowrap', overflow: 'hidden', 'text-overflow': 'ellipsis', color: unread ? 'var(--text)' : 'var(--mute)' } }, mdPlain(m.preview) || '(empty)'),
+          h('div', { class: 'small m row wrap', style: { color: m.priority === 'critical' ? 'var(--bad)' : a[1] } },
+            (m.priority === 'critical' ? 'Critical ' : '') + (KIND_TEXT[m.kind] || m.kind).toLowerCase() + ' · ',
+            h('span', { style: { color: unread ? 'var(--warn)' : 'var(--mute)' } }, readPhrase(rc)),
+            ' · ' + a[0] + (m.task ? ' · ' + m.task : '')));
+      }) : [empty('No messages here.')]);
     const det = d.detail;
     let thread;
     if (det) {
-      const m = det.message, mine = det.recipients.find((r) => r.agent === 'human');
+      const m = det.message, mine = det.recipients.find((r) => r.agent === 'human'), rc = readCounts(det.recipients);
       const ackable = canAct && mine && !mine.acked_at && m.ack_state === 'pending';
       const out = h('span', { class: 'small' });
       thread = h('section', { class: 'panel thread', style: { flex: '2 1 540px', 'min-width': 0 } },
         h('div', { class: 'row between wrap', style: { padding: '6px 10px', 'border-bottom': '1px solid var(--line2)', gap: '8px' } },
           h('div', { style: { 'min-width': 0 } }, h('div', { class: 'small b', style: { color: m.priority === 'critical' ? 'var(--bad)' : 'var(--mute)' } }, (m.priority === 'critical' ? 'Critical ' : '') + (KIND_TEXT[m.kind] || m.kind).toLowerCase() + (m.task ? ' · ' + m.task : '') + ' · #' + m.id + (m.epoch != null ? ' · epoch ' + m.epoch : '')),
-            h('div', { class: 'muted small' }, nameRole(m.sender) + ' to ' + nameText(m.recipient) + ' · ' + new Date(m.created_at).toLocaleString())),
+            h('div', { class: 'muted small' }, nameRole(m.sender) + ' to ' + nameText(m.recipient) + ' · ' + new Date(m.created_at).toLocaleString()),
+            h('div', { class: 'row wrap small', style: { gap: '5px', 'margin-top': '3px' } },
+              h('span', { class: 'tag', style: { color: rc.unread ? 'var(--warn)' : 'var(--mute)' } }, readPhrase(rc)),
+              h('span', { class: 'tag' }, rc.acked + ' acknowledged'),
+              mine && !mine.read_at ? h('span', { class: 'tag', style: { color: 'var(--warn)' } }, 'Your copy: unread') : null)),
           ackable ? h('div', { class: 'row', style: { gap: '6px' } }, out, button('Acknowledge', false, (b) => act({ action: 'ack', message: m.id }, b, out, null, 'Acknowledged.'))) : null),
         h('div', { class: 'tbody', 'data-keep': 'inbox-body:' + m.id }, h('div', { class: 'col', style: { padding: '8px 10px', gap: '8px' } },
           det.thread.map((t) => h('div', { class: 'row', style: { 'align-items': 'flex-start', gap: '10px' } }, tile(who(t.sender).kind, who(t.sender).role, 26),
             h('div', { style: { flex: 1, 'min-width': 0 } }, h('div', { class: 'row wrap', style: { gap: '6px', 'align-items': 'baseline' } }, h('b', { class: 'b' }, nameText(t.sender)), h('span', { class: 'muted small' }, who(t.sender).role), h('span', { class: 'mono dim', style: { 'margin-left': 'auto' } }, clockTime(t.created_at))),
-              h('div', { class: 'pre', style: { margin: '2px 0 0', 'max-width': '720px' } }, t.pruned ? '[payload pruned; envelope retained]' : t.body)))),
+              t.pruned ? h('div', { class: 'muted small', style: { margin: '2px 0 0' } }, '[payload pruned; envelope retained]') : markdown(t.body)))),
           expiry(m)),
         h('div', { style: { padding: '4px 10px 6px', 'border-top': '1px solid var(--line2)' } },
-          h('div', { class: 'drow small', style: { 'border-top': 0, color: 'var(--mute)', 'font-weight': 600 } }, h('span', null, 'Recipient'), h('span', null, 'Status'), h('span', null, 'Delivered'), h('span', null, 'Acknowledged')),
-          det.recipients.length ? det.recipients.map((r) => { const st = r.acked_at ? ['Acknowledged', 'var(--good)'] : r.claim && r.claim.lease_left_s > 0 ? ['Leased', 'var(--info)'] : r.delivered_at ? ['Delivered', 'var(--info)'] : ['Pending', 'var(--warn)'];
-            return h('div', { class: 'drow small' }, h('span', null, nameRole(r.agent)), h('span', { class: 'm', style: { color: st[1] } }, st[0]), h('span', { class: 'mono dim' }, r.delivered_at ? clockTime(r.delivered_at) : '–'), h('span', { class: 'mono dim' }, r.acked_at ? clockTime(r.acked_at) : '–')); }) : [h('div', { class: 'small dim' }, 'No recipient rows.')])),
+          h('div', { class: 'drow small', style: { 'border-top': 0, color: 'var(--mute)', 'font-weight': 600 } }, h('span', null, 'Recipient'), h('span', null, 'Read'), h('span', null, 'Acknowledged')),
+          det.recipients.length ? det.recipients.map((r) => h('div', { class: 'drow small' },
+            h('span', null, nameRole(r.agent)),
+            h('span', { class: 'm', style: { color: r.read_at ? 'var(--info)' : 'var(--warn)' } }, r.read_at ? h('span', null, 'Read ', h('span', { class: 'mono dim' }, clockTime(r.read_at))) : 'Unread'),
+            h('span', { class: 'm', style: { color: r.acked_at ? 'var(--good)' : 'var(--mute)' } }, r.acked_at ? clockTime(r.acked_at) : r.claim && r.claim.lease_left_s > 0 ? 'leased' : '–'))) : [h('div', { class: 'small dim' }, 'No recipient rows.')])),
         composer(det));
     } else thread = h('section', { class: 'panel thread', style: { flex: '2 1 540px' } }, empty('Select a message.'));
     const out = h('span', { class: 'small' });

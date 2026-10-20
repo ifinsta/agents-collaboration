@@ -148,6 +148,24 @@ class Acting(ActionCase):
         bob = [r for r in self.api(f"/api/message/{mid}")["recipients"] if r["agent"] == "bob"][0]
         self.assertIsNone(bob["acked_at"])
 
+    def test_reading_a_message_records_the_observation_without_acknowledging_it(self):
+        self.sw("--as", "ann", "send", "human", "Please look at the readiness test", "--kind", "review_request")
+        with self.db() as con:
+            mid = con.execute("SELECT MAX(id) FROM messages").fetchone()[0]
+        self.ok({"action": "read", "message": mid})
+        detail = self.api(f"/api/message/{mid}")
+        human = [r for r in detail["recipients"] if r["agent"] == "human"][0]
+        self.assertIsNotNone(human["read_at"])
+        self.assertIsNone(human["acked_at"])
+        self.assertEqual(detail["message"]["ack_state"], "pending")
+        self.assertEqual(self.api("/api/inbox")["tabs"]["unread"], 0)
+        self.sw("--as", "ann", "send", "bob", "Peer only", "--kind", "status")
+        with self.db() as con:
+            other = con.execute("SELECT MAX(id) FROM messages").fetchone()[0]
+        status, result = self.act({"action": "read", "message": other})
+        self.assertEqual(status, 200)
+        self.assertFalse(result["ok"], "the human cannot observe a message addressed to someone else")
+
     def test_approve_an_architecture_brief(self):
         self.sw("goal", "new", "health", "Ship a health endpoint")
         self.architecture("health", approve=False)

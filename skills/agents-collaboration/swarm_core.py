@@ -7221,13 +7221,22 @@ def cmd_inbox(sw: Swarm, a) -> None:
             sw.require_agent(who)
         if a.limit < 1 or a.limit > 1000 or a.after < 0:
             raise SwarmError("Inbox --limit is 1..1000 and --after is a nonnegative message id.")
-        rows = sw.db.execute(
-            "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
-            "WHERE r.agent=? AND m.id>? AND (? OR (r.acked_at IS NULL AND m.ack_state NOT IN ('acked','expired','resolved') "
-            "AND (r.delivered_at IS NULL OR m.requires_ack=1 OR m.priority='critical') "
-            "AND NOT EXISTS (SELECT 1 FROM message_claims c WHERE c.msg=m.id AND c.agent=r.agent))) ORDER BY m.id LIMIT ?",
-            (who, a.after, a.all, a.limit),
-        ).fetchall()
+        if a.id is not None:
+            rows = sw.db.execute(
+                "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
+                "WHERE r.agent=? AND m.id=?",
+                (who, a.id),
+            ).fetchall()
+            if not rows:
+                raise SwarmError(f"Message {a.id} was not addressed to {who}.")
+        else:
+            rows = sw.db.execute(
+                "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
+                "WHERE r.agent=? AND m.id>? AND (? OR (r.acked_at IS NULL AND m.ack_state NOT IN ('acked','expired','resolved') "
+                "AND (r.delivered_at IS NULL OR m.requires_ack=1 OR m.priority='critical') "
+                "AND NOT EXISTS (SELECT 1 FROM message_claims c WHERE c.msg=m.id AND c.agent=r.agent))) ORDER BY m.id LIMIT ?",
+                (who, a.after, a.all, a.limit),
+            ).fetchall()
         for m in rows:
             sw.db.execute(
                 "UPDATE message_recipients SET delivered_at=COALESCE(delivered_at,?) WHERE msg=? AND agent=?",
@@ -11305,6 +11314,7 @@ def build_parser() -> argparse.ArgumentParser:
     for b in bsub.choices.values():
         b.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     sp = add("inbox", cmd_inbox, "read your messages")
+    sp.add_argument("--id", type=int, default=None, metavar="MESSAGE", help="read one message by id")
     sp.add_argument("--all", action="store_true")
     sp.add_argument("--after", type=int, default=0, help="replay messages after this durable id")
     sp.add_argument("--limit", type=int, default=100)

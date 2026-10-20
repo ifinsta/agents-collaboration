@@ -3,11 +3,11 @@
   "files": {
     "SKILL.md": "b5c38f11b0dd3c31c68572ba7d9685f39a086a7f6c9b50aaa89bdf42adeeb10e",
     "hivewire.py": "e43da4b53b040280fca68f37bcef1e8d22b8f94b61483aa14dc83fe8ae37594c",
-    "swarm_core.py": "476636b087b5d71012d6df4d07cae68c8de6f4912ffb60be8ea56f2b05595ba4",
+    "swarm_core.py": "993db8612f79cd6b3db7f2667b4e602d55b139da1f52e255a9a7cb1fe8153583",
     "EDGE-CASES.md": "6e80da44181a6275628802b579258bc779261aff56bc2921ec4abd48ae93a8a4",
-    "BUS.md": "5a6a1ce6dfa0e79e556ff9945e41223835504e053d3a31a59182d202779e3fc7",
+    "BUS.md": "cec099ec8acd0bf6ea5908ad6218dac8f70eaaf96d4d5d6682a8ca5871e794fb",
     "BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
-    "swarm_web.py": "8ae9c63b0c32720789e51724abdfc40b5cb97f906a4549f4274d56efd0e15c5b",
+    "swarm_web.py": "2d50d53bc8bfdd4a6a59a12a3203175cdfe62ef8395c1845b11dc09af5378ba3",
     "swarm_sessions.py": "f2f9cbb0103bfbf0bc198e6b10416329d52901b080af39b2fa947b2b502be140",
     "swarm_workspace.py": "ae0fda61cfbb72f99447f9247e177778ca5dc689ae67d65e649b6a2f7865e2be",
     "swarm_fonts.css": "aa54f1b78f6e332e3bc8708dbcc046f12dd06861393a782a6d5da0a69157df77"

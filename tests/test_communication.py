@@ -112,6 +112,23 @@ class Envelopes(CommunicationCase):
         self.ack_message(message["id"], "bob")
         self.assertEqual(json.loads(self.sw("inbox", "--as", "bob", "--json"))["result"]["messages"], [])
 
+    def test_inbox_by_id_observes_one_addressed_message_without_acknowledging_it(self):
+        self.join("ann")
+        self.join("bob")
+        self.sw("send", "bob", "Review the interface", "--kind", "review_request", "--as", "ann")
+        message = self.row("messages")
+        observed = json.loads(self.sw("inbox", "--as", "bob", "--id", str(message["id"]), "--json"))["result"]["messages"]
+        self.assertEqual([m["message_id"] for m in observed], [message["id"]])
+        with self.database() as db:
+            db.row_factory = fixtures.sqlite3.Row
+            receipt = db.execute("SELECT * FROM message_recipients WHERE msg=? AND agent='bob'", (message["id"],)).fetchone()
+        self.assertIsNotNone(receipt["delivered_at"])
+        self.assertIsNone(receipt["acked_at"])
+        again = json.loads(self.sw("inbox", "--as", "bob", "--json"))["result"]["messages"]
+        self.assertEqual([m["message_id"] for m in again], [message["id"]], "a read observation does not acknowledge")
+        self.sw("inbox", "--as", "ann", "--id", str(message["id"]), "--json", ok=False)
+
+
     def test_ec213_concurrent_retries_commit_one_message(self):
         self.join("ann")
         self.join("bob")
