@@ -8,5 +8,5 @@ make it easy for newcomers to take part. Harassment of any kind is not tolerated
 
 Report unacceptable behaviour privately to the maintainers through GitHub's
 private vulnerability reporting
-(<https://github.com/ifinsta/agents-collaboration/security/advisories/new>),
+(<https://github.com/ifinsta/hivewire/security/advisories/new>),
 marking it as a conduct report. Reports are handled confidentially.

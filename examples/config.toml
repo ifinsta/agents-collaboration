@@ -1,6 +1,6 @@
 # agents-collaboration: project configuration.
 # Every key is optional; the values shown are the defaults unless marked "example".
-# Docs: https://github.com/ifinsta/agents-collaboration/blob/main/docs/design.md
+# Docs: https://github.com/ifinsta/hivewire/blob/main/docs/design.md
 
 [project]
 target = "main"                       # the branch work is merged into

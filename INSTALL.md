@@ -23,12 +23,12 @@ Run from the destination repository root. These download the installer from
 
 ```bash
 # bash, zsh, Git Bash
-curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | PY - --all
+curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | PY - --all
 ```
 
 ```powershell
 # PowerShell
-irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | PY - --all
+irm https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | PY - --all
 ```
 
 `--all` adds the pointers read by agent CLIs: a marked section in `AGENTS.md`
@@ -80,7 +80,7 @@ to the installed launcher printed by the tool.
 An explicitly requested installation for all repositories uses `--user`:
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | PY - --user --claude
+curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | PY - --user --claude
 ```
 
 The launcher is under the user's `.agents/skills/agents-collaboration/` directory.

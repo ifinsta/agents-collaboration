@@ -49,7 +49,7 @@ unless `--observe` is supplied, and its actions run `swarm` commands as the huma
 ## Reporting a vulnerability
 
 Please report security issues privately through GitHub's
-[private vulnerability reporting](https://github.com/ifinsta/agents-collaboration/security/advisories/new),
+[private vulnerability reporting](https://github.com/ifinsta/hivewire/security/advisories/new),
 not in a public issue. We aim to acknowledge reports within three working days.
 
 ## What is in scope

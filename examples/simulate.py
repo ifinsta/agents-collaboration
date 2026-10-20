@@ -63,7 +63,7 @@ class Sim:
         for raw in {str(self.base), self.base.as_posix(), str(self.base.resolve()), self.base.resolve().as_posix()}:
             text = text.replace(raw, "~/demo")
         for raw in {str(ROOT), ROOT.as_posix()}:
-            text = text.replace(raw, f"github.com/ifinsta/agents-collaboration@v{VERSION}")
+            text = text.replace(raw, f"github.com/ifinsta/hivewire@v{VERSION}")
         text = text.replace("\\", "/")
         if picture:  # a picture keeps real hashes and timings; only machine paths are hidden
             return text

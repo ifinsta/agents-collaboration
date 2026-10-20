@@ -2,13 +2,13 @@
 """Install Hivewire, the agents-collaboration skill.
 
 Into the current repository, with every pointer agents look for (bash, zsh, Git Bash):
-    curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
+    curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | python - --all
 
 The same from PowerShell:
-    irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
+    irm https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | python - --all
 
 Once for every repository on this machine (your home folder):
-    curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --user --claude
+    curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | python - --user --claude
 
 From a local checkout:
     python install.py --source path/to/agents-collaboration --project path/to/repo --all
@@ -45,7 +45,7 @@ import urllib.request
 from datetime import datetime, timezone
 from pathlib import Path
 
-REPO = "ifinsta/agents-collaboration"
+REPO = "ifinsta/hivewire"
 DEFAULT_REF = "main"
 SKILL = "agents-collaboration"
 SKILL_DIR = f"skills/{SKILL}"

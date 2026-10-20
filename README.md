@@ -10,7 +10,7 @@ its coordination commands. Agents can use different CLIs while sharing one
 SQLite board in the Git common directory. The default pool limit is five agents
 on one machine. Agent identities are trusted local names, not security principals.
 
-[![ci](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml)
+[![ci](https://github.com/ifinsta/hivewire/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/hivewire/actions/workflows/ci.yml)
 
 The badge reports hosted repository CI. It does not validate an unpublished
 working tree. The source described here is **0.4.4, unreleased and experimental**.
@@ -103,12 +103,12 @@ To install the current Hivewire source selected by the public installer, from yo
 
 ```bash
 # bash, zsh, Git Bash
-curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
+curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | python - --all
 ```
 
 ```powershell
 # PowerShell; first verify that python is Python 3.11+
-irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
+irm https://raw.githubusercontent.com/ifinsta/hivewire/main/install.py | python - --all
 ```
 
 The installer targets `main` and requires a Hivewire-only payload. For the

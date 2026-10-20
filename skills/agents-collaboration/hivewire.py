@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hivewire: independent agents, accountable teamwork (https://github.com/ifinsta/agents-collaboration).
+"""Hivewire: independent agents, accountable teamwork (https://github.com/ifinsta/hivewire).
 
 Run it as:  python hivewire.py <command> --as <your-name>      (or: python hivewire.py -h)
 
@@ -24,7 +24,7 @@ if __name__ == "__main__":
     if swarm_core.__version__ != EXPECTED:
         sys.stderr.write(
             f"hivewire: hivewire.py is v{EXPECTED} but swarm_core.py is v{swarm_core.__version__}: the install is "
-            "half-updated. Reinstall:\n  curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/"
+            "half-updated. Reinstall:\n  curl -fsSL https://raw.githubusercontent.com/ifinsta/hivewire/"
             "main/install.py | python - --all\n"
         )
         sys.exit(2)

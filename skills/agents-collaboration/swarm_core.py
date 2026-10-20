@@ -33,7 +33,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 __version__ = "0.4.4"
-REPO = "ifinsta/agents-collaboration"
+REPO = "ifinsta/hivewire"
 HERE = Path(__file__).resolve().parent
 LAUNCHER = HERE / "hivewire.py"  # the entry point: the path agents are told to run
 SCHEMA_VERSION = 12

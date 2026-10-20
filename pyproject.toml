@@ -8,8 +8,8 @@ requires-python = ">=3.11"
 dependencies = []
 
 [project.urls]
-Homepage = "https://github.com/ifinsta/agents-collaboration"
-Issues = "https://github.com/ifinsta/agents-collaboration/issues"
+Homepage = "https://github.com/ifinsta/hivewire"
+Issues = "https://github.com/ifinsta/hivewire/issues"
 
 [tool.ruff]
 line-length = 120

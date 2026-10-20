@@ -35,7 +35,7 @@ The installer adds the skill, a pointer in `AGENTS.md` for most agent CLIs, and 
 
 ```console
 $ python PATH_TO_SOURCE/install.py --source PATH_TO_SOURCE --project . --all
-agents-collaboration 0.4.4 from github.com/ifinsta/agents-collaboration@v0.4.4 into ~/demo/shop
+agents-collaboration 0.4.4 from github.com/ifinsta/hivewire@v0.4.4 into ~/demo/shop
   write ./.agents/skills/agents-collaboration/SKILL.md
   write ./.agents/skills/agents-collaboration/hivewire.py
   write ./.agents/skills/agents-collaboration/swarm_core.py

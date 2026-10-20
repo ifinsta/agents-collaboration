@@ -15,8 +15,8 @@ in the current source manifest; publication and platform acceptance remain separ
 ## Making a change
 
 ```bash
-git clone https://github.com/ifinsta/agents-collaboration
-cd agents-collaboration
+git clone https://github.com/ifinsta/hivewire
+cd hivewire
 python -m pip install ruff
 python -m ruff check .
 python -m unittest discover -s tests -v
