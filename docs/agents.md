@@ -2,19 +2,23 @@
 
 Which coding agents can join a pool, how readiness is checked, and how they are
 started headless. Any agent that can run a shell command can join by hand
-(`swarm join`). Adapters are only needed for `probe` and `spawn`.
+(`swarm join`). Adapters define CLI-specific probing, headless/interactive startup and optional
+native notification hooks.
 
-| Kind | Headless command | Sign-in check | Unattended flag | Status |
+| Kind | Headless command | Sign-in check | Unattended flag | Recorded command-line check |
 |---|---|---|---|---|
-| `claude` (Claude Code) | `claude -p "<prompt>"` | `claude auth status` | `--dangerously-skip-permissions` | verified with 2.1.280 |
-| `opencode` | `opencode run "<prompt>"` | `opencode auth list` | `--auto` | verified with 2.0.32 |
-| `qodercli` (Qoder) | `qodercli -p "<prompt>" -w <dir>` (interactive: `-i "<prompt>"`) | `qodercli status` | `--dangerously-skip-permissions` | verified with 1.1.73 |
-| `codex` | `codex exec "<prompt>" -C <dir> --add-dir <git dir>` | `codex login status` | `--full-auto` | verified with 0.104.0 |
-| `gemini` | `gemini -p "<prompt>"` | none (reported as unknown) | `--approval-mode yolo` | verified with 0.53.1 |
-| `kilocode` (Kilo Code) | `kilocode --auto --nosplash --workspace <dir> "<prompt>"` | none (`kilocode auth` starts a login, so it is never run; reported as unknown) | `--yolo` | verified with 0.18.0 |
+| `claude` (Claude Code) | `claude -p "<prompt>"` | `claude auth status` | `--dangerously-skip-permissions` | help checked at 2.1.280 |
+| `opencode` | `opencode run "<prompt>"` | `opencode auth list` | `--auto` | help checked at 2.0.32 |
+| `qodercli` (Qoder) | `qodercli -p "<prompt>" -w <dir>` (interactive: `-i "<prompt>"`) | `qodercli status` | `--dangerously-skip-permissions` | help checked at 1.1.73 |
+| `codex` | `codex exec "<prompt>" -C <dir> --add-dir <git dir>` | `codex login status` | `--full-auto` | help checked at 0.104.0 |
+| `gemini` | `gemini -p "<prompt>"` | none (reported as unknown) | `--approval-mode yolo` | help checked at 0.53.1 |
+| `kilocode` (Kilo Code) | `kilocode --auto --nosplash --workspace <dir> "<prompt>"` | none (`kilocode auth` starts a login, so it is never run; reported as unknown) | `--yolo` | help checked at 0.18.0 |
 | `deepseek` (deepseek-tui) | `deepseek exec "<prompt>"` | `deepseek auth status` | none | **unverified**: `exec` does not document its arguments |
 
-"Verified" means the command line was taken from that CLI version's own `--help`.
+These are recorded help/option checks for the listed versions, not claims about
+today's latest CLI or successful authenticated task execution. A successful live
+probe and supervised trial are separate evidence. Keep unavailable accounts,
+timeouts and missing usage visible; see the recorded workforce trials.
 
 CLIs update themselves. Qoder went from 0.1.46 to 1.1.73 during one session and
 dropped two options its adapter passed. Before `spawn`, `launch` or `probe` uses
@@ -22,7 +26,8 @@ a CLI, the tool checks every option it is about to pass against that CLI's own
 help. A missing option stops the launch and is named; `probe` reports it as
 `CHANGED`. Re-verify with `swarm probe --live` before relying on an adapter.
 
-**DeepSeek models through opencode** is the proven path today. opencode accepts
+**DeepSeek models through opencode** are a configurable adapter route; actual
+availability requires the chosen provider/model and account. opencode accepts
 a DeepSeek API key, so:
 
 ```bash
@@ -40,7 +45,7 @@ config` beforehand.
 swarm probe                 # installed? version? signed in? (no requests sent)
 swarm probe --live          # also asks each installed CLI to reply READY (one request each)
 swarm agents                # agents already in the pool: state, OS, task, last heartbeat
-swarm send ds1 "free for the API task?" --ping    # ds1 answers with `swarm ack "..."`
+swarm send ds1 "free for the API task?" --kind question # acknowledge via bus; reply with --reply-to ID
 ```
 
 `probe` runs each CLI's own sign-in status command and reports only its exit
@@ -48,6 +53,11 @@ code. The output usually contains an account name or email, so it is never
 printed or stored.
 
 ## Spawning
+
+Prefer headless `spawn` plus `swarm sessions` for workers whose output must stay
+auditable. The manager uses one existing terminal with per-execution tabs, leaves
+workers running when detached, and retains failed/exited sessions. The browser
+Sessions page shows the same captures. See [managed sessions](managed-sessions.md).
 
 ```bash
 swarm spawn <kind> --name <name> --task <task> [--model <model>] [--unattended] [--dry-run]
@@ -57,10 +67,15 @@ swarm spawn <kind> --name <name> --task <task> [--model <model>] [--unattended] 
    creates the worktree.
 2. It writes `.swarm-brief.md` in the worktree: identity, task, the absolute tool
    command, the skill path, and the detected environment with its rules.
-3. It launches the CLI in the worktree, detached, with output in
-   `.git/swarm/logs/<name>.log`, and records the process id.
-4. If the process exits, the agent goes offline and its task is orphaned at once,
-   so another agent can take it over.
+3. It creates an owned supervisor and launches the CLI in the worktree. Source
+   versions described here retain
+   bounded worker output in `.git/swarm/logs/<execution-id>.log` and engine
+   startup diagnostics in `<execution-id>.supervisor.log`. `execution show ID`
+   exposes observed byte counts, capture status and hash; the process id is
+   status information, never termination authority.
+4. Observed group exit settles the owner's state. Untouched work may return to
+   the pool; started work is retained for recovery. Unknown supervision blocks
+   blind restart/cleanup and can require human reconciliation before takeover.
 
 The prompt on the command line is always one safe sentence that points at the
 brief. Windows `.cmd` shims pass arguments through `cmd.exe`, and anything more
@@ -71,6 +86,46 @@ without it often stops at the first tool use, because there is nobody to approve
 it. With it, the agent can run any command its CLI allows. That is why
 `--unattended` also needs `[spawn] allow_unattended = true` in the project
 config: a person decides, once, per repository.
+
+## Automatic inbox relay and native hooks (unreleased)
+
+With `[bus] enabled = true`, headless `spawn` and foreground `launch` start
+an automatic standard-bus relay in their owning supervisor. The worker inherits `SWARM_BUS_INBOX`, pointing to
+an atomic JSON snapshot of leased deliveries and current stop controls. Committed
+messages/control changes wake the relay over loopback; a 15-second fallback
+recovers missed hints. The relay does the local reads, so the model need not run
+an inbox command continuously. Handle deliveries and acknowledge their receipts
+after durable processing. Plain `send` now defaults to reliable typed status.
+Historical read-once rows remain inspectable without fabricated receipts.
+
+Configure a native bridge as an argv array, globally under `[bus]` or for one
+adapter in its existing table:
+
+```toml
+[adapters.mycli]
+message_hook = ["python", "/absolute/path/to/native_bridge.py"]
+interrupt_hook = ["python", "/absolute/path/to/native_bridge.py"]
+```
+
+The bridge reads the file named by `SWARM_BUS_EVENT_PATH`. Its JSON includes
+deliveries with receipts, `blocked`, `reason`, current task/epoch and controls.
+The same interrupt hook receives permission/control transitions, including resume.
+Use the CLI's supported channel to forward context; hook exit 0 means notification
+only. Hooks run as bounded owned commands, without shell interpolation. Defaults
+and failure handling are in the [bus contract](../skills/agents-collaboration/BUS.md#automatic-adapter-relay-and-hooks).
+
+At native tool boundaries, a wrapper can invoke
+`swarm bus hook --stage before-tool --enforce --json`. It returns current messages
+and control state and exits 2 when blocked. Map its result to that CLI's native
+hook protocol; allow recovery/diagnostic coordination commands so a paused worker
+can checkpoint, acknowledge and hand off. The engine does not modify vendor-global
+hook settings. A native bridge is needed to inject context into a CLI's active
+session; the common relay cannot preempt an unsupported model request.
+
+Externally started CLIs can run `swarm bus listen --as NAME --json`
+as their relay. Its optional `--once` is an inspection/notification pass that
+releases receipts before returning. Supervised launch paths manage lifetime and
+lease release automatically. No relay signal authorizes killing a registry PID.
 
 ## Adding a CLI
 

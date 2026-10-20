@@ -1,0 +1,23 @@
+import json, pathlib, platform, subprocess, sys, time
+root = pathlib.Path(__file__).resolve().parent
+source = root / "source-final"
+sys.path.insert(0, str(source))
+sys.path.insert(0, str(source / "tests"))
+from scripts import validate_candidate as runner
+import unittest
+names = ["test_legacy_cleanup", "test_interactive_launch", "test_terminal_supervision", "test_bus", "test_swarm.Submitting", "test_swarm.Planning.test_ec060_overlapping_scope_needs_acknowledgement", "test_swarm.Merging.test_ec088_conflict_returns_needs_rebase_and_touches_nothing", "test_swarm.Merging.test_ec089_gates_run_on_the_rebased_tree", "test_contracts.Contracts.test_ec201_migration_is_idempotent_and_preserves_legacy_goals", "test_takeover.Takeover.test_ec318_observed_interactive_exit_pauses_the_running_contract", "test_installer.Installer.test_installed_tool_runs", "test_oversight.ReviewRecovery.test_ec225_same_head_new_claim_invalidates_old_epoch_clearance"]
+ids = sorted(t.id() for t in runner.flatten(unittest.defaultTestLoader.loadTestsFromNames(names)))
+before = runner.hashes()
+(root / "windows311-source-before.json").write_text(json.dumps(before, indent=2), encoding="utf-8")
+(root / "windows311.tests.json").write_text(json.dumps(ids), encoding="utf-8")
+started = time.monotonic()
+with (root / "windows311.log").open("wb") as log:
+    result = subprocess.run([sys.executable, str(source / "scripts/validate_candidate.py"), "--worker", str(root / "windows311.tests.json"), str(root / "windows311-cases.json")], cwd=source, stdout=log, stderr=subprocess.STDOUT)
+after = runner.hashes()
+(root / "windows311-source-after.json").write_text(json.dumps(after, indent=2), encoding="utf-8")
+cases = json.loads((root / "windows311-cases.json").read_text(encoding="utf-8"))
+report = {"scope": "focused", "system": platform.system(), "python_version": platform.python_version(), "source_fingerprint": runner.normalized_fingerprint(before), "core_sha256": before["skills/agents-collaboration/swarm_core.py"], "source_unchanged": before == after, "selected": len(ids), "exact_selected_coverage": sorted(c["id"] for c in cases["cases"]) == ids, "counts": {state: sum(c["outcome"] == state for c in cases["cases"]) for state in ("passed", "skipped", "failed")}, "elapsed_seconds": round(time.monotonic() - started, 3), "cases": cases["cases"]}
+report["ok"] = result.returncode == 0 and cases["ok"] and report["source_unchanged"] and report["exact_selected_coverage"]
+(root / "windows311.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+print(json.dumps({k:v for k,v in report.items() if k != "cases"}))
+raise SystemExit(0 if report["ok"] else 1)

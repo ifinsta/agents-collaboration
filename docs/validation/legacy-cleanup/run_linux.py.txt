@@ -1,0 +1,8 @@
+import os, pathlib, subprocess, sys, zipfile
+zipfile.ZipFile('/capture/source-final.zip').extractall('/workspace')
+names = ["test_interactive_launch.InteractiveLaunch.test_ec302_child_creation_and_pid_publication_share_the_ownership_fence", "test_interactive_launch.InteractiveLaunch.test_ec307_interactive_process_creation_failure_preserves_the_claim", "test_oversight.ReviewRecovery.test_ec225_same_head_new_claim_invalidates_old_epoch_clearance"]
+with pathlib.Path('/capture/linux313-preflight.log').open('wb') as log:
+    code=subprocess.call(['python','-m','unittest','-v',*names], env={**os.environ,'PYTHONPATH':'/workspace/tests'},stdout=log,stderr=subprocess.STDOUT)
+print('Preflight exit:',code,flush=True)
+if code:sys.exit(code)
+sys.exit(subprocess.call(['python','scripts/validate_candidate.py','--workers','4','--output','/capture/linux313']))

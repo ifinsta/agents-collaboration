@@ -2,3 +2,6 @@
 # checkout that converted line endings would no longer match its own manifest.
 * text=auto eol=lf
 *.png binary
+
+# Preserve retained evidence byte-for-byte, including logs whose hashes are recorded.
+docs/validation/** -text whitespace=-blank-at-eol,-blank-at-eof

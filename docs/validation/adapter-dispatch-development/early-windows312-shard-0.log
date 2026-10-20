@@ -1,0 +1,233 @@
+test_ec263_schema_seven_upgrade_rolls_back_and_keeps_legacy_terms (test_budget.Budgets.test_ec263_schema_seven_upgrade_rolls_back_and_keeps_legacy_terms) ... ok
+test_ec267_actual_overrun_fences_work_and_time_alone_cannot_reopen_it (test_budget.Budgets.test_ec267_actual_overrun_fences_work_and_time_alone_cannot_reopen_it) ... ok
+test_ec271_lost_tool_intent_stays_unknown_and_prevents_cleanup_or_reoffer (test_budget.Budgets.test_ec271_lost_tool_intent_stays_unknown_and_prevents_cleanup_or_reoffer) ... ok
+test_ec275_replacement_offer_keeps_prior_consumption_and_closed_clocks (test_budget.Budgets.test_ec275_replacement_offer_keeps_prior_consumption_and_closed_clocks) ... ok
+test_ec330_envelope_schema_idempotent_publish_and_installed_contract (test_bus.Bus.test_ec330_envelope_schema_idempotent_publish_and_installed_contract) ... ok
+test_ec334_bus_limits_legacy_notifications_and_fifo_are_explicit (test_bus.Bus.test_ec334_bus_limits_legacy_notifications_and_fifo_are_explicit) ... ok
+test_ec337_wake_hints_follow_commit_and_never_rollback (test_bus_dispatch.Wakeups.test_ec337_wake_hints_follow_commit_and_never_rollback) ... ok
+test_ec340_tool_hook_exposes_authoritative_pause_and_enforcement (test_bus_dispatch.Wakeups.test_ec340_tool_hook_exposes_authoritative_pause_and_enforcement) ... ok
+test_ec288_local_file_copy_holds_the_ownership_transaction (test_claim_allocation.ClaimAllocation.test_ec288_local_file_copy_holds_the_ownership_transaction) ... ok
+test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event (test_claim_crashes.ClaimCrashes.test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event) ... ok
+test_ec312_kill_before_setup_commit_keeps_physical_copies_and_the_original_claim (test_claim_crashes.ClaimCrashes.test_ec312_kill_before_setup_commit_keeps_physical_copies_and_the_original_claim) ... ok
+test_ec313_takeover_kill_before_setup_commit_preserves_committed_transfer_and_work (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_before_setup_commit_preserves_committed_transfer_and_work) ... ok
+test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting (test_claim_crashes.ClaimCrashes.test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting) ... ok
+test_ec212_normal_typed_messages_redeliver_until_ack_and_offsets_normalize (test_communication.Envelopes.test_ec212_normal_typed_messages_redeliver_until_ack_and_offsets_normalize) ... ok
+test_ec215_secret_filter_and_payload_bounds_do_not_create_control_authority (test_communication.Envelopes.test_ec215_secret_filter_and_payload_bounds_do_not_create_control_authority) ... ok
+test_ec218_timeout_escalates_once_and_operator_recovers_without_owner_ack (test_communication.Interrupts.test_ec218_timeout_escalates_once_and_operator_recovers_without_owner_ack) ... ok
+test_ec220_pause_during_gate_or_after_intent_never_advances_target (test_communication.Interrupts.test_ec220_pause_during_gate_or_after_intent_never_advances_target) ... ok
+test_ec221_killed_interrupt_checkpoint_and_handoff_transactions_recover_idempotently (test_communication.Interrupts.test_ec221_killed_interrupt_checkpoint_and_handoff_transactions_recover_idempotently) ... ok
+test_ec203_high_risk_needs_human_and_source_evidence_must_match (test_contracts.Architecture.test_ec203_high_risk_needs_human_and_source_evidence_must_match) ... ok
+test_ec202_scope_exception_cannot_widen_a_contract (test_contracts.Contracts.test_ec202_scope_exception_cannot_widen_a_contract) ... ok
+test_ec205_expiry_fences_work_and_preserves_dirty_tree_through_restart (test_contracts.Contracts.test_ec205_expiry_fences_work_and_preserves_dirty_tree_through_restart) ... ok
+test_ec207_checkpoint_due_and_grace_escalation_are_idempotent (test_contracts.Contracts.test_ec207_checkpoint_due_and_grace_escalation_are_idempotent) ... ok
+test_ec211_crash_during_migration_rolls_back_schema_and_can_be_retried (test_contracts.Contracts.test_ec211_crash_during_migration_rolls_back_schema_and_can_be_retried) ... ok
+test_ec280_excess_output_terminates_only_owned_descendants_and_retains_work (test_execution_output.ExecutionOutput.test_ec280_excess_output_terminates_only_owned_descendants_and_retains_work) ... ok
+test_ec284_capture_write_failure_is_evidence_failure_and_memory_stays_bounded (test_execution_output.ExecutionOutput.test_ec284_capture_write_failure_is_evidence_failure_and_memory_stays_bounded) ... ok
+test_ec329_counter_decision_and_acceptance_commit_kills_keep_one_bounded_offer (test_final_transitions.FinalTransitions.test_ec329_counter_decision_and_acceptance_commit_kills_keep_one_bounded_offer) ... ok
+test_ec320_migration_rollback_retains_legacy_board_and_retries_without_fabricated_proof (test_git_allocation.GitAllocation.test_ec320_migration_rollback_retains_legacy_board_and_retries_without_fabricated_proof) ... ok
+test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event (test_hardening.DoctorAndStorage.test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event) ... ok
+test_ec235_global_json_supports_nested_commands_and_preserves_legacy_payloads (test_hardening.JsonProtocol.test_ec235_global_json_supports_nested_commands_and_preserves_legacy_payloads) ... ok
+test_ec237_final_commit_and_hook_edits_are_checked_and_evidence_survives_cleanup (test_hardening.VerifiedIntegration.test_ec237_final_commit_and_hook_edits_are_checked_and_evidence_survives_cleanup) ... ok
+test_ec239_cleanup_preserves_a_clean_branch_with_new_unmerged_commits (test_hardening.VerifiedIntegration.test_ec239_cleanup_preserves_a_clean_branch_with_new_unmerged_commits) ... ok
+test_ec324_configuration_shape_and_file_limits_refuse_without_losing_board_state (test_input_payloads.InputAndPayloads.test_ec324_configuration_shape_and_file_limits_refuse_without_losing_board_state) ... ok
+test_ec146_agents_md_keeps_its_line_endings (test_installer.Installer.test_ec146_agents_md_keeps_its_line_endings) ... ok
+test_ec171_a_fresh_install_starts_with_an_empty_board (test_installer.Installer.test_ec171_a_fresh_install_starts_with_an_empty_board) ... ok
+test_ec197_a_half_updated_install_is_refused (test_installer.Installer.test_ec197_a_half_updated_install_is_refused) ... ok
+test_local_edits_are_not_overwritten (test_installer.Installer.test_local_edits_are_not_overwritten) ... ok
+test_installer_is_ascii_for_powershell_pipes (test_installer.Release.test_installer_is_ascii_for_powershell_pipes) ... ok
+test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation (test_interactive_launch.InteractiveLaunch.test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation) ... ok
+test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid (test_interactive_launch.InteractiveLaunch.test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid) ... ok
+test_ec305_interactive_launch_rechecks_policy_after_preparation (test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_policy_after_preparation) ... ok
+test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child (test_interactive_launch.InteractiveLaunch.test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child) ... ok
+test_ec225_changed_commit_or_gate_policy_requires_fresh_submission_and_review (test_oversight.Incidents.test_ec225_changed_commit_or_gate_policy_requires_fresh_submission_and_review) ... ok
+test_ec228_incident_opened_after_merge_intent_prevents_ref_update (test_oversight.Incidents.test_ec228_incident_opened_after_merge_intent_prevents_ref_update) ... ok
+test_ec229_chat_only_candidates_need_local_events_and_commits_before_promotion (test_oversight.MemoryLearning.test_ec229_chat_only_candidates_need_local_events_and_commits_before_promotion) ... ok
+test_ec232_cross_repo_import_is_explicit_provisional_and_cannot_reuse_foreign_authority (test_oversight.MemoryLearning.test_ec232_cross_repo_import_is_explicit_provisional_and_cannot_reuse_foreign_authority) ... ok
+test_ec223_schema_three_upgrade_is_atomic_and_preserves_committed_messages (test_oversight.ReviewRecovery.test_ec223_schema_three_upgrade_is_atomic_and_preserves_committed_messages) ... ok
+test_ec226_bad_citations_and_false_alarm_clearance_cannot_skip_real_gates (test_oversight.ReviewRecovery.test_ec226_bad_citations_and_false_alarm_clearance_cannot_skip_real_gates) ... ok
+test_ec234_killed_incident_requests_and_reports_have_durable_idempotent_results (test_oversight.ReviewRecovery.test_ec234_killed_incident_requests_and_reports_have_durable_idempotent_results) ... ok
+test_ec251_cleanup_retains_ignored_content_until_the_operator_preserves_it (test_preservation.IgnoredWork.test_ec251_cleanup_retains_ignored_content_until_the_operator_preserves_it) ... ok
+test_ec253_invalid_toml_and_encoding_give_a_policy_repair_refusal (test_preservation.PolicySnapshot.test_ec253_invalid_toml_and_encoding_give_a_policy_repair_refusal) ... ok
+test_ec245_raising_keepalive_cleans_up_the_gate_children_before_propagating_refusal (test_processes.OwnedGroups.test_ec245_raising_keepalive_cleans_up_the_gate_children_before_propagating_refusal) ... ok
+test_ec247_cooperative_policy_never_signals_after_grace_and_stop_preview_is_read_only (test_processes.Supervision.test_ec247_cooperative_policy_never_signals_after_grace_and_stop_preview_is_read_only) ... ok
+test_ec249_startup_without_an_acknowledged_group_never_reports_ready (test_processes.Supervision.test_ec249_startup_without_an_acknowledged_group_never_reports_ready) ... ok
+test_ec250_spawn_and_gate_policy_reject_quoted_permissions_and_unbounded_limits (test_processes.Supervision.test_ec250_spawn_and_gate_policy_reject_quoted_permissions_and_unbounded_limits) ... ok
+test_ec293_stale_preparation_cannot_create_a_startup_intent (test_startup_fences.StartupFences.test_ec293_stale_preparation_cannot_create_a_startup_intent) ... ok
+test_ec297_handoff_commit_crashes_never_invent_worker_start (test_startup_fences.StartupFences.test_ec297_handoff_commit_crashes_never_invent_worker_start) ... ok
+test_ec181_no_adapter_uses_a_cli_s_own_branching (test_swarm.Adapters.test_ec181_no_adapter_uses_a_cli_s_own_branching)
+A CLI's own parallel or worktree mode would make branches beside the swarm's worktree. ... ok
+test_ec024_cycles_refused (test_swarm.Backlog.test_ec024_cycles_refused) ... ok
+test_ec033_concurrent_claims_have_one_winner (test_swarm.Claiming.test_ec033_concurrent_claims_have_one_winner) ... ok
+test_ec065_declared_locks_are_taken_at_claim (test_swarm.Claiming.test_ec065_declared_locks_are_taken_at_claim) ... ok
+test_ec149_the_coordinator_asks_once_about_the_console (test_swarm.Console.test_ec149_the_coordinator_asks_once_about_the_console) ... ok
+test_ec153_ec155_launch_prepares_nothing_on_a_dry_run (test_swarm.Console.test_ec153_ec155_launch_prepares_nothing_on_a_dry_run) ... ok
+test_ec190_the_worker_ended_before_the_target_moved (test_swarm.CrashRecovery.test_ec190_the_worker_ended_before_the_target_moved) ... ok
+test_ec128_windows_is_never_described_as_linux (test_swarm.Environment.test_ec128_windows_is_never_described_as_linux) ... ok
+test_ec132_gates_can_differ_by_os (test_swarm.Environment.test_ec132_gates_can_differ_by_os) ... ok
+test_ec042_ec141_branch_from_outside_the_board_needs_adopt (test_swarm.FirstRealRun.test_ec042_ec141_branch_from_outside_the_board_needs_adopt) ... ok
+test_ec145_dry_run_spawn_changes_nothing (test_swarm.FirstRealRun.test_ec145_dry_run_spawn_changes_nothing) ... ok
+test_ec159_no_breakdown_before_the_hard_questions (test_swarm.Goals.test_ec159_no_breakdown_before_the_hard_questions) ... ok
+test_ec163_large_tasks_must_be_split (test_swarm.Goals.test_ec163_large_tasks_must_be_split) ... ok
+test_ec169_forged_done_rows_and_prose_do_not_close_an_unverified_goal (test_swarm.Goals.test_ec169_forged_done_rows_and_prose_do_not_close_an_unverified_goal) ... ok
+test_ec014_bad_names_refused (test_swarm.JoiningAndRoles.test_ec014_bad_names_refused) ... ok
+test_ec198_the_git_directory_is_found_without_git_and_agrees_with_git (test_swarm.Latency.test_ec198_the_git_directory_is_found_without_git_and_agrees_with_git) ... ok
+test_ec002_ec004_ec040_ec041_silent_holder_is_reclaimed_and_fenced (test_swarm.Liveness.test_ec002_ec004_ec040_ec041_silent_holder_is_reclaimed_and_fenced) ... ok
+test_ec118_one_monitor (test_swarm.Liveness.test_ec118_one_monitor) ... ok
+test_ec086_merge_queue_is_single (test_swarm.Merging.test_ec086_merge_queue_is_single) ... ok
+test_ec091_dirty_target_checkout_is_never_overwritten (test_swarm.Merging.test_ec091_dirty_target_checkout_is_never_overwritten) ... ok
+test_ec102_ec103_pings_broadcasts_and_unread_footer (test_swarm.Messages.test_ec102_ec103_pings_broadcasts_and_unread_footer) ... ok
+test_ec046_ec050_ec051_unknown_opens_a_question_and_answers_force_a_replan (test_swarm.Planning.test_ec046_ec050_ec051_unknown_opens_a_question_and_answers_force_a_replan) ... ok
+test_ec060_overlapping_scope_needs_acknowledgement (test_swarm.Planning.test_ec060_overlapping_scope_needs_acknowledgement) ... ok
+test_ec178_an_agent_can_start_without_a_task (test_swarm.ReadableConsole.test_ec178_an_agent_can_start_without_a_task) ... ok
+test_ec061_out_of_scope_files_need_a_reason (test_swarm.Submitting.test_ec061_out_of_scope_files_need_a_reason) ... ok
+test_ec069_dirty_worktree_refused (test_swarm.Submitting.test_ec069_dirty_worktree_refused) ... ok
+test_ec317_legacy_takeover_uses_the_same_start_gate (test_takeover.Takeover.test_ec317_legacy_takeover_uses_the_same_start_gate) ... ok
+test_ec318_owner_loss_cannot_cancel_an_elapsed_deliberation_cutoff (test_takeover.Takeover.test_ec318_owner_loss_cannot_cancel_an_elapsed_deliberation_cutoff) ... ok
+test_ec318_successor_deliberation_remains_bounded_before_restart (test_takeover.Takeover.test_ec318_successor_deliberation_remains_bounded_before_restart) ... ok
+test_ec327_os_killed_cooperative_launcher_preserves_processes_until_their_observed_exit (test_terminal_supervision.TerminalSupervision.test_ec327_os_killed_cooperative_launcher_preserves_processes_until_their_observed_exit) ... ok
+test_ec328_posix_terminal_has_controlling_tty_input_resize_and_restoration (test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_has_controlling_tty_input_resize_and_restoration) ... skipped 'POSIX controlling PTY; Windows uses the inherited console'
+test_ec322_submission_commit_kills_preserve_committed_work_without_integrating (test_transaction_crashes.TransactionCrashes.test_ec322_submission_commit_kills_preserve_committed_work_without_integrating) ... ok
+test_ec343_failed_subtest_is_failed_case_and_never_green_ci (test_validation_runner.ValidationRunner.test_ec343_failed_subtest_is_failed_case_and_never_green_ci) ... ok
+test_ec255_external_record_requires_actual_gates_and_preserves_failed_work (test_verification.Receipts.test_ec255_external_record_requires_actual_gates_and_preserves_failed_work) ... ok
+test_ec257_check_definition_crashes_preserve_approval_or_commit_exactly_once (test_verification.Receipts.test_ec257_check_definition_crashes_preserve_approval_or_commit_exactly_once) ... ok
+test_ec259_target_move_during_checks_cannot_produce_a_current_goal_receipt (test_verification.Receipts.test_ec259_target_move_during_checks_cannot_produce_a_current_goal_receipt) ... ok
+test_ec261_killed_external_completion_is_atomic_and_retry_is_exactly_once (test_verification.Receipts.test_ec261_killed_external_completion_is_atomic_and_retry_is_exactly_once) ... ok
+
+----------------------------------------------------------------------
+Ran 93 tests in 1525.558s
+
+OK (skipped=1)
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp60mkvan_\repo-wt\T1
+  branch    swarm/T1
+  slot      1  (`swarm env --as ann` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as ann
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as ann --template` and answer every question.
+joined as worker (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp3aic8mpb\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmp3aic8mpb\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpgglihmv8\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpgglihmv8\repo-wt\T1
+
+
+fake exited (0); current registry state was preserved. Inspect `swarm status` before continuing.
+joined as worker (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpj9u42l89\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpj9u42l89\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmphm72jtbq\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmphm72jtbq\repo-wt\T1
+
+Interactive child started but PID publication is uncertain. Waiting for that actual child; preserve work and do not restart blindly.
+joined as bob (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as bob` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpafrmnhte\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as bob` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as bob --template` and answer every question.
+joined as cat (slot 3, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as cat   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as cat` (11 rules for this machine)
+peers: ann, bob
+claimed T2: Second task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpafrmnhte\repo-wt\T2
+  branch    swarm/T2
+  slot      3  (`swarm env --as cat` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as cat
+  builds on (previous): nothing; it can start from what exists
+  feeds (next): no task waits on this one
+next: cd into the worktree, then `swarm plan --as cat --template` and answer every question.
+joined as worker (slot 2, role worker)
+environment: Windows 11, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpru_l043w\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+verification 04753c90008e487f9d5c353910cc307e: failed at 9cda6a102c; retained checkout C:\Users\user\AppData\Local\Temp\tmpf5r020gf\repo\.git\swarm\checks\04753c90008e487f9d5c353910cc307e\worktree
+The goal's target changed. Run `goal verify` again against the current target.

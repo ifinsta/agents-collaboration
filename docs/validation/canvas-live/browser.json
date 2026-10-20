@@ -1,0 +1,24 @@
+{
+  "ok": true,
+  "browser": "msedge",
+  "source_sha256": {
+    "skills/agents-collaboration/swarm_web.py": "80bd639515be1d0913d28bc3b747dbcbf3ef31141a01186b55ad13722f77a66d",
+    "skills/agents-collaboration/swarm_sessions.py": "2615c30b82171396ad0bd2491706a9669980fdd285cf453443192402c3fc8035",
+    "skills/agents-collaboration/swarm_core.py": "b0c475f2b31f1ed2104b8445f9d6ffa31be2e0fa727aae8f73e6255c4e00f9a6",
+    "tests/test_web_dashboard.py": "7b97c0cce2c01415e1f2262dfca619665cd404765b11d766393ee35864827787",
+    "tests/test_swarm.py": "14de61b805aa6e6e49cd04fd282f0978c43e37f301962427ffb49bd6ffbf5afd",
+    "tests/test_hardening.py": "6cfe876d118e6b314b712921c62fa126dc84372e6a712e3cf512ab8280cd903e",
+    "scripts/validate_canvas.py": "e9d12f6d0e4af20b0e7caef5b47832b0930ad8eba590e82d2a052cfbd402ff00"
+  },
+  "checks": [
+    "live update retains shell, canvas, controls, card and surviving connector elements; only Bob/gate cards mutate",
+    "smooth curves for every factual relationship, with directional arrowheads; camera retained through live update",
+    "canvas keyboard shortcuts and Ctrl+wheel zoom",
+    "search, no-result handling, focus, edge filters and inspector relationship navigation",
+    "steward form and selected CLI survive live updates and a successful local inbox-review action",
+    "recorded step progress and untrusted display text under the production CSP",
+    "separate cameras per board, restored on return",
+    "responsive layout without horizontal page overflow at 1440, 1024, 820, 600, 390px; touch phone starts at 100%"
+  ],
+  "browser_errors": []
+}

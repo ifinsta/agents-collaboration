@@ -1,0 +1,13 @@
+F.
+======================================================================
+FAIL: test_invalid (test_duration.Format.test_invalid) (value=-1)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\glm2\coordinated\repo-wt\T2\test_duration.py", line 19, in test_invalid
+    with self.subTest(value=value), self.assertRaises(ValueError):
+AssertionError: ValueError not raised
+
+----------------------------------------------------------------------
+Ran 2 tests in 0.001s
+
+FAILED (failures=1)

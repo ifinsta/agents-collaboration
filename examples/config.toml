@@ -19,7 +19,10 @@ reclaim_after_min = 120               # offline this long: the task is orphaned 
 question_escalate_min = 30
 assign_ttl_min = 60
 merge_lock_timeout_min = 45
-task_budget_min = 0                   # 0 = no budget
+
+[contracts]
+active_time_min = 30                 # every fresh claim accepts these visible limits
+deadline_min = 45                    # absolute window, including review reserve
 
 [planning]
 max_steps = 15

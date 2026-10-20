@@ -1,0 +1,70 @@
+{
+  "generated_at": "2026-10-20T11:40:08.684197+00:00",
+  "core_sha256": "b0c475f2b31f1ed2104b8445f9d6ffa31be2e0fa727aae8f73e6255c4e00f9a6",
+  "source_zip_sha256": "f0eb4421bae8943628797f23aed66b75f1d8de15c0eb8185a754491a34f2c99f",
+  "source_fingerprint": "48c78eefa5418fad3ae62e2520ab5984aec27c2b9ca8bf8235e31478f67b9370",
+  "working_tree_matches_frozen_validation_inputs": true,
+  "changed_inputs": [],
+  "linux": {
+    "record": "linux313/results.json",
+    "discovered": 425,
+    "counts": {
+      "passed": 425,
+      "skipped": 0,
+      "failed": 0
+    },
+    "source_unchanged": true,
+    "exact_discovery_coverage": true,
+    "elapsed_seconds": 321.764
+  },
+  "windows": {
+    "record": "windows-cases-results.json",
+    "runtime": "Windows Python 3.12.2",
+    "scope": "Selected affected suites; not full discovery",
+    "counts": {
+      "passed": 91,
+      "skipped": 3
+    },
+    "selected": 94,
+    "snapshot_inputs_unchanged": true,
+    "elapsed_seconds": 374.125,
+    "skips": [
+      {
+        "id": "test_sessions.SessionViews.test_ec346_linked_captures_are_not_served",
+        "seconds": 1.547,
+        "outcome": "skipped",
+        "skip_reason": "creating file symlinks requires host permission"
+      },
+      {
+        "id": "test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_drains_the_final_output_after_the_worker_exits",
+        "seconds": 0.0,
+        "outcome": "skipped",
+        "skip_reason": "POSIX controlling PTY; Windows uses the inherited console"
+      },
+      {
+        "id": "test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_has_controlling_tty_input_resize_and_restoration",
+        "seconds": 0.0,
+        "outcome": "skipped",
+        "skip_reason": "POSIX controlling PTY; Windows uses the inherited console"
+      }
+    ]
+  },
+  "browser": "browser.json",
+  "posix_pty": "terminal-smoke.json",
+  "native_windows_terminal": "windows-terminal.json",
+  "limits": [
+    "No hosted matrix or macOS acceptance was executed.",
+    "No authenticated real-provider task was run by this feature validation.",
+    "Session views do not add interactive stdin forwarding to headless workers."
+  ],
+  "final_checks": {
+    "lint": true,
+    "manifest": true,
+    "git_diff_check": true,
+    "markdown_files": 46,
+    "local_links": 263,
+    "broken_links": [],
+    "command_examples": 208,
+    "invalid_commands": []
+  }
+}

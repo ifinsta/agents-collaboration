@@ -1,0 +1,20 @@
+{
+  "name": "free3",
+  "started_at": "2026-10-20T05:26:58.929392+00:00",
+  "ended_at": "2026-10-20T05:31:58.095420+00:00",
+  "elapsed_seconds": 299.171,
+  "exit_code": 0,
+  "argv": [
+    "C:\\Program Files\\Python312\\python.exe",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source\\scripts\\workforce_bench.py",
+    "--output",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\free3",
+    "--runner",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\free-runner.json",
+    "--deadline-seconds",
+    "180"
+  ],
+  "cwd": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source",
+  "log": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\free3.log",
+  "log_sha256": "d7c412325e828ee3f69dab3c0ba9c614a7d838f30e9b2ac0d534f9c563da86f5"
+}

@@ -1,0 +1,307 @@
+{
+  "scope": "focused",
+  "system": "Windows",
+  "python_version": "3.11.14",
+  "source_fingerprint": "213e7a23cc36b50521359229761173645d4dcfe2b78a6d73a34b9292d41d985c",
+  "core_sha256": "d819647a59aa9415257f2d4384d5bb4f87a42b35b149ea6960cb87229e298a22",
+  "source_unchanged": true,
+  "selected": 48,
+  "exact_selected_coverage": true,
+  "counts": {
+    "passed": 45,
+    "skipped": 2,
+    "failed": 1
+  },
+  "elapsed_seconds": 187.562,
+  "cases": [
+    {
+      "id": "test_bus.Bus.test_ec330_envelope_schema_idempotent_publish_and_installed_contract",
+      "seconds": 2.203,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec331_concurrent_consumers_get_one_receipt_and_legacy_cannot_ack_it",
+      "seconds": 3.375,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec332_expired_receipts_retry_and_renew_reject_old_consumer_authority",
+      "seconds": 2.797,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec333_expiry_dead_letter_and_broadcast_keep_independent_receipts",
+      "seconds": 2.391,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec334_plain_send_uses_reliable_delivery_and_fifo_is_explicit",
+      "seconds": 2.734,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec335_schema10_migration_keeps_existing_mailbox_and_receipts",
+      "seconds": 1.407,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.BusCrashes.test_ec336_receive_and_ack_crashes_recover_committed_receipts_only",
+      "seconds": 2.828,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_contracts.Contracts.test_ec201_migration_is_idempotent_and_preserves_legacy_goals",
+      "seconds": 3.453,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_installed_tool_runs",
+      "seconds": 1.031,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup",
+      "seconds": 1.953,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation",
+      "seconds": 2.891,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec301_stale_automatic_interactive_preparation_is_refused",
+      "seconds": 2.859,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec301_stale_explicit_interactive_preparation_is_refused",
+      "seconds": 2.735,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec302_child_creation_and_pid_publication_share_the_ownership_fence",
+      "seconds": 2.031,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec303_late_finalization_preserves_a_replacement_process_and_assignment",
+      "seconds": 3.422,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec304_ec344_retired_launch_options_are_refused_before_registration",
+      "seconds": 1.672,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_pause_after_preparation",
+      "seconds": 2.609,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_policy_after_preparation",
+      "seconds": 1.953,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec305_stopped_coordinator_cannot_finish_interactive_startup",
+      "seconds": 1.953,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec306_exit_settles_the_current_task_of_its_owned_worker",
+      "seconds": 4.5,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec307_interactive_process_creation_failure_preserves_the_claim",
+      "seconds": 2.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer",
+      "seconds": 0.86,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec344_default_launch_retains_an_execution_and_reliable_inbox",
+      "seconds": 2.468,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_all_fresh_claims_have_contracts_and_old_active_work_requires_recovery",
+      "seconds": 3.313,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_integration_without_executable_gates_preserves_work",
+      "seconds": 4.656,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_protocol_two_has_one_result_location_and_refuses_version_one",
+      "seconds": 1.328,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_reclaim_carries_deadline_scope_and_remaining_allowances",
+      "seconds": 2.531,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_replies_and_observation_never_acknowledge_a_delivery",
+      "seconds": 2.985,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_retired_budget_setting_refuses_silent_loss_of_limits",
+      "seconds": 0.687,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_oversight.ReviewRecovery.test_ec225_same_head_new_claim_invalidates_old_epoch_clearance",
+      "seconds": 6.891,
+      "outcome": "failed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Merging.test_ec088_conflict_returns_needs_rebase_and_touches_nothing",
+      "seconds": 12.109,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Merging.test_ec089_gates_run_on_the_rebased_tree",
+      "seconds": 15.032,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Planning.test_ec060_overlapping_scope_needs_acknowledgement",
+      "seconds": 6.328,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec061_out_of_contract_files_require_revised_terms",
+      "seconds": 9.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec062_additive_hotspot_edit_needs_no_lock",
+      "seconds": 6.203,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec062_ec063_hotspot_rules",
+      "seconds": 7.297,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec063_migrations_always_locked",
+      "seconds": 5.437,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec069_dirty_worktree_refused",
+      "seconds": 5.266,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec070_nothing_to_submit",
+      "seconds": 5.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_takeover.Takeover.test_ec318_observed_interactive_exit_pauses_the_running_contract",
+      "seconds": 4.672,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec308_ec327_terminal_creation_commit_failure_retains_unknown_intent_and_work",
+      "seconds": 2.515,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec326_terminal_cooperative_policy_waits_for_actual_group_exit",
+      "seconds": 3.453,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec326_terminal_parent_exit_does_not_hide_its_live_descendant",
+      "seconds": 3.329,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec326_terminal_terminate_policy_stops_its_group_and_preserves_unrelated_process",
+      "seconds": 3.468,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec327_os_killed_cooperative_launcher_preserves_processes_until_their_observed_exit",
+      "seconds": 8.313,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec327_os_killed_terminal_launcher_contains_terminate_group_and_retains_unknown_proof",
+      "seconds": 10.875,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_drains_the_final_output_after_the_worker_exits",
+      "seconds": 0.0,
+      "outcome": "skipped",
+      "skip_reason": "POSIX controlling PTY; Windows uses the inherited console"
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_has_controlling_tty_input_resize_and_restoration",
+      "seconds": 0.0,
+      "outcome": "skipped",
+      "skip_reason": "POSIX controlling PTY; Windows uses the inherited console"
+    }
+  ],
+  "ok": false
+}

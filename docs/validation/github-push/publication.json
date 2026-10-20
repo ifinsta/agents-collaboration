@@ -1,0 +1,10 @@
+{
+  "runtime_inputs_match_complete_rerun": true,
+  "changed_inputs_after_complete_rerun": [
+    "tests/test_swarm.py"
+  ],
+  "changed_test_check": "liveness-fixed.txt: 10 consecutive passes",
+  "terminal_checks": "terminal-fix.txt: 9 passes",
+  "complete_rerun": "linux313-fixed/results.json: 425 passed, 1 fixture error",
+  "final_combined_full_suite": "Pending hosted CI"
+}

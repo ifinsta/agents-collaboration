@@ -1,0 +1,5 @@
+{
+  "staged_tree": "e898afbf787e9c545814548ad8f55ae50250bb34",
+  "archive": "agents-collaboration-push-fixed-e898afbf787e.zip",
+  "fix": "Drain all buffered terminal output, preserving short reads after owned group exit."
+}

@@ -1,0 +1,20 @@
+{
+  "name": "codex1",
+  "started_at": "2026-10-20T05:13:17.725022+00:00",
+  "ended_at": "2026-10-20T05:14:03.967663+00:00",
+  "elapsed_seconds": 46.235,
+  "exit_code": 1,
+  "argv": [
+    "C:\\Program Files\\Python312\\python.exe",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source\\scripts\\workforce_bench.py",
+    "--output",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\codex1",
+    "--runner",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\codex-runner.json",
+    "--deadline-seconds",
+    "180"
+  ],
+  "cwd": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source",
+  "log": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\codex1.log",
+  "log_sha256": "596bb09d3fcdacd9861cb362a7906dad231d494f4c20ea8294357858daa6f743"
+}

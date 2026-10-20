@@ -9,7 +9,9 @@ agent can finish, verify and merge on its own.
 
 - **Id**: letters, digits and `-`. It becomes the branch name.
 - **Title**: what will exist when the task is done.
-- **Scope**: a hint at the paths it touches (the agent declares the real scope when planning).
+- **Scope**: paths that bound the accepted task contract. Planning may narrow this
+  scope; widening it requires an authorized revised offer. A missing hint is
+  bound from the first accepted plan.
 - **Needs**: ids that must be merged first.
 - **Locks**: hotspot locks the task holds from claim to merge (see `[hotspots]` in config.toml).
 - **Caps**: capabilities the agent's machine must have, for example `linux`, `docker`, `linux-docker`, `windows`, `postgres-client`.

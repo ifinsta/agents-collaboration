@@ -1,0 +1,14 @@
+{
+  "started_from_snapshot": "f0eb4421bae8943628797f23aed66b75f1d8de15c0eb8185a754491a34f2c99f",
+  "command": [
+    "C:\\Program Files\\Python312\\python.exe",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\swarm-managed-sessions-9gzzcuey\\source\\scripts\\validate_candidate.py",
+    "--worker",
+    "C:\\Users\\user\\CascadeProjects\\agents-collaboration\\docs\\validation\\managed-sessions\\windows-cases.json",
+    "C:\\Users\\user\\CascadeProjects\\agents-collaboration\\docs\\validation\\managed-sessions\\windows-cases-results.json"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 374.125,
+  "finished_at": "2026-10-20T11:37:02.172519+00:00",
+  "snapshot_inputs_unchanged": true
+}

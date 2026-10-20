@@ -7,6 +7,8 @@ Test names carry the edge-case ids from EDGE-CASES.md they prove.
 
 from __future__ import annotations
 
+from contextlib import closing
+
 import json
 import os
 import shutil
@@ -152,6 +154,20 @@ class SwarmCase(unittest.TestCase):
             self.assertNotEqual(done.returncode, 0, out)
         return out
 
+    def message_receipt(self, message, who="human"):
+        receipts = getattr(self, "_message_receipts", {})
+        key = (who, int(message))
+        if key not in receipts:
+            result = json.loads(self.sw("bus", "receive", "--consumer", f"test:{who}", "--limit", "1000", "--as", who, "--json"))["result"]
+            for delivery in result["deliveries"]:
+                receipts[(who, delivery["receipt"]["message_id"])] = delivery["receipt"]
+            self._message_receipts = receipts
+        return receipts.get(key, {"consumer": f"test:{who}", "token": "no-addressed-receipt"})
+
+    def ack_message(self, message, who="human", ok=True):
+        receipt = self.message_receipt(message, who)
+        return self.sw("bus", "ack", str(message), "--consumer", receipt["consumer"], "--token", receipt["token"], "--as", who, "--json", ok=ok)
+
     def db(self):
         return sqlite3.connect(self.root / ".git" / "swarm" / "swarm.db")
 
@@ -164,6 +180,24 @@ class SwarmCase(unittest.TestCase):
 
     def join(self, name, caps=""):
         return self.sw("--as", name, "join", "--kind", "claude", "--caps", caps)
+
+    def architecture(self, goal, risk="medium", approve=True):
+        answers = {
+            "current_system": "The repository has a tracked backlog and a Python verification gate.",
+            "constraints": "Keep the existing Python workflow and preserve independent task branches.",
+            "options": "Extend the current modules; a rewrite would discard the established verification gate.",
+            "decision": "Extend the existing implementation in small independently verified changes.",
+            "boundaries": "Each task owns its declared files and exposes the outcome named in its done-check.",
+            "failure_modes": "Tests may fail or a worker may disappear; preserve branches and hand off the work.",
+            "rollout": "Integrate each change through the current rebase and verification gate.",
+            "rollback": "Revert the task commit through the same verified merge workflow.",
+            "acceptance_checks": "Run the configured Python gate and record evidence for every outcome.",
+            "unresolved_decisions": "none",
+        }
+        args = [x for k, v in answers.items() for x in ("--set", f"{k}={v}")]
+        self.sw("goal", "architecture", goal, "--risk", risk, "--evidence", "backlog.md", *args)
+        if approve:
+            self.sw("goal", "architecture", goal, "--approve")
 
     def to_ready(self, name, tid, filename="src/file.txt", content="x\n"):
         self.sw("--as", name, "claim", tid)
@@ -345,6 +379,8 @@ class Planning(SwarmCase):
     def test_ec060_overlapping_scope_needs_acknowledgement(self):
         self.sw("--as", "ann", "plan", *PLAN, cwd=self.wt)
         self.join("bob")
+        with closing(self.db()) as db, db:
+            db.execute("UPDATE tasks SET scope_hint='src/' WHERE id='T2'")
         self.sw("--as", "bob", "claim", "T2")
         wt2 = Path(self.task("T2")["worktree"])
         self.assertIn("overlaps", self.sw("--as", "bob", "plan", *PLAN, cwd=wt2, ok=False))
@@ -355,9 +391,12 @@ class Submitting(SwarmCase):
     def setUp(self):
         super().setUp()
         self.join("ann")
+        self.sw("status")
+        with closing(self.db()) as db, db:
+            db.execute("UPDATE tasks SET scope_hint='src/, config/, app/migrations/' WHERE id='T1'")
         self.sw("--as", "ann", "claim", "T1")
         self.wt = Path(self.task("T1")["worktree"])
-        self.sw("--as", "ann", "plan", *PLAN, "--ack-overlap", "n/a", cwd=self.wt)
+        self.sw("--as", "ann", "plan", *PLAN, "--set", "scope=src/, config/, app/migrations/", "--ack-overlap", "n/a", cwd=self.wt)
         self.sw("--as", "ann", "start", cwd=self.wt)
         self.sw("--as", "ann", "step", "1", "--evidence", "wrote the file", cwd=self.wt)
         self.sw("--as", "ann", "step", "2", "--evidence", "committed the file", cwd=self.wt)
@@ -376,13 +415,13 @@ class Submitting(SwarmCase):
         (self.wt / "src" / "b.txt").write_text("b")
         self.assertIn("untracked", self.sw("--as", "ann", "submit", "--evidence", "e", cwd=self.wt, ok=False))
 
-    def test_ec061_out_of_scope_files_need_a_reason(self):
+    def test_ec061_out_of_contract_files_require_revised_terms(self):
         self.commit("src/a.txt", "a")
         self.commit("other/x.txt", "x")
         self.assertIn(
-            "outside your declared scope", self.sw("--as", "ann", "submit", "--evidence", "e", cwd=self.wt, ok=False)
+            "outside contracted scope", self.sw("--as", "ann", "submit", "--evidence", "e", cwd=self.wt, ok=False)
         )
-        self.sw("--as", "ann", "submit", "--evidence", "e", "--out-of-scope-reason", "fixture needed", cwd=self.wt)
+        self.assertIn("cannot widen a contract", self.sw("--as", "ann", "submit", "--evidence", "e", "--out-of-scope-reason", "fixture needed", cwd=self.wt, ok=False))
 
     def test_ec062_ec063_hotspot_rules(self):
         self.commit("src/a.txt", "a")
@@ -426,6 +465,8 @@ class Merging(SwarmCase):
         self.join("bob")
         wt_a = self.to_ready("ann", "T1", "src/a.txt")
         self.sw("--as", "ann", "plan", *PLAN, "--ack-overlap", "x", cwd=wt_a, ok=None)
+        with closing(self.db()) as db, db:
+            db.execute("UPDATE tasks SET scope_hint='docs/, b.txt' WHERE id='T2'")
         self.sw("--as", "bob", "claim", "T2")
         wt_b = Path(self.task("T2")["worktree"])
         plan_b = [p if p != "scope=src/" else "scope=docs/,b.txt" for p in PLAN]
@@ -450,6 +491,8 @@ class Merging(SwarmCase):
         self.join("ann")
         self.join("bob")
         self.to_ready("ann", "T1", "src/same.txt", "ann\n")
+        with closing(self.db()) as db, db:
+            db.execute("UPDATE tasks SET scope_hint='src/' WHERE id='T2'")
         self.sw("--as", "bob", "claim", "T2")
         wt_b = Path(self.task("T2")["worktree"])
         self.sw("--as", "bob", "plan", *PLAN, "--ack-overlap", "we coordinate", cwd=wt_b)
@@ -544,12 +587,26 @@ class Liveness(SwarmCase):
         self.assertIn("holds no task", self.sw("--as", "ann", "plan", *PLAN, ok=False))
 
     def test_ec009_ec111_ec184_an_agent_that_exits_untouched_returns_its_task_to_the_pool(self):
+        release = Path(self.tmp.name) / "allow-worker-exit"
+        code = f"import time;from pathlib import Path\np=Path({str(release)!r})\nwhile not p.exists(): time.sleep(0.01)"
+        config = self.root / ".agents" / "swarm" / "config.toml"
+        config.write_text(
+            config.read_text(encoding="utf-8")
+            + "\n[adapters.waitexit]\nversion = " + json.dumps([sys.executable, "--version"])
+            + "\nauth = []\nrun = " + json.dumps([sys.executable, "-c", code])
+            + "\nmodel = []\nunattended = []\nverified = true\n",
+            encoding="utf-8",
+        )
         self.join("ann")
-        out = self.sw("spawn", "fake", "--name", "fay", "--task", "T2")
+        out = self.sw("spawn", "waitexit", "--name", "fay", "--task", "T2")
         self.assertIn("spawned fay", out)
         wt = self.worktree_of("T2")
-        self.assertTrue((wt / ".swarm-brief.md").exists())
-        self.assertEqual(self.git("status", "--porcelain", cwd=wt), "")  # the brief is ignored, never committed
+        try:
+            self.assertTrue((wt / ".swarm-brief.md").exists())
+            self.assertEqual(self.git("status", "--porcelain", cwd=wt), "")  # the brief is ignored, never committed
+        finally:
+            # Audit the live worktree before allowing the worker's automatic cleanup.
+            release.touch()
         for _ in range(50):
             time.sleep(0.2)
             self.sw("status")
@@ -704,7 +761,7 @@ class Environment(SwarmCase):
         self.assertIn("exited 3", self.sw("--as", "ann", "merge"))
 
     def test_ec133_environment_command_and_json(self):
-        data = json.loads(self.sw("environment", "--json"))
+        data = json.loads(self.sw("environment", "--json"))["result"]
         self.assertIn("rules", data)
         self.assertIn(data["os"], ("windows", "linux", "macos"))
 
@@ -937,6 +994,7 @@ class Goals(SwarmCase):
             "the API guide lists /health and its answer",
             *extra,
         )
+        self.architecture("GL")
 
     def test_ec159_no_breakdown_before_the_hard_questions(self):
         self.sw("goal", "new", "GQ", "Make sign-in faster")
@@ -967,6 +1025,7 @@ class Goals(SwarmCase):
         self.assertIn("is open", out)
         self.assertIn("review first", self.sw("goal", "commit", "GQ", ok=False))
         self.sw("answer", "1", "the provider's response time; measure it before caching anything")
+        self.architecture("GQ")
         self.sw("goal", "review", "GQ")
 
     def test_ec173_an_unknown_is_not_counted_as_answered(self):
@@ -1099,7 +1158,7 @@ class Goals(SwarmCase):
         self.assertIn("H-api -> ann", out)
         self.assertNotIn("H-tests ->", out)  # it waits for H-api
 
-    def test_ec169_closing_needs_evidence_for_every_outcome(self):
+    def test_ec169_forged_done_rows_and_prose_do_not_close_an_unverified_goal(self):
         self.build()
         self.sw("goal", "commit", "GL")
         con = self.db()
@@ -1107,7 +1166,7 @@ class Goals(SwarmCase):
         con.commit()
         con.close()
         out = self.sw("goal", "close", "GL", "--evidence", "1=curl returned 200 with v0.3.0", ok=False)
-        self.assertIn("Run each outcome's check", out)
+        self.assertIn("no landed completion", out)
         self.sw(
             "goal",
             "close",
@@ -1116,8 +1175,9 @@ class Goals(SwarmCase):
             "1=curl returned 200 with v0.3.0",
             "--evidence",
             "2=pytest tests/health: 4 passed",
+            ok=False,
         )
-        self.assertIn("closed", self.sw("goal", "list"))
+        self.assertIn("active", self.sw("goal", "list"))
 
 
 class Output(SwarmCase):
@@ -1209,9 +1269,9 @@ class ReadableConsole(SwarmCase):
         self.assertIn("Launcher closed", out)
         self.assertIn("launcher", out.split("Launcher closed", 1)[1])
 
-    def test_ec178_an_agent_can_start_without_a_task(self):
-        out = self.sw("launch", "fake", "--name", "fay", "--no-task", "--dry-run")
-        self.assertIn("without a task, in the main checkout", out)
+    def test_ec178_unsupervised_no_task_launch_is_refused(self):
+        out = self.sw("launch", "fake", "--name", "fay", "--no-task", "--dry-run", ok=False)
+        self.assertIn("unrecognized arguments", out)
         self.assertNotIn("fay", self.sw("agents"))
 
     def test_ec179_the_launcher_offers_a_chosen_task(self):
@@ -1412,6 +1472,9 @@ class CrashRecovery(SwarmCase):
         self.assertIsNone(self.meta("merge_lock"))
         self.assertEqual(self.git("rev-parse", "main"), before)
         self.sw("--as", "ann", "join", "--kind", "claude", "--resume")
+        self.assertEqual(self.task("T1")["state"], "planning")
+        self.sw("--as", "ann", "start")
+        self.sw("--as", "ann", "submit", "--evidence", "Retained committed work is ready for the configured merge gate")
         self.assertIn("merged T1", self.sw("--as", "ann", "merge"))
 
     def test_ec191_recovery_trusts_only_git(self):
@@ -1473,7 +1536,8 @@ class Latency(SwarmCase):
 
     def measure(self, argv):
         return self.in_repo(f"""
-import contextlib, io, subprocess
+import contextlib, io, json, subprocess
+from pathlib import Path
 calls = []
 real = subprocess.run
 def counting(*a, **k):
@@ -1482,19 +1546,26 @@ def counting(*a, **k):
 subprocess.run = counting
 with contextlib.redirect_stdout(io.StringIO()):
     swarm_core.main({argv!r})
-print(len(calls))
+git_calls = [c for c in calls if isinstance(c, (list, tuple)) and c and Path(c[0]).name.lower() in ("git", "git.exe")]
+print(len(git_calls))
 print(" ".join(m for m in ("urllib.request", "http.client", "ssl", "textwrap", "tomllib") if m in sys.modules) or "-")
+print(json.dumps([c for c in calls if c not in git_calls]))
 """)
 
     def test_ec195_a_command_starts_no_git_process_and_loads_no_network_code(self):
         self.join("ann")
         for argv in (["version"], ["status"], ["agents"], ["whoami", "--as", "ann"]):
-            git_calls, loaded = self.measure(argv)
+            git_calls, loaded, other = self.measure(argv)
             self.assertEqual(git_calls, "0", f"{argv}: git was started {git_calls} time(s)")
             self.assertEqual(loaded, "-", f"{argv} imported {loaded} at start-up")
-        git_calls, loaded = self.measure(["environment", "--json"])
+            self.assertEqual(json.loads(other), [], f"{argv} started a non-Git command")
+        git_calls, loaded, other = self.measure(["environment", "--json"])
         self.assertEqual(git_calls, "1", "the environment probe asks git once (core.autocrlf and core.longpaths)")
         self.assertEqual(loaded, "-")
+        # Python 3.11's Windows platform.win32_ver() invokes the native `ver` query.
+        # Count that bounded OS probe explicitly; it is not an additional Git call.
+        allowed_other = [[], ["ver"]] if os.name == "nt" and sys.version_info < (3, 12) else [[]]
+        self.assertIn(json.loads(other), allowed_other)
 
     def test_ec199_the_config_is_parsed_once_and_a_change_is_noticed(self):
         self.join("ann")
@@ -1577,12 +1648,15 @@ class Messages(SwarmCase):
     def test_ec102_ec103_pings_broadcasts_and_unread_footer(self):
         self.join("ann")
         self.join("bob")
-        self.sw("--as", "ann", "send", "bob", "are you free?", "--ping")
+        self.sw("--as", "ann", "send", "bob", "are you free?", "--kind", "question")
         self.assertIn("unread", self.sw("--as", "bob", "status"))
         out = self.sw("--as", "bob", "inbox")
         self.assertIn("are you free?", out)
-        self.sw("--as", "bob", "ack", "ready")
-        self.assertIn("ack: ready", self.sw("--as", "ann", "inbox"))
+        with closing(self.db()) as db, db:
+            message = db.execute("SELECT MAX(id) FROM messages WHERE sender='ann' AND recipient='bob'").fetchone()[0]
+        self.ack_message(message, "bob")
+        self.sw("send", "ann", "ready", "--kind", "decision", "--reply-to", str(message), "--as", "bob")
+        self.assertIn("ready", self.sw("--as", "ann", "inbox"))
         self.sw("--as", "ann", "send", "*", "freeze at five")
         self.join("cat")
         self.assertNotIn("freeze", self.sw("--as", "cat", "inbox"))  # joined after the broadcast

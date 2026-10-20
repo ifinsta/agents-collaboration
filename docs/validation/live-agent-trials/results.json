@@ -1,0 +1,1956 @@
+{
+  "engine_core_sha256": "85adf9e270a8689d5113d97188c3d7dbe7e7988bd83af54371cfc8ff661c71e3",
+  "runner_sha256": "4fbb347b0f8c76dc9ce43efb77cb90a487fd4f3f3bf469c0387e59d6c6eeabef",
+  "cli": "OpenCode 2.0.32",
+  "selected_model": "opencode/minimax-m3.1-flash-free",
+  "command_deadline_seconds": 180,
+  "runner_timeout_seconds": 120,
+  "trials": [
+    {
+      "trial": "free2",
+      "results": [
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "solo",
+          "runner": "external",
+          "agent_count": 1,
+          "baseline_commit": "f6b9447af863d9a58586882a0cc11cf91e6ec932",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 0,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 73.5,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 35.35900000005495,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 36.85900000005495,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 35.03099999995902,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 36.0,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        },
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "uncoordinated",
+          "runner": "external",
+          "agent_count": 2,
+          "baseline_commit": "a33e12dd9b25dcf990f6079e7386c71a117a894c",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 0,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 55.625,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 52.65600000007544,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 53.84400000004098,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 39.79700000002049,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 54.92200000002049,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        },
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "coordinated",
+          "runner": "external",
+          "agent_count": 2,
+          "baseline_commit": "27534cde286dde534048c4086b2420a0297c812d",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 0,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 146.23399999993853,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 95.81299999996554,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 106.54700000002049,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 27.56299999996554,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 32.17200000002049,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "results": [
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "solo",
+          "runner": "external",
+          "agent_count": 1,
+          "baseline_commit": "e8c71b354691d32287759a4b933c6c2329d61538",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 0,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 104.57799999997951,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 73.93700000003446,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 74.98400000005495,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 27.06200000003446,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 28.75,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        },
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "uncoordinated",
+          "runner": "external",
+          "agent_count": 2,
+          "baseline_commit": "524fc81288ce08393bfdd4f6b17e50e4a29e7137",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 1,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 101.93699999991804,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 48.703000000095926,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 63.93700000003446,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 2,
+              "runner_seconds": 34.828000000095926,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": false,
+              "integration_retry": true
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 62.59400000004098,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 1,
+              "elapsed_seconds": 101.07800000009593,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        },
+        {
+          "version": 1,
+          "workload": "duration-operations-v1",
+          "mode": "coordinated",
+          "runner": "external",
+          "agent_count": 2,
+          "baseline_commit": "5492764f2fbae120e036c925293cd502cb8fde68",
+          "task_count": 2,
+          "verified_completion": 2,
+          "full_acceptance": true,
+          "rework": 0,
+          "deadline_misses": 0,
+          "usage": {
+            "cost": 0,
+            "tokens": null,
+            "human_interventions": 0,
+            "currency": "USD"
+          },
+          "usage_source": "runner-reported; not independently metered",
+          "elapsed_seconds": 89.81299999996554,
+          "attempts": [
+            {
+              "task": "T1",
+              "attempt": 1,
+              "runner_seconds": 47.625,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 51.65600000007544,
+              "deadline_missed": false
+            },
+            {
+              "task": "T2",
+              "attempt": 1,
+              "runner_seconds": 27.375,
+              "failure": null,
+              "usage": {
+                "cost": 0,
+                "currency": "USD",
+                "tokens": null,
+                "human_interventions": 0
+              },
+              "verified": true,
+              "rework": 0,
+              "elapsed_seconds": 31.70299999997951,
+              "deadline_missed": false
+            }
+          ],
+          "fault": null,
+          "owed": [],
+          "limitations": [
+            "Tiny shared-file conflict workload; no general productivity inference",
+            "Coordinated workers serialize the declared hotspot",
+            "Unknown cost or human intervention is null, never zero",
+            "Run repeated matched trials before drawing comparisons"
+          ]
+        }
+      ]
+    }
+  ],
+  "native_usage_evidence": [
+    {
+      "trial": "free2",
+      "path": "coordinated\\T1-1-usage.opencode.json",
+      "sha256": "b7742864cd5c068b7451263cfec17d4d33a8720a2bd3ef45ca9520f35bfe2d40",
+      "bytes": 56047,
+      "event_counts": {
+        "step_start": 12,
+        "text": 6,
+        "tool_use": 16,
+        "step_finish": 11
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7318,
+            "output": 89,
+            "reasoning": 0,
+            "cache": {
+              "read": 1721,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 322,
+            "output": 169,
+            "reasoning": 6,
+            "cache": {
+              "read": 9039,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 739,
+            "output": 169,
+            "reasoning": 1284,
+            "cache": {
+              "read": 9361,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1846,
+            "output": 271,
+            "reasoning": 64,
+            "cache": {
+              "read": 10100,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 357,
+            "output": 77,
+            "reasoning": 53,
+            "cache": {
+              "read": 11946,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 185,
+            "output": 338,
+            "reasoning": 398,
+            "cache": {
+              "read": 12303,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1142,
+            "output": 126,
+            "reasoning": 219,
+            "cache": {
+              "read": 12488,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1319,
+            "output": 158,
+            "reasoning": 251,
+            "cache": {
+              "read": 13630,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 947,
+            "output": 191,
+            "reasoning": 951,
+            "cache": {
+              "read": 14949,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1649,
+            "output": 158,
+            "reasoning": 432,
+            "cache": {
+              "read": 15896,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 885,
+            "output": 131,
+            "reasoning": 56,
+            "cache": {
+              "read": 17545,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free2",
+      "path": "coordinated\\T2-1-usage.opencode.json",
+      "sha256": "1fc373ef819bf68b6db76ee06bb1c90fee6e0983815e881d3a1f6074b1f5fdb8",
+      "bytes": 32339,
+      "event_counts": {
+        "step_start": 7,
+        "text": 6,
+        "tool_use": 9,
+        "step_finish": 6
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 3760,
+            "output": 116,
+            "reasoning": 0,
+            "cache": {
+              "read": 5347,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 858,
+            "output": 113,
+            "reasoning": 13,
+            "cache": {
+              "read": 9221,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 473,
+            "output": 258,
+            "reasoning": 350,
+            "cache": {
+              "read": 10203,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 24,
+            "output": 86,
+            "reasoning": 10,
+            "cache": {
+              "read": 11282,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 156,
+            "output": 280,
+            "reasoning": 84,
+            "cache": {
+              "read": 11400,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 204,
+            "output": 98,
+            "reasoning": 25,
+            "cache": {
+              "read": 11918,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free2",
+      "path": "solo\\T1-1-usage.opencode.json",
+      "sha256": "1c10a912deb2f66d9e2f868de9d871dd791d9554c550e68a801adcf86d813dcc",
+      "bytes": 33186,
+      "event_counts": {
+        "step_start": 9,
+        "text": 3,
+        "tool_use": 11,
+        "step_finish": 8
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7744,
+            "output": 106,
+            "reasoning": 0,
+            "cache": {
+              "read": 1280,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1003,
+            "output": 106,
+            "reasoning": 13,
+            "cache": {
+              "read": 8704,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1069,
+            "output": 149,
+            "reasoning": 1877,
+            "cache": {
+              "read": 9216,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 2404,
+            "output": 280,
+            "reasoning": 18,
+            "cache": {
+              "read": 9984,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 675,
+            "output": 55,
+            "reasoning": 0,
+            "cache": {
+              "read": 12032,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 786,
+            "output": 66,
+            "reasoning": 133,
+            "cache": {
+              "read": 12288,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 528,
+            "output": 288,
+            "reasoning": 43,
+            "cache": {
+              "read": 12800,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 623,
+            "output": 63,
+            "reasoning": 0,
+            "cache": {
+              "read": 13056,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free2",
+      "path": "solo\\T2-1-usage.opencode.json",
+      "sha256": "b7a99235d69b85d95c130d0cc160d52231cf7914ce08618dc521532ffaef0bb6",
+      "bytes": 38256,
+      "event_counts": {
+        "step_start": 10,
+        "text": 6,
+        "tool_use": 13,
+        "step_finish": 9
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 3747,
+            "output": 84,
+            "reasoning": 0,
+            "cache": {
+              "read": 5345,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 147,
+            "output": 103,
+            "reasoning": 0,
+            "cache": {
+              "read": 9174,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 657,
+            "output": 103,
+            "reasoning": 153,
+            "cache": {
+              "read": 9422,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 285,
+            "output": 176,
+            "reasoning": 281,
+            "cache": {
+              "read": 10333,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 46,
+            "output": 248,
+            "reasoning": 45,
+            "cache": {
+              "read": 11073,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 24,
+            "output": 54,
+            "reasoning": 0,
+            "cache": {
+              "read": 11410,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 491,
+            "output": 86,
+            "reasoning": 0,
+            "cache": {
+              "read": 11486,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 173,
+            "output": 309,
+            "reasoning": 206,
+            "cache": {
+              "read": 12061,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 40,
+            "output": 134,
+            "reasoning": 357,
+            "cache": {
+              "read": 12747,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free2",
+      "path": "uncoordinated\\T1-1-usage.opencode.json",
+      "sha256": "7db1fb4596fd271fab445f968c752481887e159ff88cb4489fe7cd629da28214",
+      "bytes": 31268,
+      "event_counts": {
+        "step_start": 9,
+        "text": 5,
+        "tool_use": 10,
+        "step_finish": 8
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 3744,
+            "output": 60,
+            "reasoning": 0,
+            "cache": {
+              "read": 5346,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 212,
+            "output": 49,
+            "reasoning": 14,
+            "cache": {
+              "read": 9148,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 406,
+            "output": 100,
+            "reasoning": 1177,
+            "cache": {
+              "read": 9421,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 22,
+            "output": 269,
+            "reasoning": 82,
+            "cache": {
+              "read": 11102,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 24,
+            "output": 27,
+            "reasoning": 0,
+            "cache": {
+              "read": 11473,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 311,
+            "output": 97,
+            "reasoning": 57,
+            "cache": {
+              "read": 11522,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 146,
+            "output": 277,
+            "reasoning": 60,
+            "cache": {
+              "read": 11985,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 78,
+            "output": 64,
+            "reasoning": 0,
+            "cache": {
+              "read": 12466,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free2",
+      "path": "uncoordinated\\T2-1-usage.opencode.json",
+      "sha256": "262f41a07acf54c72797081703e84f00509b24b74811601e9da7cba856977c66",
+      "bytes": 35718,
+      "event_counts": {
+        "step_start": 9,
+        "text": 4,
+        "tool_use": 11,
+        "step_finish": 8
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7317,
+            "output": 89,
+            "reasoning": 0,
+            "cache": {
+              "read": 1721,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 328,
+            "output": 110,
+            "reasoning": 18,
+            "cache": {
+              "read": 9038,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 592,
+            "output": 108,
+            "reasoning": 954,
+            "cache": {
+              "read": 9366,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1197,
+            "output": 88,
+            "reasoning": 40,
+            "cache": {
+              "read": 9958,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 545,
+            "output": 238,
+            "reasoning": 59,
+            "cache": {
+              "read": 11155,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 318,
+            "output": 57,
+            "reasoning": 0,
+            "cache": {
+              "read": 11700,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 306,
+            "output": 302,
+            "reasoning": 62,
+            "cache": {
+              "read": 12018,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 598,
+            "output": 72,
+            "reasoning": 28,
+            "cache": {
+              "read": 12324,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "coordinated\\T1-1-usage.opencode.json",
+      "sha256": "255d7e008ba236ce1a1dca200cd8b227c977262b1d437483e4719b0a3c2ff89b",
+      "bytes": 44348,
+      "event_counts": {
+        "step_start": 12,
+        "text": 9,
+        "tool_use": 16,
+        "step_finish": 11
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 4175,
+            "output": 90,
+            "reasoning": 0,
+            "cache": {
+              "read": 4864,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 584,
+            "output": 114,
+            "reasoning": 0,
+            "cache": {
+              "read": 8704,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 892,
+            "output": 116,
+            "reasoning": 116,
+            "cache": {
+              "read": 8960,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 902,
+            "output": 118,
+            "reasoning": 1450,
+            "cache": {
+              "read": 9472,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1991,
+            "output": 414,
+            "reasoning": 114,
+            "cache": {
+              "read": 9984,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1005,
+            "output": 388,
+            "reasoning": 0,
+            "cache": {
+              "read": 11520,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 945,
+            "output": 111,
+            "reasoning": 29,
+            "cache": {
+              "read": 12032,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 903,
+            "output": 207,
+            "reasoning": 90,
+            "cache": {
+              "read": 12544,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 728,
+            "output": 164,
+            "reasoning": 120,
+            "cache": {
+              "read": 13056,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 782,
+            "output": 74,
+            "reasoning": 0,
+            "cache": {
+              "read": 13312,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 653,
+            "output": 231,
+            "reasoning": 86,
+            "cache": {
+              "read": 13824,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "coordinated\\T2-1-usage.opencode.json",
+      "sha256": "a3b49b719fc93d8d564ca5ef92bc7d3e97e4b36a7c6bf411028945c5e3ad89e0",
+      "bytes": 32562,
+      "event_counts": {
+        "step_start": 7,
+        "text": 5,
+        "tool_use": 10,
+        "step_finish": 6
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7325,
+            "output": 89,
+            "reasoning": 0,
+            "cache": {
+              "read": 1722,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 322,
+            "output": 168,
+            "reasoning": 0,
+            "cache": {
+              "read": 9047,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 955,
+            "output": 257,
+            "reasoning": 258,
+            "cache": {
+              "read": 9369,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 536,
+            "output": 142,
+            "reasoning": 0,
+            "cache": {
+              "read": 10324,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 780,
+            "output": 344,
+            "reasoning": 105,
+            "cache": {
+              "read": 10860,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 470,
+            "output": 79,
+            "reasoning": 20,
+            "cache": {
+              "read": 11640,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "solo\\T1-1-usage.opencode.json",
+      "sha256": "9ab854909d2e34a503e7383d784dcb49b6e1ced5d940dff60949bf9c4358c061",
+      "bytes": 149917,
+      "event_counts": {
+        "step_start": 10,
+        "text": 4,
+        "tool_use": 17,
+        "step_finish": 9
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7303,
+            "output": 84,
+            "reasoning": 0,
+            "cache": {
+              "read": 1721,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 292,
+            "output": 153,
+            "reasoning": 0,
+            "cache": {
+              "read": 9024,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 702,
+            "output": 109,
+            "reasoning": 1513,
+            "cache": {
+              "read": 9316,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1969,
+            "output": 118,
+            "reasoning": 129,
+            "cache": {
+              "read": 10018,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 13045,
+            "output": 105,
+            "reasoning": 775,
+            "cache": {
+              "read": 11987,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 926,
+            "output": 305,
+            "reasoning": 39,
+            "cache": {
+              "read": 25032,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 365,
+            "output": 119,
+            "reasoning": 0,
+            "cache": {
+              "read": 25958,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 490,
+            "output": 440,
+            "reasoning": 27,
+            "cache": {
+              "read": 26323,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 606,
+            "output": 197,
+            "reasoning": 157,
+            "cache": {
+              "read": 26813,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "solo\\T2-1-usage.opencode.json",
+      "sha256": "f7d273750d15945e962ea65009ee2cae695b1f51d7737e94c383e32072734c3d",
+      "bytes": 33948,
+      "event_counts": {
+        "step_start": 7,
+        "text": 5,
+        "tool_use": 10,
+        "step_finish": 6
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 4168,
+            "output": 100,
+            "reasoning": 0,
+            "cache": {
+              "read": 4864,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 843,
+            "output": 155,
+            "reasoning": 14,
+            "cache": {
+              "read": 8704,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 1122,
+            "output": 244,
+            "reasoning": 366,
+            "cache": {
+              "read": 9216,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 985,
+            "output": 85,
+            "reasoning": 59,
+            "cache": {
+              "read": 9984,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 770,
+            "output": 295,
+            "reasoning": 49,
+            "cache": {
+              "read": 10496,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 773,
+            "output": 117,
+            "reasoning": 0,
+            "cache": {
+              "read": 11008,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "uncoordinated\\T1-1-usage.opencode.json",
+      "sha256": "eadfb21c655abce2c984ef152b770da7ac45c91da4a45ba79a875983853f187e",
+      "bytes": 37434,
+      "event_counts": {
+        "step_start": 8,
+        "text": 5,
+        "tool_use": 12,
+        "step_finish": 7
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7372,
+            "output": 86,
+            "reasoning": 0,
+            "cache": {
+              "read": 1718,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 153,
+            "output": 158,
+            "reasoning": 0,
+            "cache": {
+              "read": 9174,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 558,
+            "output": 287,
+            "reasoning": 1454,
+            "cache": {
+              "read": 9483,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 25,
+            "output": 435,
+            "reasoning": 68,
+            "cache": {
+              "read": 11780,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 666,
+            "output": 243,
+            "reasoning": 291,
+            "cache": {
+              "read": 12306,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 24,
+            "output": 297,
+            "reasoning": 0,
+            "cache": {
+              "read": 13504,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 450,
+            "output": 73,
+            "reasoning": 17,
+            "cache": {
+              "read": 13823,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "uncoordinated\\T2-1-usage.opencode.json",
+      "sha256": "f7bf77063857c3ccb92eebeccb0b539ede908aeb316f2b872558f8bb3dca0724",
+      "bytes": 44939,
+      "event_counts": {
+        "step_start": 9,
+        "text": 3,
+        "tool_use": 13,
+        "step_finish": 8
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7316,
+            "output": 82,
+            "reasoning": 0,
+            "cache": {
+              "read": 1722,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 635,
+            "output": 73,
+            "reasoning": 6,
+            "cache": {
+              "read": 9038,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 543,
+            "output": 87,
+            "reasoning": 664,
+            "cache": {
+              "read": 9673,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 2427,
+            "output": 36,
+            "reasoning": 68,
+            "cache": {
+              "read": 10216,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 399,
+            "output": 167,
+            "reasoning": 574,
+            "cache": {
+              "read": 12643,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 762,
+            "output": 28,
+            "reasoning": 0,
+            "cache": {
+              "read": 13042,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 181,
+            "output": 85,
+            "reasoning": 39,
+            "cache": {
+              "read": 13804,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 179,
+            "output": 245,
+            "reasoning": 175,
+            "cache": {
+              "read": 13985,
+              "write": 0
+            }
+          }
+        }
+      ]
+    },
+    {
+      "trial": "free3",
+      "path": "uncoordinated\\T2-2-usage.opencode.json",
+      "sha256": "c9bb39248cff1023fac73fa7e024623fc81dd0f716652d6aa72d4009a976489e",
+      "bytes": 26833,
+      "event_counts": {
+        "step_start": 7,
+        "text": 3,
+        "tool_use": 9,
+        "step_finish": 7
+      },
+      "steps": [
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 7323,
+            "output": 92,
+            "reasoning": 0,
+            "cache": {
+              "read": 1721,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 248,
+            "output": 112,
+            "reasoning": 0,
+            "cache": {
+              "read": 9044,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 770,
+            "output": 61,
+            "reasoning": 146,
+            "cache": {
+              "read": 9292,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 329,
+            "output": 254,
+            "reasoning": 240,
+            "cache": {
+              "read": 10062,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 515,
+            "output": 75,
+            "reasoning": 37,
+            "cache": {
+              "read": 10391,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "tool-calls",
+          "cost": 0,
+          "tokens": {
+            "input": 191,
+            "output": 170,
+            "reasoning": 30,
+            "cache": {
+              "read": 10906,
+              "write": 0
+            }
+          }
+        },
+        {
+          "reason": "stop",
+          "cost": 0,
+          "tokens": {
+            "input": 692,
+            "output": 213,
+            "reasoning": 0,
+            "cache": {
+              "read": 11097,
+              "write": 0
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "limitations": [
+    "Two trials of a small fixed workload; no causal productivity claim.",
+    "Times include concurrent local validation load.",
+    "Cost is provider-reported USD zero for the selected free model, not independently authenticated billing.",
+    "Token/cache overlap is not inferred; aggregate tokens remain null.",
+    "This engine predates the current frozen 348-test candidate; final-source benchmark reruns have their own evidence."
+  ],
+  "retained_artifact_root": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6"
+}

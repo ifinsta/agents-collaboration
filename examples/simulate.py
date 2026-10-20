@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import importlib.util
+import json
 import os
 import platform
 import re
@@ -67,7 +68,7 @@ class Sim:
         if picture:  # a picture keeps real hashes and timings; only machine paths are hidden
             return text
         text = re.sub(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d\+00:00", "<time>", text)
-        text = re.sub(r"\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,40}\b", "<sha>", text)
+        text = re.sub(r"\b(?=[0-9a-f]*\d)(?=[0-9a-f]*[a-f])[0-9a-f]{7,64}\b", "<sha>", text)
         text = re.sub(r"pid \d+", "pid <n>", text)
         text = re.sub(r"\d+\.\d+ min", "<n> min", text)
         return text
@@ -251,10 +252,11 @@ def run(sim: Sim) -> None:
     sim.out += [
         "# A simulated session",
         "",
-        "Three coding agents and one human take a single goal from a sentence to merged, verified work.",
+        "Scripted agent identities and human decisions take one goal from a sentence to merged, verified work.",
         "Everything below is real output from the real tool and real git, produced by",
-        "[`examples/simulate.py`](../examples/simulate.py) in a throwaway repository. Only these things are",
-        "simulated: the human typing, an agent going silent for hours, and the launcher pane in the pictures.",
+        "[`examples/simulate.py`](../examples/simulate.py) in a throwaway repository using the local source.",
+        "Agent reasoning, code edits and human decisions are scripted; silence and the launcher pane are simulated.",
+        "No provider requests are made, and this session establishes no productivity or cost advantage.",
         "Paths, times and commit hashes are normalised.",
         "",
         "![The console while three agents work: the live board on the left, the event monitor and the agent "
@@ -266,8 +268,8 @@ def run(sim: Sim) -> None:
         f"Generated with agents-collaboration v{VERSION} on {platform.system()}, Python {platform.python_version()}.",
         "Regenerate it with `python examples/simulate.py --write docs/simulation.md`.",
         "",
-        "`swarm` below stands for `python .agents/skills/agents-collaboration/swarm.py`, the command every",
-        "agent runs from its own shell.",
+        "`swarm` below abbreviates the verified Python executable and installed launcher.",
+        "Inside task worktrees, use the absolute launcher path printed by the tool.",
         "",
         "**The cast:**",
         "",
@@ -299,7 +301,7 @@ def run(sim: Sim) -> None:
         "and a branch prefix.",
     )
     sim.block(
-        "curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all",
+        "python PATH_TO_SOURCE/install.py --source PATH_TO_SOURCE --project . --all",
         done.stdout.split("\nVerify")[0],
     )
     sim.block("cat .agents/swarm/config.toml", CONFIG)
@@ -481,6 +483,46 @@ def run(sim: Sim) -> None:
         "test_health passes under python -m unittest discover -s tests",
         who="claude-1",
     )
+    outcome_checks = {
+        1: [
+            "python",
+            "-c",
+            "import sys; sys.path.insert(0, 'src'); import app; assert app.health() == {'status': 'ok', 'version': app.VERSION}; print('health fields checked')",
+        ],
+        2: ["python", "-m", "unittest", "discover", "-s", "tests", "-q"],
+        3: [
+            "python",
+            "-c",
+            "from pathlib import Path; assert all(all(word in Path(name).read_text(encoding='utf-8') for word in ('health', 'status', 'version')) for name in ('docs/api.md', 'CHANGELOG.md')); assert 'health' in Path('README.md').read_text(encoding='utf-8'); print('documentation fields checked')",
+        ],
+    }
+    for number, argv in outcome_checks.items():
+        sim.swarm("goal", "check", "health", str(number), "--command", json.dumps(argv), who="claude-1")
+    sim.note(
+        "Before assignment, the coordinator defines executable checks for each outcome, then records and approves a small source-backed architecture brief. Check-policy edits invalidate approval."
+    )
+    architecture = {
+        "current_system": "src/app.py provides greet() and VERSION; tests use standard-library unittest.",
+        "constraints": "Preserve greet(), the existing Python gate, and the local-first deployment.",
+        "options": "Add health() to the current module; a separate HTTP service adds deployment work without helping this goal.",
+        "decision": "Expose health() as a pure function returning status and the running VERSION.",
+        "boundaries": "API owns src/; tests own tests/; docs and changelog describe the two returned fields.",
+        "failure_modes": "Conflicting README edits require rebase; an incorrect status value must fail the gate.",
+        "rollout": "Merge the API first, then the dependent test; documentation can proceed alongside the API.",
+        "rollback": "Revert the health() commits and associated documentation using the same merge gate.",
+        "acceptance_checks": "Run unittest discover and call app.health(); verify the documented keys match the result.",
+        "unresolved_decisions": "none",
+    }
+    sim.swarm(
+        "goal",
+        "architecture",
+        "health",
+        "--evidence",
+        "src/app.py",
+        *[x for k, v in architecture.items() for x in ("--set", f"{k}={v}")],
+        who="claude-1",
+    )
+    sim.swarm("goal", "architecture", "health", "--approve", who="claude-1")
     sim.swarm(
         "goal",
         "review",
@@ -516,6 +558,46 @@ def run(sim: Sim) -> None:
     sim.swarm("claim", "H-api", who="claude-1", expect=("feeds (next):", "-> H-tests"))
     sim.swarm("claim", "H-docs", who="opencode-1", expect=("claimed H-docs",))
     sim.swarm("claim", "H-changelog", who="qoder-1", expect=("claimed H-changelog",))
+
+    sim.note(
+        "The coordinator briefly pauses only the changelog assignment. Qoder acknowledges the fenced epoch, records a checkpoint, and completes the pause before the coordinator resumes it. Other agents can continue."
+    )
+    sim.swarm(
+        "interrupt",
+        "request",
+        "qoder-1",
+        "--mode",
+        "pause",
+        "--reason",
+        "Review the changelog boundary before implementation starts",
+        "--key",
+        "changelog-pause",
+        who="claude-1",
+    )
+    sim.swarm("interrupt", "ack", "1", "--epoch", "2", who="qoder-1")
+    sim.swarm(
+        "checkpoint",
+        "--epoch",
+        "2",
+        "--note",
+        "No edits yet; the claimed branch and worktree are retained",
+        "--next",
+        "Resume and plan the changelog entry after boundary review",
+        who="qoder-1",
+    )
+    sim.swarm(
+        "interrupt",
+        "complete",
+        "1",
+        "--epoch",
+        "2",
+        "--checkpoint",
+        "1",
+        "--note",
+        "Stopped safely with the starting commit preserved",
+        who="qoder-1",
+    )
+    sim.swarm("interrupt", "resume", "1", who="claude-1")
 
     # 6. planning, with an overlap
     sim.section(
@@ -711,6 +793,8 @@ def run(sim: Sim) -> None:
     )
     sim.swarm("status", expect=("orphaned",))
     sim.swarm("claim", "H-tests", "--take-over", who="claude-1", expect=("claimed H-tests",))
+    sim.note("claude-1 reads the retained plan and steps, then revalidates the start gate before continuing.")
+    sim.swarm("start", who="claude-1", cwd=tests_wt, expect=("started H-tests",))
     sim.snapshot("qoder-1 went silent; claude-1 took over H-tests from its branch")
     sim.note("If qoder-1 comes back, it is fenced: nothing it does counts until it rejoins, and then it holds nothing.")
     sim.swarm("whoami", who="qoder-1", ok=False, expect=("offline",))
@@ -750,12 +834,54 @@ def run(sim: Sim) -> None:
         who="claude-1",
         cwd=tests_wt,
     )
+    sim.note(
+        "Before integration, the human asks opencode-1 to independently inspect a frozen snapshot of the coordinator's corrected test. The reviewer reports evidence; the human separately clears the false alarm. The normal gate still runs."
+    )
+    sim.swarm(
+        "incident",
+        "open",
+        "H-tests",
+        "--signal",
+        "The corrected health fixture may still assert the wrong status",
+        "--subject",
+        "claude-1",
+        "--reviewer",
+        "opencode-1",
+        "--key",
+        "health-fixture-review",
+    )
+    review = json.loads(sim.swarm("incident", "brief", "1", show=False))
+    sim.swarm(
+        "incident",
+        "review",
+        "1",
+        "--snapshot",
+        review["review"]["snapshot_hash"],
+        "--verdict",
+        "not_confirmed",
+        "--evidence",
+        "commit:" + review["snapshot"]["head_sha"],
+        "--remediation",
+        "Keep the corrected status assertion and require the existing Python gate",
+        who="opencode-1",
+    )
+    sim.swarm(
+        "incident",
+        "resolve",
+        "1",
+        "--revision",
+        "1",
+        "--outcome",
+        "cleared",
+        "--reason",
+        "The independently cited fixture now checks status ok and the running version",
+    )
     sim.swarm("merge", who="claude-1", cwd=repo, expect=("merged H-tests",))
 
     # 11. closing with evidence
     sim.section(
         "11. Done means the outcomes are checked, not just the tasks merged",
-        "Closing the goal needs the result of each outcome's own check. The coordinator runs them on main.",
+        "Closing the goal needs an engine receipt for the approved outcome checks at the current target commit. Free-text claims do not close it. The coordinator also inspects the results on main.",
     )
     sim.swarm("goal", "close", "health", who="claude-1", ok=False, expect=("Run each outcome's check",))
     health = subprocess.run(
@@ -778,6 +904,41 @@ def run(sim: Sim) -> None:
     )
     sim.block('python -c "import app; print(app.health())"   # on main', health)
     sim.block("python -m unittest discover -s tests -q   # on main", suite)
+    sim.note(
+        "The checks produced ignored Python bytecode in the task worktrees. Cleanup preserves ignored files, "
+        "so the human moves these known fixture caches to a recovery directory before retrying. "
+        "The engine does not infer that all ignored files are disposable."
+    )
+    sim.swarm("doctor", "--fix", "--dry-run", who="claude-1", expect=("retained",))
+    retained = []
+    for task in ("H-api", "H-docs", "H-changelog", "H-tests"):
+        tree = sim.worktree(task)
+        for relative in ("src/__pycache__", "tests/__pycache__"):
+            source = tree / relative
+            if not source.exists():
+                continue
+            destination = sim.base / "retained-artifacts" / task / relative
+            if (
+                source.is_symlink()
+                or not source.resolve().is_relative_to(tree.resolve())
+                or not destination.resolve().is_relative_to(sim.base.resolve())
+                or destination.exists()
+            ):
+                raise Diverged("Preserve and inspect unexpected fixture-cache paths before cleanup")
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            source.rename(destination)
+            retained.append(f"{task}/{relative} -> ~/demo/retained-artifacts/{task}/{relative}")
+    sim.block("human: preserve known ignored fixture caches outside the worktrees", "\n".join(retained))
+    sim.swarm("doctor", "--fix", who="claude-1", expect=("removed",))
+    sim.swarm(
+        "goal",
+        "verify",
+        "health",
+        "--key",
+        "health-final-check",
+        who="claude-1",
+        expect=("passed", "retained checkout"),
+    )
     sim.swarm(
         "goal",
         "close",
@@ -788,13 +949,52 @@ def run(sim: Sim) -> None:
         who="claude-1",
         expect=("closed",),
     )
-    sim.snapshot("Goal closed on evidence for every outcome; every worktree merged and removed")
+    sim.snapshot("Goal closed on executable outcome checks; task worktrees removed, verification checkout retained")
+    board = sim.module().Swarm(repo)
+    try:
+        merged_task = board.task("H-tests")
+        source_event = board.db.execute(
+            "SELECT id FROM events WHERE kind='merged' AND task='H-tests' ORDER BY id DESC LIMIT 1"
+        ).fetchone()[0]
+        lesson_commit = merged_task["merged_sha"]
+    finally:
+        board.db.close()
+    sim.note(
+        "The completed task produces a scoped lesson with real event and commit provenance. A different agent verifies it. Retrieval supplies context and cannot alter task scope or gate policy."
+    )
+    sim.swarm(
+        "memory",
+        "propose",
+        "The health fixture must assert status ok together with the running VERSION",
+        "--applicability",
+        "When modifying health() or its isolated acceptance fixture in this repository",
+        "--event",
+        str(source_event),
+        "--commit",
+        lesson_commit,
+        "--signal",
+        "health:acceptance-fixture",
+        "--key",
+        "health-fixture-lesson",
+        who="claude-1",
+    )
+    sim.swarm(
+        "memory",
+        "verify",
+        "1",
+        "--revision",
+        "1",
+        "--reason",
+        "Inspected the landed commit and merge event; the test covers both returned fields",
+        who="opencode-1",
+    )
+    sim.swarm("memory", "search", "health", "--limit", "1", expect=("verified", "never scope"))
 
     # 12. what remains
     sim.section(
         "12. What is left behind",
-        "Main carries one squash commit per task. Every worktree and task branch is gone, and the board remembers "
-        "who did what.",
+        "Main carries one squash commit per task. Every task worktree and task branch is gone; the verification checkout and receipt remain for inspection. The board remembers "
+        "who did what. The fixture caches remain in the human's recovery directory outside those task worktrees.",
     )
     log_main = sim.git("log", "--oneline", "main", cwd=repo)
     sim.block("git log --oneline main", log_main)
@@ -810,8 +1010,8 @@ def run(sim: Sim) -> None:
         if f"{task}: " not in log_main:
             raise Diverged(f"main does not carry {task}:\n{log_main}")
     leftover = sim.git("worktree", "list", cwd=repo).splitlines()
-    if len(leftover) != 1:
-        raise Diverged("worktrees were left behind:\n" + "\n".join(leftover))
+    if len(leftover) != 2 or any(sim.worktree(task).exists() for task in ("H-api", "H-docs", "H-changelog", "H-tests")):
+        raise Diverged("unexpected task/verification worktrees left behind:\n" + "\n".join(leftover))
     sim.note(
         "**What to take from it:**\n\n"
         "- No task was touched before its questions were answered.\n"
@@ -820,7 +1020,7 @@ def run(sim: Sim) -> None:
         "- A missing outcome, a silent agent and a wrong test were each caught by the service at the point they "
         "happened, with the next step named.\n"
         "- Main only ever moved through the queue, after the gate passed on the rebased result.\n"
-        "- The goal closed on evidence for its outcomes, not on merged tasks alone."
+        "- The goal closed on engine-observed outcome checks at the target commit. The receipt and its checkout remain inspectable."
     )
 
 

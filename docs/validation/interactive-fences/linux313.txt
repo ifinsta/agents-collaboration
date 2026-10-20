@@ -1,0 +1,314 @@
+test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup (test_interactive_launch.InteractiveLaunch.test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup) ... ok
+test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation (test_interactive_launch.InteractiveLaunch.test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation) ... ok
+test_ec301_stale_automatic_interactive_preparation_is_refused (test_interactive_launch.InteractiveLaunch.test_ec301_stale_automatic_interactive_preparation_is_refused) ... ok
+test_ec301_stale_explicit_interactive_preparation_is_refused (test_interactive_launch.InteractiveLaunch.test_ec301_stale_explicit_interactive_preparation_is_refused) ... ok
+test_ec302_child_creation_and_pid_publication_share_the_ownership_fence (test_interactive_launch.InteractiveLaunch.test_ec302_child_creation_and_pid_publication_share_the_ownership_fence) ... ok
+test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid (test_interactive_launch.InteractiveLaunch.test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid) ... ok
+test_ec304_no_task_launch_rechecks_after_clipboard_preparation (test_interactive_launch.InteractiveLaunch.test_ec304_no_task_launch_rechecks_after_clipboard_preparation) ... ok
+test_ec304_no_task_launch_rechecks_after_terminal_confirmation (test_interactive_launch.InteractiveLaunch.test_ec304_no_task_launch_rechecks_after_terminal_confirmation) ... ok
+test_ec305_interactive_launch_rechecks_pause_after_preparation (test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_pause_after_preparation) ... ok
+test_ec305_interactive_launch_rechecks_policy_after_preparation (test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_policy_after_preparation) ... joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp6jwp0rv0/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp6jwp0rv0/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpc862v5gp/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmpc862v5gp/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpd8et_2ry/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmpd8et_2ry/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmptsnfy4gy/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmptsnfy4gy/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp1v45kz2w/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp1v45kz2w/repo-wt/T1
+
+
+fake exited (0) before starting T1; the task is back in the pool.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpeqkduhme/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmpeqkduhme/repo-wt/T1
+
+
+fake exited (0); current registry state was preserved. Inspect `swarm status` before continuing.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+
+worker (fakeplain) joined without a task; it will ask for work.
+
+fakeplain cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file ../../../workspace/skills/agents-collaboration/SKILL.md and follow it. You have already joined. Ask for work with swarm next.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+
+worker (fakeplain) joined without a task; it will ask for work.
+
+fakeplain cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file ../../../workspace/skills/agents-collaboration/SKILL.md and follow it. You have already joined. Ask for work with swarm next.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp551_tqby/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp551_tqby/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp1ph62hi9/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)ok
+test_ec305_stopped_coordinator_cannot_finish_interactive_startup (test_interactive_launch.InteractiveLaunch.test_ec305_stopped_coordinator_cannot_finish_interactive_startup) ... ok
+test_ec306_exit_settles_the_current_task_of_the_same_actual_child (test_interactive_launch.InteractiveLaunch.test_ec306_exit_settles_the_current_task_of_the_same_actual_child) ... ok
+test_ec307_interactive_process_creation_failure_preserves_the_claim (test_interactive_launch.InteractiveLaunch.test_ec307_interactive_process_creation_failure_preserves_the_claim) ... ok
+test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child (test_interactive_launch.InteractiveLaunch.test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child) ... ok
+test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer (test_interactive_launch.InteractiveLaunch.test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer) ... ok
+test_dashboard_renders_once (test_swarm.Console.test_dashboard_renders_once) ... ok
+test_ec148_git_ignored_local_files_follow_into_worktrees (test_swarm.Console.test_ec148_git_ignored_local_files_follow_into_worktrees) ... ok
+test_ec149_the_coordinator_asks_once_about_the_console (test_swarm.Console.test_ec149_the_coordinator_asks_once_about_the_console) ... ok
+test_ec150_console_observes_when_a_monitor_runs (test_swarm.Console.test_ec150_console_observes_when_a_monitor_runs) ... ok
+test_ec151_a_pane_command_with_a_separator_is_refused (test_swarm.Console.test_ec151_a_pane_command_with_a_separator_is_refused) ... ok
+test_ec152_every_platform_gets_a_layout (test_swarm.Console.test_ec152_every_platform_gets_a_layout) ... ok
+test_ec153_ec155_launch_prepares_nothing_on_a_dry_run (test_swarm.Console.test_ec153_ec155_launch_prepares_nothing_on_a_dry_run) ... ok
+test_ec154_agent_panes_get_distinct_names (test_swarm.Console.test_ec154_agent_panes_get_distinct_names) ... ok
+test_ec158_version_and_update (test_swarm.Console.test_ec158_version_and_update) ... ok
+test_ec174_views_fit_their_pane (test_swarm.ReadableConsole.test_ec174_views_fit_their_pane) ... ok
+test_ec175_events_read_as_sentences_in_local_time (test_swarm.ReadableConsole.test_ec175_events_read_as_sentences_in_local_time) ... ok
+test_ec177_leaving_the_launcher_says_how_to_come_back (test_swarm.ReadableConsole.test_ec177_leaving_the_launcher_says_how_to_come_back) ... ok
+test_ec178_an_agent_can_start_without_a_task (test_swarm.ReadableConsole.test_ec178_an_agent_can_start_without_a_task) ... ok
+test_ec179_the_launcher_offers_a_chosen_task (test_swarm.ReadableConsole.test_ec179_the_launcher_offers_a_chosen_task) ... ok
+test_ec180_the_board_gets_the_big_pane_and_agents_their_own_tab (test_swarm.ReadableConsole.test_ec180_the_board_gets_the_big_pane_and_agents_their_own_tab) ... ok
+test_ec240_doctor_cleanup_preview_retains_files_then_applies_idempotently (test_hardening.DoctorAndStorage.test_ec240_doctor_cleanup_preview_retains_files_then_applies_idempotently) ... ok
+test_ec240_doctor_reports_missing_source_pins_without_inventing_evidence (test_hardening.DoctorAndStorage.test_ec240_doctor_reports_missing_source_pins_without_inventing_evidence) ... ok
+test_ec240_doctor_reports_ownership_evidence_and_owed_checks_with_safe_hints (test_hardening.DoctorAndStorage.test_ec240_doctor_reports_ownership_evidence_and_owed_checks_with_safe_hints) ... ok
+test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event (test_hardening.DoctorAndStorage.test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event) ... ok
+test_ec241_concurrent_takeovers_leave_one_owner_and_fence_the_old_worker (test_hardening.DoctorAndStorage.test_ec241_concurrent_takeovers_leave_one_owner_and_fence_the_old_worker) ... ok
+test_ec241_seeded_claim_release_model_preserves_single_ownership_and_stale_epoch_fences (test_hardening.DoctorAndStorage.test_ec241_seeded_claim_release_model_preserves_single_ownership_and_stale_epoch_fences) ... ok
+test_ec300_stopping_coordinator_cannot_finish_new_worker_startup (test_startup_fences.StartupFences.test_ec300_stopping_coordinator_cannot_finish_new_worker_startup) ... ok
+
+----------------------------------------------------------------------
+Ran 37 tests in 199.261s
+
+OK
+
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp1ph62hi9/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpi51kj26p/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmpi51kj26p/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmphms_xsqs/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (waiter) takes T1: First task
+  worktree /tmp/tmphms_xsqs/repo-wt/T1
+
+waiter cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file .swarm-brief.md in this directory and follow it exactly.
+
+waiter exited (0). T2 keeps its work; inspect `swarm explain T2` before takeover.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp6lelyr4g/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp6lelyr4g/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp_mmll74w/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmp_mmll74w/repo-wt/T1
+
+Interactive child started but PID publication is uncertain. Waiting for that actual child; preserve work and do not restart blindly.
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmp2ai2e6s8/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /workspace/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.

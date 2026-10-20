@@ -1,0 +1,14 @@
+{
+  "core_sha256": "2dc0c2d6893ca332ba2ef905ff913e0a143e2570143c08b6e613655decc054c2",
+  "scope": "Real Git checkout with a fixture smudge filter paused inside worktree creation; kill only the actual calling CLI handle; no provider calls.",
+  "caller_exit_code": 1,
+  "old_owner": "ann",
+  "replacement_owner": "bob",
+  "replacement_claim_output": "claimed T1: First task\n  worktree  C:\\Users\\user\\AppData\\Local\\Temp\\tmpzejbyah0\\repo-wt\\T1\n  branch    swarm/T1\n  slot      2  (`swarm env --as bob` prints your environment)\n  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob\n  builds on (previous): nothing; it can start from what exists\n  feeds (next):\n    -> T3 [open] Needs T1\n       it will work in: src/\nnext: cd into the worktree, then `swarm plan --as bob --template` and answer every question.\n\n[1 unread message(s): swarm inbox --as bob]\n",
+  "before": "new owner edits that must be preserved\n",
+  "after": null,
+  "new_owner_edits_overwritten": true,
+  "filter_completed": true,
+  "worktree_still_exists": false,
+  "successor_task_still_claimed": true
+}

@@ -1,0 +1,18 @@
+{
+  "started_from_snapshot": "f0eb4421bae8943628797f23aed66b75f1d8de15c0eb8185a754491a34f2c99f",
+  "command": [
+    "docker",
+    "run",
+    "--rm",
+    "--init",
+    "--mount",
+    "type=bind,source=C:\\Users\\user\\CascadeProjects\\agents-collaboration\\docs\\validation\\managed-sessions,target=/evidence",
+    "agents-collaboration-validation:py313",
+    "python",
+    "-c",
+    "import zipfile,subprocess,sys;zipfile.ZipFile('/evidence/source.zip').extractall('/tmp/source');sys.exit(subprocess.call(['python','scripts/validate_candidate.py','--workers','6','--output','/evidence/linux313'],cwd='/tmp/source'))"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 324.234,
+  "finished_at": "2026-10-20T11:36:12.280911+00:00"
+}

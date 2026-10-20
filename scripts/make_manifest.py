@@ -15,7 +15,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
 SKILL = ROOT / "skills" / "agents-collaboration"
-FILES = ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md")
+FILES = ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md", "BUS.md", "BUS.schema.json", "swarm_web.py", "swarm_sessions.py")
 
 
 def version() -> str:

@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "exit_code": 0,
+  "real_pty": true,
+  "session_and_view_switching": true,
+  "settings_restored": true,
+  "detach_message": true
+}

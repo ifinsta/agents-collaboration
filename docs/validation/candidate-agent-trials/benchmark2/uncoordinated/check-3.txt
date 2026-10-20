@@ -1,0 +1,126 @@
+..EEEEEEEEEEEE
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='s')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='-1m')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='1.5m')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='1h')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text=' 1s')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='1s ')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text=2)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text=True)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text=None)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_invalid (test_duration.Parse.test_invalid) (text='�s')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 11, in test_invalid
+    parse_seconds(text)
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+======================================================================
+ERROR: test_valid (test_duration.Parse.test_valid)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\test_duration.py", line 7, in test_valid
+    self.assertEqual(parse_seconds(text), want)
+                     ^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\user\AppData\Local\Temp\workforce-candidate-1gsdaibm\benchmark2\uncoordinated\repo\durations.py", line 2, in parse_seconds
+    raise NotImplementedError("parse")
+NotImplementedError: parse
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.012s
+
+FAILED (errors=12)

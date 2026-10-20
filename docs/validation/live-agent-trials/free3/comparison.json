@@ -1,0 +1,210 @@
+{
+  "version": 1,
+  "created_at": "2026-10-20T05:31:58.080652+00:00",
+  "results": [
+    {
+      "version": 1,
+      "workload": "duration-operations-v1",
+      "mode": "solo",
+      "runner": "external",
+      "agent_count": 1,
+      "baseline_commit": "e8c71b354691d32287759a4b933c6c2329d61538",
+      "task_count": 2,
+      "verified_completion": 2,
+      "full_acceptance": true,
+      "rework": 0,
+      "deadline_misses": 0,
+      "usage": {
+        "cost": 0,
+        "tokens": null,
+        "human_interventions": 0,
+        "currency": "USD"
+      },
+      "usage_source": "runner-reported; not independently metered",
+      "elapsed_seconds": 104.57799999997951,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 73.93700000003446,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 74.98400000005495,
+          "deadline_missed": false
+        },
+        {
+          "task": "T2",
+          "attempt": 1,
+          "runner_seconds": 27.06200000003446,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 28.75,
+          "deadline_missed": false
+        }
+      ],
+      "fault": null,
+      "owed": [],
+      "limitations": [
+        "Tiny shared-file conflict workload; no general productivity inference",
+        "Coordinated workers serialize the declared hotspot",
+        "Unknown cost or human intervention is null, never zero",
+        "Run repeated matched trials before drawing comparisons"
+      ]
+    },
+    {
+      "version": 1,
+      "workload": "duration-operations-v1",
+      "mode": "uncoordinated",
+      "runner": "external",
+      "agent_count": 2,
+      "baseline_commit": "524fc81288ce08393bfdd4f6b17e50e4a29e7137",
+      "task_count": 2,
+      "verified_completion": 2,
+      "full_acceptance": true,
+      "rework": 1,
+      "deadline_misses": 0,
+      "usage": {
+        "cost": 0,
+        "tokens": null,
+        "human_interventions": 0,
+        "currency": "USD"
+      },
+      "usage_source": "runner-reported; not independently metered",
+      "elapsed_seconds": 101.93699999991804,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 48.703000000095926,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 63.93700000003446,
+          "deadline_missed": false
+        },
+        {
+          "task": "T2",
+          "attempt": 2,
+          "runner_seconds": 34.828000000095926,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": false,
+          "integration_retry": true
+        },
+        {
+          "task": "T2",
+          "attempt": 1,
+          "runner_seconds": 62.59400000004098,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 1,
+          "elapsed_seconds": 101.07800000009593,
+          "deadline_missed": false
+        }
+      ],
+      "fault": null,
+      "owed": [],
+      "limitations": [
+        "Tiny shared-file conflict workload; no general productivity inference",
+        "Coordinated workers serialize the declared hotspot",
+        "Unknown cost or human intervention is null, never zero",
+        "Run repeated matched trials before drawing comparisons"
+      ]
+    },
+    {
+      "version": 1,
+      "workload": "duration-operations-v1",
+      "mode": "coordinated",
+      "runner": "external",
+      "agent_count": 2,
+      "baseline_commit": "5492764f2fbae120e036c925293cd502cb8fde68",
+      "task_count": 2,
+      "verified_completion": 2,
+      "full_acceptance": true,
+      "rework": 0,
+      "deadline_misses": 0,
+      "usage": {
+        "cost": 0,
+        "tokens": null,
+        "human_interventions": 0,
+        "currency": "USD"
+      },
+      "usage_source": "runner-reported; not independently metered",
+      "elapsed_seconds": 89.81299999996554,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 47.625,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 51.65600000007544,
+          "deadline_missed": false
+        },
+        {
+          "task": "T2",
+          "attempt": 1,
+          "runner_seconds": 27.375,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 31.70299999997951,
+          "deadline_missed": false
+        }
+      ],
+      "fault": null,
+      "owed": [],
+      "limitations": [
+        "Tiny shared-file conflict workload; no general productivity inference",
+        "Coordinated workers serialize the declared hotspot",
+        "Unknown cost or human intervention is null, never zero",
+        "Run repeated matched trials before drawing comparisons"
+      ]
+    }
+  ],
+  "claim": "Measured local trial outcomes only; no LLM improvement claim"
+}

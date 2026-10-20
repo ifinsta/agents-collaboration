@@ -10,7 +10,7 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:05</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:26:45</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 3 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#73c991">  claude-1     ready    -                 now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#73c991">  opencode-1   ready    -                 now  opencode / deepseek-chat</tspan></text>
@@ -19,38 +19,43 @@
 <text x="12" y="165" xml:space="preserve"><tspan fill="#cccccc">  next up: H-api, H-docs, H-changelog</tspan></text>
 <text x="12" y="182" xml:space="preserve"><tspan fill="#cccccc">goal health [active] 0/4: Operators can check the service is healthy and which ...</tspan></text>
 <text x="12" y="199" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="216" xml:space="preserve"><tspan fill="#75beff">02:22:57 claude-1 joined: claude / sonnet; caps bash, windows</tspan></text>
-<text x="12" y="233" xml:space="preserve"><tspan fill="#75beff">02:22:57 claude-1 is the coordinator (first live agent)</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#75beff">02:22:58 opencode-1 joined: opencode / deepseek-chat; caps bash, windows</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#75beff">02:22:59 qoder-1 joined: qodercli; caps bash, windows</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#75beff">02:22:59 claude-1 started goal health: Operators can check the service is healt...</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#8b8b8b">02:23:00 claude-1 answered questions on goal health</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#73c991">02:23:01 human answered goal health Q1</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#8b8b8b">02:23:01 claude-1 answered questions on goal health</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #1: health() answers ok with the running v...</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #2: health() is covered by a test the gate...</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 set outcome health #3: operators can read what health() returns</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-api (health, serves outcome 1)</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-docs (health, serves outcome 3)</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#8b8b8b">02:23:04 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#8b8b8b">02:23:05 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#73c991">02:23:05 goal committed by claude-1: health: 4 tasks opened</tspan></text>
+<text x="12" y="216" xml:space="preserve"><tspan fill="#75beff">14:26:36 claude-1 joined: claude / sonnet; caps bash, docker, windows</tspan></text>
+<text x="12" y="233" xml:space="preserve"><tspan fill="#75beff">14:26:36 claude-1 is the coordinator (first live agent)</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#75beff">14:26:37 opencode-1 joined: opencode / deepseek-chat; caps bash, docker, windows</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#75beff">14:26:37 qoder-1 joined: qodercli; caps bash, docker, windows</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#75beff">14:26:38 claude-1 started goal health: Operators can check the service is healt...</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#8b8b8b">14:26:38 claude-1 answered questions on goal health</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#73c991">14:26:39 human answered goal health Q1</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#8b8b8b">14:26:40 claude-1 answered questions on goal health</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#8b8b8b">14:26:40 claude-1 set outcome health #1: health() answers ok with the running v...</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#8b8b8b">14:26:40 claude-1 set outcome health #2: health() is covered by a test the gate...</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 set outcome health #3: operators can read what health() returns</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 drafted H-api (health, serves outcome 1)</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 drafted H-docs (health, serves outcome 3)</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#8b8b8b">14:26:42 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#8b8b8b">14:26:42 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 1; architecture reapprova...</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 2; architecture reapprova...</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 3; architecture reapprova...</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">14:26:44 architecture_recorded claude-1 - health brief revision 1</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">14:26:44 architecture_approved claude-1 - health revision 15</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#73c991">14:26:45 goal committed by claude-1: health: 4 tasks opened</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#75beff">02:22:59 claude-1 started goal health: Operators can check the service is healthy</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#75beff">         and which version runs</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#8b8b8b">02:23:00 claude-1 answered questions on goal health</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#73c991">02:23:01 human answered goal health Q1</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#8b8b8b">02:23:01 claude-1 answered questions on goal health</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #1: health() answers ok with the running</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#8b8b8b">         version</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #2: health() is covered by a test the gate</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#8b8b8b">         runs</tspan></text>
-<text x="672" y="233" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 set outcome health #3: operators can read what health() returns</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-api (health, serves outcome 1)</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-docs (health, serves outcome 3)</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#8b8b8b">02:23:04 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#8b8b8b">02:23:05 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
-<text x="672" y="318" xml:space="preserve"><tspan fill="#73c991">02:23:05 goal committed by claude-1: health: 4 tasks opened</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#8b8b8b">         runs</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 set outcome health #3: operators can read what health() returns</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 drafted H-api (health, serves outcome 1)</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#8b8b8b">14:26:41 claude-1 drafted H-docs (health, serves outcome 3)</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#8b8b8b">14:26:42 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#8b8b8b">14:26:42 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 1; architecture reapproval</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">         required</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 2; architecture reapproval</tspan></text>
+<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">         required</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">14:26:43 goal_check_defined claude-1 - health outcome 3; architecture reapproval</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">         required</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:26:44 architecture_recorded claude-1 - health brief revision 1</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#cccccc">14:26:44 architecture_approved claude-1 - health revision 15</tspan></text>
+<text x="672" y="318" xml:space="preserve"><tspan fill="#73c991">14:26:45 goal committed by claude-1: health: 4 tasks opened</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
 <text x="672" y="398" xml:space="preserve"><tspan fill="#cccccc">  1. claude   2. opencode   3. qodercli   4. codex   5. gemini</tspan></text>
@@ -72,7 +77,7 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:14</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:27:02</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 3 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#cccccc">  claude-1     busy     H-api             now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#cccccc">  opencode-1   busy     H-docs            now  opencode / deepseek-chat</tspan></text>
@@ -83,44 +88,44 @@
 <text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">  H-changelog      in_progress      qoder-1      step 1/2</tspan></text>
 <text x="12" y="216" xml:space="preserve"><tspan fill="#cccccc">goal health [active] 0/4: Operators can check the service is healthy and which ...</tspan></text>
 <text x="12" y="233" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#73c991">02:23:01 human answered goal health Q1</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#8b8b8b">02:23:01 claude-1 answered questions on goal health</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #1: health() answers ok with the running v...</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#8b8b8b">02:23:02 claude-1 set outcome health #2: health() is covered by a test the gate...</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 set outcome health #3: operators can read what health() returns</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-api (health, serves outcome 1)</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#8b8b8b">02:23:03 claude-1 drafted H-docs (health, serves outcome 3)</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#8b8b8b">02:23:04 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#8b8b8b">02:23:05 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#73c991">02:23:05 goal committed by claude-1: health: 4 tasks opened</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#75beff">02:23:06 claude-1 claimed H-api</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#75beff">02:23:07 opencode-1 claimed H-docs</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#75beff">02:23:08 qoder-1 claimed H-changelog</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">02:23:09 claude-1 planned H-api: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">02:23:09 opencode-1 planned H-docs: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">02:23:10 qoder-1 planned H-changelog: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">02:23:10 claude-1 started H-api</tspan></text>
-<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">02:23:11 claude-1 finished step 1/2 of H-api</tspan></text>
-<text x="12" y="556" xml:space="preserve"><tspan fill="#cccccc">02:23:11 opencode-1 started H-docs</tspan></text>
-<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">02:23:12 opencode-1 finished step 1/2 of H-docs</tspan></text>
-<text x="12" y="590" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 started H-changelog</tspan></text>
-<text x="12" y="607" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 finished step 1/2 of H-changelog</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#75beff">14:26:48 opencode-1 claimed H-docs</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">14:26:49 allocation_started opencode-1 H-docs 58297bbc36ab4998b33bd60fd4369e53</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#cccccc">14:26:49 allocation_quiescent opencode-1 H-docs 58297bbc36ab4998b33bd60fd4369e5...</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#8b8b8b">14:26:50 qoder-1 received a contract for H-changelog</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">14:26:50 contract_activated qoder-1 H-changelog contract 3,</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#75beff">14:26:50 qoder-1 claimed H-changelog</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">14:26:50 allocation_started qoder-1 H-changelog 5427a2780934498681496e23b6721cd5</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#cccccc">14:26:51 allocation_quiescent qoder-1 H-changelog 5427a2780934498681496e23b6721...</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">14:26:52 interrupt_requested claude-1 H-changelog interrupt 1: pause to qoder-1</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#cccccc">14:26:53 interrupt_ack qoder-1 H-changelog interrupt 1</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#cccccc">14:26:55 checkpoint qoder-1 H-changelog checkpoint 1: No edits yet; the claimed...</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#cccccc">14:26:56 interrupt_complete qoder-1 H-changelog interrupt 1</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">14:26:56 interrupt_resume claude-1 H-changelog interrupt 1</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">14:26:57 claude-1 planned H-api: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:26:58 opencode-1 planned H-docs: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">14:26:58 qoder-1 planned H-changelog: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">14:26:59 claude-1 started H-api</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">14:27:00 claude-1 finished step 1/2 of H-api</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#cccccc">14:27:00 opencode-1 started H-docs</tspan></text>
+<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">14:27:01 opencode-1 finished step 1/2 of H-docs</tspan></text>
+<text x="12" y="590" xml:space="preserve"><tspan fill="#cccccc">14:27:01 qoder-1 started H-changelog</tspan></text>
+<text x="12" y="607" xml:space="preserve"><tspan fill="#cccccc">14:27:01 qoder-1 finished step 1/2 of H-changelog</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#8b8b8b">02:23:04 claude-1 drafted H-changelog (health, serves outcome 3)</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#8b8b8b">02:23:05 claude-1 drafted H-tests (health, serves outcome 2, after H-api)</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#73c991">02:23:05 goal committed by claude-1: health: 4 tasks opened</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#75beff">02:23:06 claude-1 claimed H-api</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#75beff">02:23:07 opencode-1 claimed H-docs</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#75beff">02:23:08 qoder-1 claimed H-changelog</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">02:23:09 claude-1 planned H-api: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">02:23:09 opencode-1 planned H-docs: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">02:23:10 qoder-1 planned H-changelog: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">02:23:10 claude-1 started H-api</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:11 claude-1 finished step 1/2 of H-api</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">02:23:11 opencode-1 started H-docs</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">02:23:12 opencode-1 finished step 1/2 of H-docs</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 started H-changelog</tspan></text>
-<text x="672" y="318" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 finished step 1/2 of H-changelog</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">14:26:52 interrupt_requested claude-1 H-changelog interrupt 1: pause to qoder-1</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#cccccc">14:26:53 interrupt_ack qoder-1 H-changelog interrupt 1</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#cccccc">14:26:55 checkpoint qoder-1 H-changelog checkpoint 1: No edits yet; the claimed</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#cccccc">         branch and worktree are retained</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">14:26:56 interrupt_complete qoder-1 H-changelog interrupt 1</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">14:26:56 interrupt_resume claude-1 H-changelog interrupt 1</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">14:26:57 claude-1 planned H-api: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">14:26:58 opencode-1 planned H-docs: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">14:26:58 qoder-1 planned H-changelog: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">14:26:59 claude-1 started H-api</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">14:27:00 claude-1 finished step 1/2 of H-api</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:00 opencode-1 started H-docs</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:27:01 opencode-1 finished step 1/2 of H-docs</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:01 qoder-1 started H-changelog</tspan></text>
+<text x="672" y="318" xml:space="preserve"><tspan fill="#cccccc">14:27:01 qoder-1 finished step 1/2 of H-changelog</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
 <text x="672" y="398" xml:space="preserve"><tspan fill="#cccccc">  1. claude   2. opencode   3. qodercli   4. codex   5. gemini</tspan></text>
@@ -142,7 +147,7 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:26</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:27:18</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 3 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#73c991">  claude-1     ready    -                 now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#cccccc">  opencode-1   busy     H-docs            now  opencode / deepseek-chat</tspan></text>
@@ -152,45 +157,45 @@
 <text x="12" y="182" xml:space="preserve"><tspan fill="#cccccc">  next up: H-tests</tspan></text>
 <text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">goal health [active] 2/4: Operators can check the service is healthy and which ...</tspan></text>
 <text x="12" y="216" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="233" xml:space="preserve"><tspan fill="#cccccc">02:23:09 opencode-1 planned H-docs: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:10 qoder-1 planned H-changelog: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">02:23:10 claude-1 started H-api</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#cccccc">02:23:11 claude-1 finished step 1/2 of H-api</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">02:23:11 opencode-1 started H-docs</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">02:23:12 opencode-1 finished step 1/2 of H-docs</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 started H-changelog</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 finished step 1/2 of H-changelog</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#cccccc">02:23:15 claude-1 finished step 2/2 of H-api</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#e2c08d">02:23:15 claude-1 finished H-api suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#cccccc">02:23:16 claude-1 submitted H-api: 2 files</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#8b8b8b">02:23:17 claude-1 is merging H-api</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#73c991">02:23:19 claude-1 merged H-api: e6ff59abb0 H-api: Add health() returning status...</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">02:23:20 qoder-1 finished step 2/2 of H-changelog</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#e2c08d">02:23:20 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">02:23:21 qoder-1 submitted H-changelog: 1 file</tspan></text>
-<text x="12" y="505" xml:space="preserve"><tspan fill="#8b8b8b">02:23:22 qoder-1 is merging H-changelog</tspan></text>
-<text x="12" y="522" xml:space="preserve"><tspan fill="#73c991">02:23:23 qoder-1 merged H-changelog: 37a1085977 H-changelog: Announce health() ...</tspan></text>
-<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="12" y="556" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="590" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="607" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
+<text x="12" y="233" xml:space="preserve"><tspan fill="#cccccc">14:27:03 claude-1 finished step 2/2 of H-api</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#e2c08d">14:27:03 claude-1 finished H-api suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:04 claude-1 submitted H-api: 2 files</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#8b8b8b">14:27:05 claude-1 is merging H-api</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:05 usage_reserved claude-1 H-api 18880826291842fba5226daec3a64721</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">14:27:06 tool_observed claude-1 H-api 18880826291842fba5226daec3a64721</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">14:27:07 usage_reserved claude-1 H-api 9aa8c3c1599c41a682cb2df1e4a293d2</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">14:27:07 tool_observed claude-1 H-api 9aa8c3c1599c41a682cb2df1e4a293d2</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#73c991">14:27:08 claude-1 merged H-api: 68edebcf59 H-api: Add health() returning status...</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">14:27:10 qoder-1 finished step 2/2 of H-changelog</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#e2c08d">14:27:10 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#cccccc">14:27:11 qoder-1 submitted H-changelog: 1 file</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#8b8b8b">14:27:12 qoder-1 is merging H-changelog</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">14:27:12 usage_reserved qoder-1 H-changelog 19cebe9154184034bb9b44a3265d011f</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">14:27:13 tool_observed qoder-1 H-changelog 19cebe9154184034bb9b44a3265d011f</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:27:14 usage_reserved qoder-1 H-changelog ebbc2dc7651245a3babddb8070ca0de0</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">14:27:14 tool_observed qoder-1 H-changelog ebbc2dc7651245a3babddb8070ca0de0</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#73c991">14:27:15 qoder-1 merged H-changelog: 422d294435 H-changelog: Announce health() ...</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">14:27:16 opencode-1 finished step 2/2 of H-docs</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#e2c08d">14:27:16 opencode-1 finished H-docs suspiciously fast (2 steps in 0.3 min)</tspan></text>
+<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">14:27:17 opencode-1 submitted H-docs: 2 files</tspan></text>
+<text x="12" y="590" xml:space="preserve"><tspan fill="#8b8b8b">14:27:18 opencode-1 is merging H-docs</tspan></text>
+<text x="12" y="607" xml:space="preserve"><tspan fill="#e2c08d">14:27:18 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">02:23:16 claude-1 submitted H-api: 2 files</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#8b8b8b">02:23:17 claude-1 is merging H-api</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#73c991">02:23:19 claude-1 merged H-api: e6ff59abb0 H-api: Add health() returning status</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#73c991">         and version</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">02:23:20 qoder-1 finished step 2/2 of H-changelog</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#e2c08d">02:23:20 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">02:23:21 qoder-1 submitted H-changelog: 1 file</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#8b8b8b">02:23:22 qoder-1 is merging H-changelog</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#73c991">02:23:23 qoder-1 merged H-changelog: 37a1085977 H-changelog: Announce health() in</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">14:27:10 qoder-1 finished step 2/2 of H-changelog</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#e2c08d">14:27:10 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#cccccc">14:27:11 qoder-1 submitted H-changelog: 1 file</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#8b8b8b">14:27:12 qoder-1 is merging H-changelog</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">14:27:12 usage_reserved qoder-1 H-changelog 19cebe9154184034bb9b44a3265d011f</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">14:27:13 tool_observed qoder-1 H-changelog 19cebe9154184034bb9b44a3265d011f</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">14:27:14 usage_reserved qoder-1 H-changelog ebbc2dc7651245a3babddb8070ca0de0</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">14:27:14 tool_observed qoder-1 H-changelog ebbc2dc7651245a3babddb8070ca0de0</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#73c991">14:27:15 qoder-1 merged H-changelog: 422d294435 H-changelog: Announce health() in</tspan></text>
 <text x="672" y="233" xml:space="preserve"><tspan fill="#73c991">         the changelog</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="672" y="318" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">14:27:16 opencode-1 finished step 2/2 of H-docs</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#e2c08d">14:27:16 opencode-1 finished H-docs suspiciously fast (2 steps in 0.3 min)</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:27:17 opencode-1 submitted H-docs: 2 files</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#8b8b8b">14:27:18 opencode-1 is merging H-docs</tspan></text>
+<text x="672" y="318" xml:space="preserve"><tspan fill="#e2c08d">14:27:18 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
 <text x="672" y="398" xml:space="preserve"><tspan fill="#cccccc">  1. claude   2. opencode   3. qodercli   4. codex   5. gemini</tspan></text>
@@ -212,7 +217,7 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:33</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:27:31</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 2 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#cccccc">  claude-1     busy     H-tests           now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#73c991">  opencode-1   ready    -                 now  opencode / deepseek-chat</tspan></text>
@@ -220,47 +225,47 @@
 <text x="12" y="148" xml:space="preserve"><tspan fill="#cccccc">  H-tests          in_progress      claude-1     step 0/2</tspan></text>
 <text x="12" y="165" xml:space="preserve"><tspan fill="#cccccc">goal health [active] 3/4: Operators can check the service is healthy and which ...</tspan></text>
 <text x="12" y="182" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">02:23:13 qoder-1 finished step 1/2 of H-changelog</tspan></text>
-<text x="12" y="216" xml:space="preserve"><tspan fill="#cccccc">02:23:15 claude-1 finished step 2/2 of H-api</tspan></text>
-<text x="12" y="233" xml:space="preserve"><tspan fill="#e2c08d">02:23:15 claude-1 finished H-api suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:16 claude-1 submitted H-api: 2 files</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#8b8b8b">02:23:17 claude-1 is merging H-api</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#73c991">02:23:19 claude-1 merged H-api: e6ff59abb0 H-api: Add health() returning status...</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">02:23:20 qoder-1 finished step 2/2 of H-changelog</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#e2c08d">02:23:20 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">02:23:21 qoder-1 submitted H-changelog: 1 file</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#8b8b8b">02:23:22 qoder-1 is merging H-changelog</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#73c991">02:23:23 qoder-1 merged H-changelog: 37a1085977 H-changelog: Announce health() ...</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">02:23:27 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="488" xml:space="preserve"><tspan fill="#8b8b8b">02:23:28 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="505" xml:space="preserve"><tspan fill="#73c991">02:23:29 opencode-1 merged H-docs: 752b4af68a H-docs: Document health() for ope...</tspan></text>
-<text x="12" y="522" xml:space="preserve"><tspan fill="#75beff">02:23:30 qoder-1 claimed H-tests</tspan></text>
-<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="556" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="12" y="573" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="12" y="590" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="12" y="607" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="12" y="199" xml:space="preserve"><tspan fill="#e2c08d">14:27:16 opencode-1 finished H-docs suspiciously fast (2 steps in 0.3 min)</tspan></text>
+<text x="12" y="216" xml:space="preserve"><tspan fill="#cccccc">14:27:17 opencode-1 submitted H-docs: 2 files</tspan></text>
+<text x="12" y="233" xml:space="preserve"><tspan fill="#8b8b8b">14:27:18 opencode-1 is merging H-docs</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#e2c08d">14:27:18 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:20 opencode-1 submitted H-docs: 2 files</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#8b8b8b">14:27:20 opencode-1 is merging H-docs</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:21 usage_reserved opencode-1 H-docs 9d5f1795d85f4e78a4c7864f93139ebb</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">14:27:21 tool_observed opencode-1 H-docs 9d5f1795d85f4e78a4c7864f93139ebb</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">14:27:23 usage_reserved opencode-1 H-docs 3acd2d6760754ef1b4c66d4fbade9a2e</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">14:27:24 tool_observed opencode-1 H-docs 3acd2d6760754ef1b4c66d4fbade9a2e</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#73c991">14:27:25 opencode-1 merged H-docs: a28fda54b7 H-docs: Document health() for ope...</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#8b8b8b">14:27:28 qoder-1 received a contract for H-tests</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#cccccc">14:27:28 contract_activated qoder-1 H-tests contract 4,</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#75beff">14:27:28 qoder-1 claimed H-tests</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#cccccc">14:27:28 allocation_started qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">14:27:29 allocation_quiescent qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b:...</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 started H-tests</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">14:27:30 contract_paused qoder-1 H-tests Holder unavailable; running time settl...</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#8b8b8b">14:27:31 claude-1 received a contract for H-tests</tspan></text>
+<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">14:27:31 contract_activated claude-1 H-tests contract 5,</tspan></text>
+<text x="12" y="590" xml:space="preserve"><tspan fill="#75beff">14:27:31 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="12" y="607" xml:space="preserve"><tspan fill="#cccccc">14:27:31 claude-1 started H-tests</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">02:23:27 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#8b8b8b">02:23:28 opencode-1 is merging H-docs</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#73c991">02:23:29 opencode-1 merged H-docs: 752b4af68a H-docs: Document health() for</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#73c991">         operators</tspan></text>
-<text x="672" y="233" xml:space="preserve"><tspan fill="#75beff">02:23:30 qoder-1 claimed H-tests</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="672" y="318" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">14:27:28 contract_activated qoder-1 H-tests contract 4,</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#75beff">14:27:28 qoder-1 claimed H-tests</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#cccccc">14:27:28 allocation_started qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#cccccc">14:27:29 allocation_quiescent qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b:</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">         exit 0</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 started H-tests</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">14:27:30 contract_paused qoder-1 H-tests Holder unavailable; running time settled,</tspan></text>
+<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">         work and elapsed limits retained</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#8b8b8b">14:27:31 claude-1 received a contract for H-tests</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:27:31 contract_activated claude-1 H-tests contract 5,</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#75beff">14:27:31 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="672" y="318" xml:space="preserve"><tspan fill="#cccccc">14:27:31 claude-1 started H-tests</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
 <text x="672" y="398" xml:space="preserve"><tspan fill="#cccccc">  1. claude   2. opencode   3. qodercli   4. codex   5. gemini</tspan></text>
@@ -282,7 +287,7 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:37</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:27:35</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 2 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#cccccc">  claude-1     busy     H-tests           now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#73c991">  opencode-1   ready    -                 now  opencode / deepseek-chat</tspan></text>
@@ -290,46 +295,46 @@
 <text x="12" y="148" xml:space="preserve"><tspan fill="#f48771">  H-tests          gates_failed     claude-1     step 2/2</tspan></text>
 <text x="12" y="165" xml:space="preserve"><tspan fill="#cccccc">goal health [active] 3/4: Operators can check the service is healthy and which ...</tspan></text>
 <text x="12" y="182" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">02:23:20 qoder-1 finished step 2/2 of H-changelog</tspan></text>
-<text x="12" y="216" xml:space="preserve"><tspan fill="#e2c08d">02:23:20 qoder-1 finished H-changelog suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="233" xml:space="preserve"><tspan fill="#cccccc">02:23:21 qoder-1 submitted H-changelog: 1 file</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#8b8b8b">02:23:22 qoder-1 is merging H-changelog</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#73c991">02:23:23 qoder-1 merged H-changelog: 37a1085977 H-changelog: Announce health() ...</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#cccccc">02:23:27 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#8b8b8b">02:23:28 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#73c991">02:23:29 opencode-1 merged H-docs: 752b4af68a H-docs: Document health() for ope...</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#75beff">02:23:30 qoder-1 claimed H-tests</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="12" y="488" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="12" y="505" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
-<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">02:23:34 claude-1 finished step 1/2 of H-tests</tspan></text>
-<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">02:23:35 claude-1 finished step 2/2 of H-tests</tspan></text>
-<text x="12" y="556" xml:space="preserve"><tspan fill="#e2c08d">02:23:35 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">02:23:36 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="12" y="590" xml:space="preserve"><tspan fill="#8b8b8b">02:23:36 claude-1 is merging H-tests</tspan></text>
-<text x="12" y="607" xml:space="preserve"><tspan fill="#f48771">02:23:37 H-tests: the gate failed for claude-1: python -m unittest discover -s ...</tspan></text>
+<text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">14:27:23 usage_reserved opencode-1 H-docs 3acd2d6760754ef1b4c66d4fbade9a2e</tspan></text>
+<text x="12" y="216" xml:space="preserve"><tspan fill="#cccccc">14:27:24 tool_observed opencode-1 H-docs 3acd2d6760754ef1b4c66d4fbade9a2e</tspan></text>
+<text x="12" y="233" xml:space="preserve"><tspan fill="#73c991">14:27:25 opencode-1 merged H-docs: a28fda54b7 H-docs: Document health() for ope...</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#8b8b8b">14:27:28 qoder-1 received a contract for H-tests</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:28 contract_activated qoder-1 H-tests contract 4,</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#75beff">14:27:28 qoder-1 claimed H-tests</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:28 allocation_started qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#cccccc">14:27:29 allocation_quiescent qoder-1 H-tests 3dc6f4cfc4c9442e9807c57fc7855d4b:...</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">14:27:29 qoder-1 started H-tests</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">14:27:30 contract_paused qoder-1 H-tests Holder unavailable; running time settl...</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#8b8b8b">14:27:31 claude-1 received a contract for H-tests</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#cccccc">14:27:31 contract_activated claude-1 H-tests contract 5,</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#75beff">14:27:31 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">14:27:31 claude-1 started H-tests</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 1/2 of H-tests</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 2/2 of H-tests</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#e2c08d">14:27:32 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">14:27:34 claude-1 submitted H-tests: 1 file</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#8b8b8b">14:27:34 claude-1 is merging H-tests</tspan></text>
+<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">14:27:34 usage_reserved claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="12" y="590" xml:space="preserve"><tspan fill="#cccccc">14:27:35 tool_observed claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="12" y="607" xml:space="preserve"><tspan fill="#f48771">14:27:35 H-tests: the gate failed for claude-1: python -m unittest discover -s ...</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#73c991">02:23:29 opencode-1 merged H-docs: 752b4af68a H-docs: Document health() for</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#73c991">         operators</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#75beff">02:23:30 qoder-1 claimed H-tests</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">02:23:34 claude-1 finished step 1/2 of H-tests</tspan></text>
-<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">02:23:35 claude-1 finished step 2/2 of H-tests</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#e2c08d">02:23:35 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">02:23:36 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#8b8b8b">02:23:36 claude-1 is merging H-tests</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#f48771">02:23:37 H-tests: the gate failed for claude-1: python -m unittest discover -s</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">         work and elapsed limits retained</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#8b8b8b">14:27:31 claude-1 received a contract for H-tests</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#cccccc">14:27:31 contract_activated claude-1 H-tests contract 5,</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#75beff">14:27:31 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">14:27:31 claude-1 started H-tests</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 1/2 of H-tests</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 2/2 of H-tests</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#e2c08d">14:27:32 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">14:27:34 claude-1 submitted H-tests: 1 file</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#8b8b8b">14:27:34 claude-1 is merging H-tests</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:34 usage_reserved claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:27:35 tool_observed claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#f48771">14:27:35 H-tests: the gate failed for claude-1: python -m unittest discover -s</tspan></text>
 <text x="672" y="318" xml:space="preserve"><tspan fill="#f48771">         tests -q exited 1</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
@@ -352,55 +357,55 @@
 <line x1="660" y1="339" x2="1320" y2="339" stroke="#3c3c3c" stroke-width="2"/>
 <rect x="661" y="340" width="658" height="299"
       fill="none" stroke="#0078d4" stroke-width="2"/>
-<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  02:23:42</tspan></text>
+<text x="12" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM BOARD  shop  14:27:59</tspan></text>
 <text x="12" y="80" xml:space="preserve"><tspan fill="#cccccc">agents 2 of 5   coordinator claude-1</tspan></text>
 <text x="12" y="97" xml:space="preserve"><tspan fill="#73c991">  claude-1     ready    -                 now  claude / sonnet</tspan></text>
 <text x="12" y="114" xml:space="preserve"><tspan fill="#73c991">  opencode-1   ready    -                 now  opencode / deepseek-chat</tspan></text>
 <text x="12" y="131" xml:space="preserve"><tspan fill="#cccccc">tasks  0 in flight   0 open now   0 waiting   4 done</tspan></text>
 <text x="12" y="148" xml:space="preserve"><tspan fill="#8b8b8b">recent</tspan></text>
-<text x="12" y="165" xml:space="preserve"><tspan fill="#cccccc">02:23:21 qoder-1 submitted H-changelog: 1 file</tspan></text>
-<text x="12" y="182" xml:space="preserve"><tspan fill="#8b8b8b">02:23:22 qoder-1 is merging H-changelog</tspan></text>
-<text x="12" y="199" xml:space="preserve"><tspan fill="#73c991">02:23:23 qoder-1 merged H-changelog: 37a1085977 H-changelog: Announce health() ...</tspan></text>
-<text x="12" y="216" xml:space="preserve"><tspan fill="#cccccc">02:23:24 opencode-1 finished step 2/2 of H-docs</tspan></text>
-<text x="12" y="233" xml:space="preserve"><tspan fill="#e2c08d">02:23:24 opencode-1 finished H-docs suspiciously fast (2 steps in 0.2 min)</tspan></text>
-<text x="12" y="250" xml:space="preserve"><tspan fill="#cccccc">02:23:25 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="267" xml:space="preserve"><tspan fill="#8b8b8b">02:23:26 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="284" xml:space="preserve"><tspan fill="#e2c08d">02:23:26 H-docs conflicts with the target in README.md; opencode-1 must rebase</tspan></text>
-<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">02:23:27 opencode-1 submitted H-docs: 2 files</tspan></text>
-<text x="12" y="318" xml:space="preserve"><tspan fill="#8b8b8b">02:23:28 opencode-1 is merging H-docs</tspan></text>
-<text x="12" y="335" xml:space="preserve"><tspan fill="#73c991">02:23:29 opencode-1 merged H-docs: 752b4af68a H-docs: Document health() for ope...</tspan></text>
-<text x="12" y="352" xml:space="preserve"><tspan fill="#75beff">02:23:30 qoder-1 claimed H-tests</tspan></text>
-<text x="12" y="369" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 planned H-tests: revision 1, 2 steps, 0 open questions</tspan></text>
-<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="12" y="403" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="12" y="420" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="12" y="437" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
-<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">02:23:34 claude-1 finished step 1/2 of H-tests</tspan></text>
-<text x="12" y="471" xml:space="preserve"><tspan fill="#cccccc">02:23:35 claude-1 finished step 2/2 of H-tests</tspan></text>
-<text x="12" y="488" xml:space="preserve"><tspan fill="#e2c08d">02:23:35 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">02:23:36 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="12" y="522" xml:space="preserve"><tspan fill="#8b8b8b">02:23:36 claude-1 is merging H-tests</tspan></text>
-<text x="12" y="539" xml:space="preserve"><tspan fill="#f48771">02:23:37 H-tests: the gate failed for claude-1: python -m unittest discover -s ...</tspan></text>
-<text x="12" y="556" xml:space="preserve"><tspan fill="#cccccc">02:23:38 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="12" y="573" xml:space="preserve"><tspan fill="#8b8b8b">02:23:39 claude-1 is merging H-tests</tspan></text>
-<text x="12" y="590" xml:space="preserve"><tspan fill="#73c991">02:23:40 claude-1 merged H-tests: b150898ffc H-tests: Test health() in the gate</tspan></text>
-<text x="12" y="607" xml:space="preserve"><tspan fill="#73c991">02:23:42 goal health closed by claude-1</tspan></text>
+<text x="12" y="165" xml:space="preserve"><tspan fill="#e2c08d">14:27:30 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
+<text x="12" y="182" xml:space="preserve"><tspan fill="#8b8b8b">14:27:31 claude-1 received a contract for H-tests</tspan></text>
+<text x="12" y="199" xml:space="preserve"><tspan fill="#cccccc">14:27:31 contract_activated claude-1 H-tests contract 5,</tspan></text>
+<text x="12" y="216" xml:space="preserve"><tspan fill="#75beff">14:27:31 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
+<text x="12" y="233" xml:space="preserve"><tspan fill="#cccccc">14:27:31 claude-1 started H-tests</tspan></text>
+<text x="12" y="250" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 1/2 of H-tests</tspan></text>
+<text x="12" y="267" xml:space="preserve"><tspan fill="#cccccc">14:27:32 claude-1 finished step 2/2 of H-tests</tspan></text>
+<text x="12" y="284" xml:space="preserve"><tspan fill="#e2c08d">14:27:32 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
+<text x="12" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:34 claude-1 submitted H-tests: 1 file</tspan></text>
+<text x="12" y="318" xml:space="preserve"><tspan fill="#8b8b8b">14:27:34 claude-1 is merging H-tests</tspan></text>
+<text x="12" y="335" xml:space="preserve"><tspan fill="#cccccc">14:27:34 usage_reserved claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="12" y="352" xml:space="preserve"><tspan fill="#cccccc">14:27:35 tool_observed claude-1 H-tests 070520e73b7b4610a0f47790a69abc26</tspan></text>
+<text x="12" y="369" xml:space="preserve"><tspan fill="#f48771">14:27:35 H-tests: the gate failed for claude-1: python -m unittest discover -s ...</tspan></text>
+<text x="12" y="386" xml:space="preserve"><tspan fill="#cccccc">14:27:36 claude-1 submitted H-tests: 1 file</tspan></text>
+<text x="12" y="403" xml:space="preserve"><tspan fill="#cccccc">14:27:38 incident_dispatched opencode-1 H-tests I1 revision 1, snapshot 0743554...</tspan></text>
+<text x="12" y="420" xml:space="preserve"><tspan fill="#cccccc">14:27:38 incident_opened human H-tests I1: The corrected health fixture may sti...</tspan></text>
+<text x="12" y="437" xml:space="preserve"><tspan fill="#cccccc">14:27:38 incident_reviewed opencode-1 H-tests I1 revision 1: not_confirmed</tspan></text>
+<text x="12" y="454" xml:space="preserve"><tspan fill="#cccccc">14:27:39 incident_resolved human H-tests I1: cleared; The independently cited f...</tspan></text>
+<text x="12" y="471" xml:space="preserve"><tspan fill="#8b8b8b">14:27:39 claude-1 is merging H-tests</tspan></text>
+<text x="12" y="488" xml:space="preserve"><tspan fill="#cccccc">14:27:40 usage_reserved claude-1 H-tests 4112d09a50ad45569fcf7c622ba3c8e5</tspan></text>
+<text x="12" y="505" xml:space="preserve"><tspan fill="#cccccc">14:27:40 tool_observed claude-1 H-tests 4112d09a50ad45569fcf7c622ba3c8e5</tspan></text>
+<text x="12" y="522" xml:space="preserve"><tspan fill="#cccccc">14:27:41 usage_reserved claude-1 H-tests a7ebda1354714e6a80afc48f14f52e30</tspan></text>
+<text x="12" y="539" xml:space="preserve"><tspan fill="#cccccc">14:27:41 tool_observed claude-1 H-tests a7ebda1354714e6a80afc48f14f52e30</tspan></text>
+<text x="12" y="556" xml:space="preserve"><tspan fill="#73c991">14:27:42 claude-1 merged H-tests: 4934bd42ff H-tests: Test health() in the gate</tspan></text>
+<text x="12" y="573" xml:space="preserve"><tspan fill="#cccccc">14:27:50 verification_started claude-1 - e3e9ce1eb368472292a41b56bc39071a</tspan></text>
+<text x="12" y="590" xml:space="preserve"><tspan fill="#cccccc">14:27:58 verification_passed claude-1 - e3e9ce1eb368472292a41b56bc39071a</tspan></text>
+<text x="12" y="607" xml:space="preserve"><tspan fill="#73c991">14:27:59 goal health closed by claude-1</tspan></text>
 <text x="672" y="63" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">SWARM MONITOR</tspan><tspan fill="#8b8b8b">  events as they happen, local time</tspan></text>
-<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">02:23:31 qoder-1 started H-tests</tspan></text>
-<text x="672" y="97" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 qoder-1 went offline: no heartbeat for 20 min</tspan></text>
-<text x="672" y="114" xml:space="preserve"><tspan fill="#e2c08d">02:23:32 H-tests is orphaned: holder offline; branch and worktree kept</tspan></text>
-<text x="672" y="131" xml:space="preserve"><tspan fill="#75beff">02:23:33 claude-1 claimed H-tests (took over from qoder-1)</tspan></text>
-<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">02:23:34 claude-1 finished step 1/2 of H-tests</tspan></text>
-<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">02:23:35 claude-1 finished step 2/2 of H-tests</tspan></text>
-<text x="672" y="182" xml:space="preserve"><tspan fill="#e2c08d">02:23:35 claude-1 finished H-tests suspiciously fast (2 steps in 0.1 min)</tspan></text>
-<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">02:23:36 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="672" y="216" xml:space="preserve"><tspan fill="#8b8b8b">02:23:36 claude-1 is merging H-tests</tspan></text>
-<text x="672" y="233" xml:space="preserve"><tspan fill="#f48771">02:23:37 H-tests: the gate failed for claude-1: python -m unittest discover -s</tspan></text>
-<text x="672" y="250" xml:space="preserve"><tspan fill="#f48771">         tests -q exited 1</tspan></text>
-<text x="672" y="267" xml:space="preserve"><tspan fill="#cccccc">02:23:38 claude-1 submitted H-tests: 1 file</tspan></text>
-<text x="672" y="284" xml:space="preserve"><tspan fill="#8b8b8b">02:23:39 claude-1 is merging H-tests</tspan></text>
-<text x="672" y="301" xml:space="preserve"><tspan fill="#73c991">02:23:40 claude-1 merged H-tests: b150898ffc H-tests: Test health() in the gate</tspan></text>
-<text x="672" y="318" xml:space="preserve"><tspan fill="#73c991">02:23:42 goal health closed by claude-1</tspan></text>
+<text x="672" y="80" xml:space="preserve"><tspan fill="#cccccc">         0743554ab631a63eebee3afbbaf8d4ac6d1f7f586a9c86511acf4844c88853ad</tspan></text>
+<text x="672" y="97" xml:space="preserve"><tspan fill="#cccccc">14:27:38 incident_opened human H-tests I1: The corrected health fixture may still</tspan></text>
+<text x="672" y="114" xml:space="preserve"><tspan fill="#cccccc">         assert the wrong status; subject claude-1; allegation, not proof</tspan></text>
+<text x="672" y="131" xml:space="preserve"><tspan fill="#cccccc">14:27:38 incident_reviewed opencode-1 H-tests I1 revision 1: not_confirmed</tspan></text>
+<text x="672" y="148" xml:space="preserve"><tspan fill="#cccccc">14:27:39 incident_resolved human H-tests I1: cleared; The independently cited</tspan></text>
+<text x="672" y="165" xml:space="preserve"><tspan fill="#cccccc">         fixture now checks status ok and the running version</tspan></text>
+<text x="672" y="182" xml:space="preserve"><tspan fill="#8b8b8b">14:27:39 claude-1 is merging H-tests</tspan></text>
+<text x="672" y="199" xml:space="preserve"><tspan fill="#cccccc">14:27:40 usage_reserved claude-1 H-tests 4112d09a50ad45569fcf7c622ba3c8e5</tspan></text>
+<text x="672" y="216" xml:space="preserve"><tspan fill="#cccccc">14:27:40 tool_observed claude-1 H-tests 4112d09a50ad45569fcf7c622ba3c8e5</tspan></text>
+<text x="672" y="233" xml:space="preserve"><tspan fill="#cccccc">14:27:41 usage_reserved claude-1 H-tests a7ebda1354714e6a80afc48f14f52e30</tspan></text>
+<text x="672" y="250" xml:space="preserve"><tspan fill="#cccccc">14:27:41 tool_observed claude-1 H-tests a7ebda1354714e6a80afc48f14f52e30</tspan></text>
+<text x="672" y="267" xml:space="preserve"><tspan fill="#73c991">14:27:42 claude-1 merged H-tests: 4934bd42ff H-tests: Test health() in the gate</tspan></text>
+<text x="672" y="284" xml:space="preserve"><tspan fill="#cccccc">14:27:50 verification_started claude-1 - e3e9ce1eb368472292a41b56bc39071a</tspan></text>
+<text x="672" y="301" xml:space="preserve"><tspan fill="#cccccc">14:27:58 verification_passed claude-1 - e3e9ce1eb368472292a41b56bc39071a</tspan></text>
+<text x="672" y="318" xml:space="preserve"><tspan fill="#73c991">14:27:59 goal health closed by claude-1</tspan></text>
 <text x="672" y="364" xml:space="preserve"><tspan fill="#ffffff" font-weight="bold">START AGENTS</tspan><tspan fill="#cccccc">  in shop</tspan></text>
 <text x="672" y="381" xml:space="preserve"><tspan fill="#8b8b8b">Each agent joins the swarm with a brief, in its own tab.</tspan></text>
 <text x="672" y="398" xml:space="preserve"><tspan fill="#cccccc">  1. claude   2. opencode   3. qodercli   4. codex   5. gemini</tspan></text>
@@ -412,7 +417,7 @@
 <text x="672" y="500" xml:space="preserve"><tspan fill="#73c991">opened qoder-1 (qodercli) in a new tab, joined and waiting for work</tspan></text>
 <text x="672" y="517" xml:space="preserve"><tspan fill="#cccccc">agent (number or name, q to close): </tspan></text>
 <rect x="0" y="640" width="1320" height="46" fill="#1f1f1f"/>
-<text x="16" y="669" fill="#ffffff" font-size="15" font-weight="bold">Goal closed on evidence for every outcome; every worktree merged and removed</text>
+<text x="16" y="669" fill="#ffffff" font-size="15" font-weight="bold">Goal closed on executable outcome checks; task worktrees removed, verification checkout retained</text>
 <text x="1304" y="669" fill="#8b8b8b" font-size="12" text-anchor="end">simulated session: real board and events from examples/simulate.py</text>
 </g>
 </svg>

@@ -1,0 +1,11 @@
+test_ec329_architecture_approval_and_goal_assignment_commit_kills_preserve_authority (test_final_transitions.FinalTransitions.test_ec329_architecture_approval_and_goal_assignment_commit_kills_preserve_authority) ... ok
+test_ec329_assignment_manual_locks_and_leave_release_commit_kills_keep_single_owner (test_final_transitions.FinalTransitions.test_ec329_assignment_manual_locks_and_leave_release_commit_kills_keep_single_owner) ... ok
+test_ec329_counter_decision_and_acceptance_commit_kills_keep_one_bounded_offer (test_final_transitions.FinalTransitions.test_ec329_counter_decision_and_acceptance_commit_kills_keep_one_bounded_offer) ... ok
+test_ec329_message_and_interrupt_ack_complete_resume_commit_kills_keep_control (test_final_transitions.FinalTransitions.test_ec329_message_and_interrupt_ack_complete_resume_commit_kills_keep_control) ... ok
+test_ec219_cancel_needs_human_policy_and_never_marks_work_verified (test_communication.Interrupts.test_ec219_cancel_needs_human_policy_and_never_marks_work_verified) ... ok
+test_ec328_posix_terminal_drains_the_final_output_after_the_worker_exits (test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_drains_the_final_output_after_the_worker_exits) ... ok
+
+----------------------------------------------------------------------
+Ran 6 tests in 96.603s
+
+OK

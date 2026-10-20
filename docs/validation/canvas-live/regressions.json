@@ -1,0 +1,347 @@
+{
+  "ok": true,
+  "cases": [
+    {
+      "id": "test_web_dashboard.Command.test_bad_arguments_are_refused_before_a_server_starts",
+      "seconds": 1.297,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Command.test_the_command_prints_a_working_link_and_a_second_run_joins_it",
+      "seconds": 2.281,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Guards.test_a_request_without_the_token_or_with_a_foreign_host_is_refused",
+      "seconds": 2.109,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Guards.test_only_get_is_served_and_unknown_paths_are_not_found",
+      "seconds": 2.078,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Guards.test_the_page_is_locked_down_and_never_builds_markup_from_data",
+      "seconds": 1.922,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Guards.test_the_server_listens_on_loopback_only",
+      "seconds": 1.985,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Payloads.test_decisions_show_open_and_settled_questions",
+      "seconds": 6.531,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Payloads.test_inbox_lists_messages_with_filters_and_a_message_shows_its_delivery",
+      "seconds": 3.765,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Payloads.test_overview_reports_agents_tasks_questions_and_events",
+      "seconds": 6.313,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Payloads.test_task_detail_and_a_goal_with_an_unapproved_brief",
+      "seconds": 3.641,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.ReadOnly.test_requests_never_write_to_the_board",
+      "seconds": 3.281,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.ReadOnly.test_the_dashboards_connection_cannot_write",
+      "seconds": 3.547,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Responsive.test_tables_stack_with_labels_and_the_team_is_one_canvas_everywhere",
+      "seconds": 0.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Responsive.test_the_page_declares_a_viewport_and_breakpoints_for_phone_and_tablet",
+      "seconds": 0.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.SessionPayloads.test_ec346_foreground_sessions_never_invent_a_retained_transcript",
+      "seconds": 1.984,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.SessionPayloads.test_ec346_session_tabs_retain_failures_logs_and_are_isolated_by_board",
+      "seconds": 2.656,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_a_board_whose_database_is_gone_is_reported_not_crashed_on",
+      "seconds": 2.375,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_every_registered_board_is_listed_and_selected_with_b",
+      "seconds": 2.219,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_running_finds_the_live_dashboard_and_nothing_else",
+      "seconds": 5.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_the_link_stays_the_same_across_restarts_and_is_new_only_on_request",
+      "seconds": 3.047,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_the_registry_never_names_a_file_that_is_not_a_swarm_board",
+      "seconds": 1.891,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Team.test_events_read_as_sentences_with_display_names",
+      "seconds": 1.937,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Team.test_roles_are_derived_from_what_the_board_says_each_agent_is_doing",
+      "seconds": 2.766,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Team.test_team_graph_has_lanes_and_only_lines_the_board_supports",
+      "seconds": 3.89,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_a_message_to_someone_else_cannot_be_acknowledged_by_you",
+      "seconds": 3.235,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_answer_a_question_and_text_that_looks_like_an_option_stays_text",
+      "seconds": 3.125,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_approve_an_architecture_brief",
+      "seconds": 4.218,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_reply_to_a_message_and_acknowledge_it",
+      "seconds": 4.469,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_the_next_review_task_is_numbered_after_existing_ones",
+      "seconds": 3.063,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_waive_a_question_with_a_reason",
+      "seconds": 4.359,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Guards.test_a_read_only_dashboard_and_an_old_registration_cannot_act",
+      "seconds": 2.656,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Guards.test_an_action_needs_the_pages_origin_the_token_json_and_a_known_action",
+      "seconds": 3.11,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Guards.test_inputs_are_checked_before_any_command_runs",
+      "seconds": 2.859,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_an_offline_recipient_is_escalated_to_the_coordinator",
+      "seconds": 2.922,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_fresh_messages_and_the_humans_own_inbox_are_left_alone",
+      "seconds": 3.672,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_it_reminds_once_and_never_acknowledges_for_anyone",
+      "seconds": 3.156,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_the_steward_command_runs_once_and_reports",
+      "seconds": 4.438,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_the_team_canvas_shows_the_steward_and_who_it_reminded",
+      "seconds": 4.39,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec146_agents_md_keeps_its_line_endings",
+      "seconds": 1.297,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec156_claude_code_pointer",
+      "seconds": 2.078,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec157_user_install_serves_every_repository",
+      "seconds": 2.797,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec168_nothing_about_the_project_is_assumed",
+      "seconds": 1.344,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec171_a_fresh_install_starts_with_an_empty_board",
+      "seconds": 5.172,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec171_the_example_backlog_is_never_work",
+      "seconds": 3.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec186_an_uncommitted_skill_is_named",
+      "seconds": 4.906,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec195_ec196_the_bytecode_is_cached_and_kept_out_of_git_status",
+      "seconds": 2.469,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec197_a_half_updated_install_is_refused",
+      "seconds": 2.312,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_existing_agents_md_is_kept",
+      "seconds": 0.625,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_installed_tool_runs",
+      "seconds": 3.156,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_installs_skill_config_and_agents_pointer",
+      "seconds": 0.594,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_local_edits_are_not_overwritten",
+      "seconds": 2.25,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_rerun_is_idempotent_and_keeps_project_config",
+      "seconds": 1.61,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_the_launcher_stays_tiny_and_matches_the_release",
+      "seconds": 0.14,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Release.test_installer_default_ref_matches_version",
+      "seconds": 0.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Release.test_installer_is_ascii_for_powershell_pipes",
+      "seconds": 0.0,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Release.test_manifest_is_current",
+      "seconds": 0.203,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Release.test_tool_version_matches_release",
+      "seconds": 0.0,
+      "outcome": "passed",
+      "skip_reason": null
+    }
+  ]
+}

@@ -38,7 +38,7 @@ class Installer(unittest.TestCase):
     def test_installs_skill_config_and_agents_pointer(self):
         self.install("--agents-md", "--scaffold")
         skill = self.repo / ".agents" / "skills" / "agents-collaboration"
-        for name in ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md", "INSTALLED.json"):
+        for name in ("SKILL.md", "swarm.py", "swarm_core.py", "EDGE-CASES.md", "BUS.md", "BUS.schema.json", "swarm_web.py", "swarm_sessions.py", "INSTALLED.json"):
             self.assertTrue((skill / name).exists(), name)
         self.assertTrue((self.repo / ".agents" / "swarm" / "config.toml").exists())
         self.assertIn("agents-collaboration:start", (self.repo / "AGENTS.md").read_text(encoding="utf-8"))
@@ -233,7 +233,13 @@ class Installer(unittest.TestCase):
             check=False,
         )
         self.assertEqual(done.returncode, 0, done.stderr)
-        self.assertIn("rules", json.loads(done.stdout))
+        self.assertIn("rules", json.loads(done.stdout)["result"])
+        sessions = subprocess.run(
+            [sys.executable, ".agents/skills/agents-collaboration/swarm.py", "sessions", "--once", "--json"],
+            cwd=self.repo, capture_output=True, text=True, encoding="utf-8", check=False,
+        )
+        self.assertEqual(sessions.returncode, 0, sessions.stdout + sessions.stderr)
+        self.assertEqual(json.loads(sessions.stdout)["result"]["sessions"], [])
 
 
 class Release(unittest.TestCase):

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:agents-collaboration:bus:message:1",
+  "title": "Agents collaboration bus message v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["version", "message_id", "thread_id", "kind", "sender", "recipient", "task_id", "epoch", "priority", "created_at", "expires_at", "reply_to", "correlation_id", "body_ref", "body", "ack_state", "body_pruned_at", "requires_ack"],
+  "properties": {
+    "version": {"const": 1},
+    "message_id": {"type": "integer", "minimum": 1},
+    "thread_id": {"type": "string", "minLength": 1, "maxLength": 200},
+    "kind": {"enum": ["question", "decision", "status", "warning", "experience", "review_request", "review_result", "interrupt", "ack", "handoff"]},
+    "sender": {"type": "string", "minLength": 1},
+    "recipient": {"type": "string", "minLength": 1},
+    "task_id": {"type": ["string", "null"]},
+    "epoch": {"type": ["integer", "null"], "minimum": 0},
+    "priority": {"enum": ["normal", "high", "critical"]},
+    "created_at": {"type": "string", "format": "date-time"},
+    "expires_at": {"type": ["string", "null"], "format": "date-time"},
+    "reply_to": {"type": ["integer", "null"], "minimum": 1},
+    "correlation_id": {"type": ["string", "null"], "minLength": 1, "maxLength": 200},
+    "body_ref": {"type": "string", "minLength": 1},
+    "body": {"type": "string", "description": "Untrusted UTF-8 text. New publications are bounded by messages.max_body_bytes; body_ref is local to this board."},
+    "ack_state": {"enum": ["pending", "acked", "expired", "dead_letter", "resolved"]},
+    "body_pruned_at": {"type": ["string", "null"], "format": "date-time"},
+    "requires_ack": {"type": "boolean"}
+  },
+  "$defs": {
+    "receipt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["message_id", "agent", "consumer", "token", "lease_until", "attempt"],
+      "properties": {
+        "message_id": {"type": "integer", "minimum": 1},
+        "agent": {"type": "string", "minLength": 1},
+        "consumer": {"type": "string", "pattern": "^[A-Za-z0-9][A-Za-z0-9_.:-]{0,127}$"},
+        "token": {"type": "string", "pattern": "^[0-9a-f]{32}$"},
+        "lease_until": {"type": "string", "format": "date-time"},
+        "attempt": {"type": "integer", "minimum": 1}
+      }
+    }
+  }
+}

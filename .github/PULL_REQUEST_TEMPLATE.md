@@ -10,4 +10,6 @@
 - [ ] `python -m unittest discover -s tests -v` passes
 - [ ] `python scripts/make_manifest.py --check` passes (run `python scripts/make_manifest.py` if the skill changed)
 - [ ] New behaviour has a test named after its edge case
-- [ ] Works on Windows as well as Linux and macOS (argument lists, explicit UTF-8)
+- [ ] Actual runtime/source/scope evidence is stated; unexecuted platforms remain owed
+- [ ] Portable command arguments and explicit UTF-8 are preserved
+- [ ] Current docs, historical evidence and breaking migrations are labeled accurately

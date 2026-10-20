@@ -1,0 +1,476 @@
+{
+  "review_date": "2026-10-20",
+  "recorded_at": "2026-10-20T09:59:15.261065+00:00",
+  "original_markdown_files": 41,
+  "reviewed_markdown_files": 44,
+  "scope": "All repository Markdown outside .git, virtual environments, node_modules and bytecode caches; includes the new index, dashboard guide and this audit report.",
+  "local_link_checks": {
+    "checked": 233,
+    "broken": []
+  },
+  "command_syntax_checks": {
+    "checked": 196,
+    "invalid": [],
+    "schematic_examples_skipped": [
+      {
+        "file": "docs/agents.md",
+        "line": 58,
+        "command": "swarm spawn <kind> --name <name> --task <task> [--model <model>] [--unattended] [--dry-run]",
+        "reason": "schematic command"
+      },
+      {
+        "file": "docs/resilient-workforce.md",
+        "line": 87,
+        "command": "swarm goal architecture health --set current_system=\"...\" --set constraints=\"...\" ... --evidence src/app.py",
+        "reason": "schematic command"
+      },
+      {
+        "file": "README.md",
+        "line": 90,
+        "command": "swarm goal answer health --set done_looks_like=\"...\" ...",
+        "reason": "schematic command"
+      },
+      {
+        "file": "skills/agents-collaboration/SKILL.md",
+        "line": 101,
+        "command": "swarm goal answer <id> --set done_looks_like=\"...\" --set who_uses_it=\"...\" ...   # every question, with substance",
+        "reason": "schematic command"
+      },
+      {
+        "file": "skills/agents-collaboration/SKILL.md",
+        "line": 104,
+        "command": "swarm goal task <id> <task-id> \"title\" --serves 1 --done-when \"the check\" [--needs a,b] [--caps x] [--size S|M]",
+        "reason": "schematic command"
+      },
+      {
+        "file": "skills/agents-collaboration/SKILL.md",
+        "line": 281,
+        "command": "swarm plan --as <name> --set outcome=\"...\" --set acceptance=\"...\" --set scope=\"src/x/,docs/y.md\"  --set out_of_scope=\"...\" --set dependencies=\"...\" --set risks=\"...\" --set rollback=\"...\"  --set unknowns=\"none\" --step \"first concrete step\" --step \"second concrete step\"",
+        "reason": "schematic command"
+      },
+      {
+        "file": "skills/agents-collaboration/SKILL.md",
+        "line": 314,
+        "command": "swarm step 2 --as <name> --evidence \"...\"",
+        "reason": "schematic command"
+      }
+    ],
+    "method": "Read-only argparse parsing; normalize global --json like main(); no board operations executed. Historical reports/proposal/changelog, generated transcripts and incomplete outlines excluded."
+  },
+  "routine_checks": [
+    {
+      "command": "python -m ruff check .",
+      "exit_code": 0
+    },
+    {
+      "command": "git diff --check",
+      "exit_code": 0,
+      "note": "Git emitted CRLF normalization notices, with no whitespace errors."
+    },
+    {
+      "command": "python scripts/make_manifest.py --check",
+      "exit_code": 1,
+      "note": "Earlier final check found a concurrent dashboard-module change after focused tests."
+    },
+    {
+      "command": "python scripts/make_manifest.py",
+      "exit_code": 0,
+      "note": "Regenerated manifest for current payload."
+    },
+    {
+      "command": "python scripts/make_manifest.py --check",
+      "exit_code": 0
+    }
+  ],
+  "focused_validation": {
+    "installer": {
+      "record": "installer.json",
+      "log": "installer.txt",
+      "exit_code": 0,
+      "elapsed_seconds": 40.516,
+      "recorded_inputs_unchanged_during_run": true
+    },
+    "simulation": {
+      "record": "simulation.json",
+      "log": "simulation.txt",
+      "exit_code": 0,
+      "elapsed_seconds": 86.657,
+      "recorded_inputs_unchanged_during_run": true
+    }
+  },
+  "historical_report_numeric_tokens_unchanged": {
+    "docs/validation/adapter-dispatch/report.md": true,
+    "docs/validation/candidate-agent-trials/report.md": true,
+    "docs/validation/candidate-matrix/report.md": true,
+    "docs/validation/final-source-timebox/report.md": true,
+    "docs/validation/legacy-cleanup/report.md": true,
+    "docs/validation/live-agent-trials/report.md": true,
+    "docs/validation/standard-bus/report.md": true
+  },
+  "published_changelog_sections_unchanged": true,
+  "core_sha256": "cab0e158873e4fcaae69ba6b6735a0e5d31cca6f248d8be5458214ee0c1d6576",
+  "selected_inputs_changed_after_focused_runs": {
+    "skills/agents-collaboration/swarm_web.py": "4dc0fe243a53b1ce577b5bf0ba358281497b239b688693cd45566f0132b65181",
+    "skills/agents-collaboration/MANIFEST.json": "11029feeb1d905c79cbfade0d78262d6d0f2d8aad2b14f0c2eebde486734bb34"
+  },
+  "limits": [
+    "No full current-source test suite or hosted matrix executed by this review.",
+    "No macOS result established.",
+    "Later concurrent dashboard changes are outside the focused tests.",
+    "Syntax and local-link checks do not prove task-state preconditions or external web-link availability."
+  ],
+  "files": [
+    {
+      "path": ".github/ISSUE_TEMPLATE/bug_report.md",
+      "sha256": "b3a3509297391b3dc97c480a0848ed6c41015af7bb199fe4004280c3d87856ef",
+      "original_sha256": "21c584a36e827626e6569e2fa1d79e0ba116de64aa7a70d23c68b95f0c362b7e",
+      "status": "aligned",
+      "lines": 16,
+      "utf8_valid": true
+    },
+    {
+      "path": ".github/ISSUE_TEMPLATE/edge_case.md",
+      "sha256": "787b97be454da5db6479cc3c1665595edf4abfdca27d24a676fdca1917ef984a",
+      "original_sha256": "787b97be454da5db6479cc3c1665595edf4abfdca27d24a676fdca1917ef984a",
+      "status": "reviewed_unchanged",
+      "lines": 13,
+      "utf8_valid": true
+    },
+    {
+      "path": ".github/PULL_REQUEST_TEMPLATE.md",
+      "sha256": "c2103898ecb554c6f5f29b28e90c39ee64f48b63e68369a5de8ba2fb15027fab",
+      "original_sha256": "e85e870de47a32df99607815e223008e62d0e0141e9e2c693eeb10c73fe475fc",
+      "status": "aligned",
+      "lines": 15,
+      "utf8_valid": true
+    },
+    {
+      "path": "agents-collaboration-resilient-workforce-design.md",
+      "sha256": "f3f73ec10d36dfcc9aa3228589f150f8effde2d66f32b21beb5d886097c76e6a",
+      "original_sha256": "60c3cd2cd896008a22dfaaa1a2a7b4f70be11a8d231ea9ac84d6b59740927259",
+      "status": "aligned",
+      "lines": 135,
+      "utf8_valid": true
+    },
+    {
+      "path": "CHANGELOG.md",
+      "sha256": "d804298e427068ff397371f4c6e6dd60fcac4b8b769cb7827494b061f33095f6",
+      "original_sha256": "b0fbb64716425073090c3e91cb5daf38f3a234f27a289ffa5d221b5446f5ac2d",
+      "status": "aligned",
+      "lines": 498,
+      "utf8_valid": true
+    },
+    {
+      "path": "CODE_OF_CONDUCT.md",
+      "sha256": "5ee504ab1a6e51ef23dcf5c6bb83e8c95fe964f651a75375cd8c1f9f74c77afd",
+      "original_sha256": "5ee504ab1a6e51ef23dcf5c6bb83e8c95fe964f651a75375cd8c1f9f74c77afd",
+      "status": "reviewed_unchanged",
+      "lines": 12,
+      "utf8_valid": true
+    },
+    {
+      "path": "CONTRIBUTING.md",
+      "sha256": "d74d5727f54b655dcf7fbb716bd107515248f0cd4371ed87ab337b9e6aab5a69",
+      "original_sha256": "d510935e8f17b97ae8d9b683a4a3f5cff841e7ee28ee5837d7d204c580627827",
+      "status": "aligned",
+      "lines": 78,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/agents.md",
+      "sha256": "1dfcf97f42a0353b2a9de5a6a8d2fd86cd0c0b314ebf84eb85143cc753298780",
+      "original_sha256": "563a0461d74d0a706e188d0a7015ad68db5c9d5ef8ab45e68e147eec9bde36ce",
+      "status": "aligned",
+      "lines": 139,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/completion-evidence.md",
+      "sha256": "07371542ff19c3f2fa1be6181a1be04c8763d24916cdf991faa0598b73c53963",
+      "original_sha256": "dc0c4d74cff4acab553fdf22fa75f05f3fb83a6f49b849c27307d7f7e8a17059",
+      "status": "aligned",
+      "lines": 107,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/design.md",
+      "sha256": "7a0f880e3de423222efa8371225c65010331fb19936612bfc5ac3acd4490cd56",
+      "original_sha256": "4a2aaff344fb28998c699d3af04108f7c5a708e25789fbd67dea899c203d1db1",
+      "status": "aligned",
+      "lines": 174,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/legacy-migration.md",
+      "sha256": "0721b1de2b5253d46cc10df1427903a6b5306ca8ce33bda5be97850ee5cc602f",
+      "original_sha256": "c458e9ff1694155f789acc8d629bf32b8e555d7dc93ab20af1dcf3e55828e81d",
+      "status": "aligned",
+      "lines": 44,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/platform-validation.md",
+      "sha256": "5c68f277fb581f5db6b1d27c99858a7cbf589564e5bc1f1e58b5005ea6486555",
+      "original_sha256": "cb6573b0e8b6fb5dff90eb50a6eb98497cacfaef13ef3ba82285d074825e84df",
+      "status": "aligned",
+      "lines": 76,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/process-supervision.md",
+      "sha256": "0fbcfe754a7933a3dc51eb3a54bb2b879f22e8728edbf719895cba348627a6f3",
+      "original_sha256": "96a279e125fc08bd6060c85c61733a46d443b047f06b61d597008621c71913a0",
+      "status": "aligned",
+      "lines": 227,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/README.md",
+      "sha256": "52b5cf8998df3cd83398ca3aaeee91a185e1acd839f92da1fd63be71022b09b5",
+      "original_sha256": null,
+      "status": "new_or_discovered_during_review",
+      "lines": 62,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/release-candidate.md",
+      "sha256": "3884125b69f402b4860eb1c4eac11a4a5a70024ac40ce5fc7e00d001f02006fc",
+      "original_sha256": "2d05b95a88f182831e649c732b5d43d8fbc82a6e967db463560548f4957b3585",
+      "status": "aligned",
+      "lines": 66,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/resilient-workforce.md",
+      "sha256": "9a99f40ee3a3b9fdc837faaf8bcb7dd0a7e3cb8682722963d17505daa62a214d",
+      "original_sha256": "204365fcc5eda40d5f3f65179e0b16fd173512dc603ae0e701fdfac3c4fe8230",
+      "status": "aligned",
+      "lines": 849,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/simulation.md",
+      "sha256": "25162b9003d18bb43d2d85bc49c1e15419e67809db4a69a44577e4e56e661764",
+      "original_sha256": "e6725cae176ed088e1a717453dad1e020f64ad0b7e7355230f694507576f458e",
+      "status": "aligned",
+      "lines": 1060,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/transition-crash-audit.md",
+      "sha256": "4ad815d1218696fd01918f7e1f88ab36d9a3e7ab79d0af398eff1cba1ed1cab3",
+      "original_sha256": "47f3c302b6526cb64de4c752b0b4d3e7139a338ca37421c97d33fb6cd774bfab",
+      "status": "aligned",
+      "lines": 188,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/usage-budgets.md",
+      "sha256": "96380f8b0d1488d2e6a07ad919a8cc370ab193b71d3e2fa7325a41d2f05088da",
+      "original_sha256": "faa8e021941e7cdd6c93e4d468f4df70fe71273e9448deed65f26c1cc2a979ad",
+      "status": "aligned",
+      "lines": 117,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/adapter-dispatch/report.md",
+      "sha256": "1e9444f499ad1befeb0dbb948622271ba3b250096363dd005374e1fed2c5c879",
+      "original_sha256": "62c3d96f33977a5b88ffac3694db3889f2c7109956a4dfd0a8111196eb887ed7",
+      "status": "aligned",
+      "lines": 89,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/candidate-agent-trials/report.md",
+      "sha256": "61d82e37e1ac7e9620983b6906f1a015b58d9cc8c9ae95b3bec89dd3af318fbb",
+      "original_sha256": "46f2d8e26c56b87057efd86b46ad0df8d4f01ab4194bf46dd8753df077d5e2e3",
+      "status": "aligned",
+      "lines": 24,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/candidate-matrix/report.md",
+      "sha256": "03a6a8484f1d009a1b93da1f7d2e4e0660c67995b63866f8ae82ceaa82e3195d",
+      "original_sha256": "8269891fde5362ef8bdc14998633d7da8df034618d398c65c5658c8a8193f7e6",
+      "status": "aligned",
+      "lines": 21,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/final-source-timebox/report.md",
+      "sha256": "97cf9db1b7e78a4b0ae5e51e8a232febac1bad83e7d57c12eee9fbf57159e323",
+      "original_sha256": "309023ff1ee31b9d73d42a146189dddbed00015e5ee888051129fd05a592d368",
+      "status": "aligned",
+      "lines": 32,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/legacy-cleanup/report.md",
+      "sha256": "0d5bb7f1fbd3a8dd18c6acb4003a8713b5bf62ce93b0308fb9b3b9bf8b1ed037",
+      "original_sha256": "89d34f6561856a3b257c4eafcb62ebd0530956ba612b1c2f4feb678bba6dd9ea",
+      "status": "aligned",
+      "lines": 54,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/live-agent-trials/report.md",
+      "sha256": "b928fb9436022157d6d98f163a63f3e8d4b0e25c67f0b69851c2df59ec285b24",
+      "original_sha256": "af025ee841c2f3c3f1fcaf02267fc6fac36ce1033f6e0e2df389f131c3929552",
+      "status": "aligned",
+      "lines": 20,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/markdown-alignment/report.md",
+      "sha256": "99bd389f20b5a3c56ae714a68a8a8565f0ec25e461fd5493cb56bf25202eea2d",
+      "original_sha256": null,
+      "status": "new_or_discovered_during_review",
+      "lines": 106,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/validation/standard-bus/report.md",
+      "sha256": "ff54d44695f7cc526b6ee93b40cddef92740ae7abbed7e375f6f6705a2531688",
+      "original_sha256": "09019431edd889f0580e4f0294b3c83c88a334264be0316b7dd6372c14227702",
+      "status": "aligned",
+      "lines": 57,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/web-dashboard.md",
+      "sha256": "1d387bee29a21ccc7a908335e5c1f2767ed51a1510b374cee688aff2cf69147a",
+      "original_sha256": null,
+      "status": "new_or_discovered_during_review",
+      "lines": 58,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/workforce-benchmark.md",
+      "sha256": "a126d3230fe00aee07492a41eac3dd926fcd97d6763ed62acfcde6fd6e79dc01",
+      "original_sha256": "45a3ef68e48f03c57d7b9f933d80f639552c0da32f678b8fe14f2b87d4c1baf5",
+      "status": "aligned",
+      "lines": 113,
+      "utf8_valid": true
+    },
+    {
+      "path": "docs/workforce-conformance.md",
+      "sha256": "d8072bbd3560fbb8e46200092e1455bdebb09f91a84bbc23d283fcef85c86503",
+      "original_sha256": "86b37fde0deacfa974b111be6f125847d08c969575f3c771aa03fd9a9ac4d119",
+      "status": "aligned",
+      "lines": 64,
+      "utf8_valid": true
+    },
+    {
+      "path": "examples/backlog.md",
+      "sha256": "55d9783e192a9f8e2f8664932b822a080208171d6adb1334c2fe3c670ec8b147",
+      "original_sha256": "e6051ab490f35616ba046e5061112c739326f176cef268baad3bbcdc52054dec",
+      "status": "aligned",
+      "lines": 26,
+      "utf8_valid": true
+    },
+    {
+      "path": "INSTALL.md",
+      "sha256": "cc9c5745ab3afde1716a71ab2a15da36e549ef666d97ce7d608ea8b8afcf5852",
+      "original_sha256": "836b86b7b50840f56582c1b902358a76178b40d020ca8cc132fbf7a8e02d2a0f",
+      "status": "aligned",
+      "lines": 97,
+      "utf8_valid": true
+    },
+    {
+      "path": "README.md",
+      "sha256": "c81f64c1094859fcb863045c8e2e7a6f89c048ef9741a8e82629557ce89156ee",
+      "original_sha256": "4d577bd5ea3f662678a5daa4707101a3afd079f331ddd9eb6f00a081955a32e1",
+      "status": "aligned",
+      "lines": 170,
+      "utf8_valid": true
+    },
+    {
+      "path": "SECURITY.md",
+      "sha256": "616db9d16e4a1a9a931c525db1a92f078d152ede155676a8e14de14c30c759cf",
+      "original_sha256": "fda77279ed87a881f34ccf3b2a8db1e599feeb5a926512ba7b41374503e1b8d3",
+      "status": "aligned",
+      "lines": 90,
+      "utf8_valid": true
+    },
+    {
+      "path": "skills/agents-collaboration/BUS.md",
+      "sha256": "42725738fda46b4b0751b7cee156637b59c4c88ca646991eb4cb86c502afef93",
+      "original_sha256": "3cbd5e5a142d5acd827774309751a2d1d5a3ab04578c88e919440e19592a4b9d",
+      "status": "aligned",
+      "lines": 212,
+      "utf8_valid": true
+    },
+    {
+      "path": "skills/agents-collaboration/EDGE-CASES.md",
+      "sha256": "8dd1138f6ca5931d0577b771ad6702a724ad92101aa3692e16f556e952f45192",
+      "original_sha256": "de7e20b160945cb7dbb2c1cdfd0defdda5d466b741b2ee6749ff5cbb0702be9c",
+      "status": "aligned",
+      "lines": 540,
+      "utf8_valid": true
+    },
+    {
+      "path": "skills/agents-collaboration/SKILL.md",
+      "sha256": "c6fe5278708ab3aab1d29d7d1cd6da9ef3c247ab5fd7617a11ea4f8b7f934ea8",
+      "original_sha256": "678ffaf3b94987e532d045c0e2d0e8f0cd22924c4c37582cd5b6f71c557132ba",
+      "status": "aligned",
+      "lines": 744,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/01-parallel-feature-delivery.md",
+      "sha256": "c4ed16ba76e93650d80e0ae44a8c86520a6a82c152be2d8bfe0425e0e0704d60",
+      "original_sha256": "1d24d8cffb2b2febc05fcd5b87cf8ab30a08e570288baefad168b37fdeb4e38d",
+      "status": "aligned",
+      "lines": 76,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/02-crash-recovery-takeover.md",
+      "sha256": "3f1de7b9e59cd315da4cdad69b36e38302dd2f965ab38eb9da900e94284c3814",
+      "original_sha256": "68733e5aae42e43b21a02884747328f33cdde8e591a4dc37cf03505c350ef519",
+      "status": "aligned",
+      "lines": 55,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/03-mixed-agent-team.md",
+      "sha256": "84d90bf70cc25d850902f2d24eec99f44aba541fd2eea6f63b9c65a6f390e84b",
+      "original_sha256": "efa07eb6f0e09ed66a491174d80159dd46c18e99b38a30ad8bea5f428c2d4bb2",
+      "status": "aligned",
+      "lines": 55,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/04-solo-agent-safety-net.md",
+      "sha256": "7517e72b6ea5faaa374a4d67d76b06344f05e2a479ecc46a42b1584031f814b2",
+      "original_sha256": "1c7528a5b232a12596d484c2450a356e2ff1f9bf33159fcc16584939396fbba8",
+      "status": "aligned",
+      "lines": 54,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/05-interrupt-and-handoff.md",
+      "sha256": "0197992c9eea362a27521322a4e0e64dd2002d2a0bf5ba247f1d881733a2f514",
+      "original_sha256": "66754f8ce515f7580bcf1d26c082d46cba7235175799c24f37ed702a37783c0d",
+      "status": "aligned",
+      "lines": 68,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/06-incident-review-and-lessons.md",
+      "sha256": "8f25164e297d99719c55399c4646be671be02876e766f53cfcb3f51128b53c05",
+      "original_sha256": "c99a97ea9c081c4e03aac425c2d8874b8d6160f753246f90dfc6e66a96403d41",
+      "status": "aligned",
+      "lines": 60,
+      "utf8_valid": true
+    },
+    {
+      "path": "usecases/README.md",
+      "sha256": "458fe1b6a11876c26a6bd74d9146b9a1d151da9832b8236efe49c39d1e92be28",
+      "original_sha256": "c21808cff7e5515fae4ed47b444a8dbfc866c0fc05f1524191d9c02b82824e60",
+      "status": "aligned",
+      "lines": 29,
+      "utf8_valid": true
+    }
+  ]
+}

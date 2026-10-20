@@ -1,0 +1,138 @@
+test_ec266_numeric_reports_are_hashed_minimized_and_missing_cost_is_unknown (test_budget.Budgets.test_ec266_numeric_reports_are_hashed_minimized_and_missing_cost_is_unknown) ... ok
+test_ec272_pending_usage_blocks_submission_until_report_then_gates_are_metered (test_budget.Budgets.test_ec272_pending_usage_blocks_submission_until_report_then_gates_are_metered) ... ok
+test_ec276_late_usage_facts_invalidate_an_earlier_goal_receipt (test_budget.GoalBudgetEvidence.test_ec276_late_usage_facts_invalidate_an_earlier_goal_receipt) ... ok
+test_ec335_schema10_migration_keeps_existing_mailbox_and_receipts (test_bus.Bus.test_ec335_schema10_migration_keeps_existing_mailbox_and_receipts) ... ok
+test_ec339_hook_timeout_and_fallback_preserve_pending_work (test_bus_dispatch.Wakeups.test_ec339_hook_timeout_and_fallback_preserve_pending_work) ... ok
+test_ec286_stale_allocation_failure_cannot_release_new_owner_or_new_epoch (test_claim_allocation.ClaimAllocation.test_ec286_stale_allocation_failure_cannot_release_new_owner_or_new_epoch) ... ok
+test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event (test_claim_crashes.ClaimCrashes.test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event) ... ok
+test_ec313_takeover_kill_after_setup_commit_retains_the_published_transfer (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_after_setup_commit_retains_the_published_transfer) ... ok
+test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting (test_claim_crashes.ClaimCrashes.test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting) ... ok
+test_ec213_conflicting_keys_replies_cursors_and_per_recipient_broadcast_ack (test_communication.Envelopes.test_ec213_conflicting_keys_replies_cursors_and_per_recipient_broadcast_ack) ... ok
+test_ec218_timeout_escalates_once_and_operator_recovers_without_owner_ack (test_communication.Interrupts.test_ec218_timeout_escalates_once_and_operator_recovers_without_owner_ack) ... ok
+test_ec220_pause_during_rebase_prevents_integration (test_communication.Interrupts.test_ec220_pause_during_rebase_prevents_integration) ... ok
+test_ec203_high_risk_needs_human_and_source_evidence_must_match (test_contracts.Architecture.test_ec203_high_risk_needs_human_and_source_evidence_must_match) ... ok
+test_ec204_offer_accept_and_one_counter_keep_the_original_decision_deadline (test_contracts.Contracts.test_ec204_offer_accept_and_one_counter_keep_the_original_decision_deadline) ... ok
+test_ec207_checkpoint_due_and_grace_escalation_are_idempotent (test_contracts.Contracts.test_ec207_checkpoint_due_and_grace_escalation_are_idempotent) ... ok
+test_ec278_output_limit_rejects_quoted_booleans_and_unbounded_values (test_execution_output.ExecutionOutput.test_ec278_output_limit_rejects_quoted_booleans_and_unbounded_values) ... ok
+test_ec284_capture_write_failure_is_evidence_failure_and_memory_stays_bounded (test_execution_output.ExecutionOutput.test_ec284_capture_write_failure_is_evidence_failure_and_memory_stays_bounded) ... ok
+test_ec319_caller_os_kill_contains_git_and_retains_uncertainty_until_human_attestation (test_git_allocation.GitAllocation.test_ec319_caller_os_kill_contains_git_and_retains_uncertainty_until_human_attestation) ... ok
+test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event (test_hardening.DoctorAndStorage.test_ec241_busy_writer_waits_for_atomic_commit_and_rollback_drops_partial_event) ... ok
+test_ec236_event_replay_is_versioned_ordered_bounded_and_rejects_future_events (test_hardening.JsonProtocol.test_ec236_event_replay_is_versioned_ordered_bounded_and_rejects_future_events) ... ok
+test_ec239_cleanup_preserves_a_clean_branch_with_new_unmerged_commits (test_hardening.VerifiedIntegration.test_ec239_cleanup_preserves_a_clean_branch_with_new_unmerged_commits) ... ok
+test_ec325_lifecycle_payloads_expose_questions_and_the_released_subject (test_input_payloads.InputAndPayloads.test_ec325_lifecycle_payloads_expose_questions_and_the_released_subject) ... ok
+test_ec171_a_fresh_install_starts_with_an_empty_board (test_installer.Installer.test_ec171_a_fresh_install_starts_with_an_empty_board) ... ok
+test_installed_tool_runs (test_installer.Installer.test_installed_tool_runs) ... ok
+test_installer_is_ascii_for_powershell_pipes (test_installer.Release.test_installer_is_ascii_for_powershell_pipes) ... ok
+test_ec301_stale_explicit_interactive_preparation_is_refused (test_interactive_launch.InteractiveLaunch.test_ec301_stale_explicit_interactive_preparation_is_refused) ... ok
+test_ec305_stopped_coordinator_cannot_finish_interactive_startup (test_interactive_launch.InteractiveLaunch.test_ec305_stopped_coordinator_cannot_finish_interactive_startup) ... ok
+test_ec344_integration_without_executable_gates_preserves_work (test_legacy_cleanup.LegacyCleanup.test_ec344_integration_without_executable_gates_preserves_work) ... ok
+test_ec224_frozen_review_is_independent_and_reserves_read_only_reviewer (test_oversight.Incidents.test_ec224_frozen_review_is_independent_and_reserves_read_only_reviewer) ... ok
+test_ec229_promotion_requires_independent_verifier_real_provenance_and_revision (test_oversight.Memories.test_ec229_promotion_requires_independent_verifier_real_provenance_and_revision) ... ok
+test_ec231_frozen_policy_arguments_and_diff_redact_common_credentials (test_oversight.MemoryLearning.test_ec231_frozen_policy_arguments_and_diff_redact_common_credentials) ... ok
+test_ec225_rebase_onto_changed_target_needs_current_head_review (test_oversight.ReviewRecovery.test_ec225_rebase_onto_changed_target_needs_current_head_review) ... ok
+test_ec228_post_gate_hook_changes_are_not_covered_by_an_old_review (test_oversight.ReviewRecovery.test_ec228_post_gate_hook_changes_are_not_covered_by_an_old_review) ... ok
+test_ec251_failed_worktree_removal_keeps_ownership_and_branch_references (test_preservation.IgnoredWork.test_ec251_failed_worktree_removal_keeps_ownership_and_branch_references) ... ok
+test_ec245_gate_timeout_terminates_its_owned_group_and_bounds_output_in_memory (test_processes.OwnedGroups.test_ec245_gate_timeout_terminates_its_owned_group_and_bounds_output_in_memory) ... ok
+test_ec248_registry_pids_never_grant_authority_to_signal_unrelated_processes (test_processes.Supervision.test_ec248_registry_pids_never_grant_authority_to_signal_unrelated_processes) ... ok
+test_ec250_same_size_and_mtime_policy_changes_do_not_reuse_stale_parsed_config (test_processes.Supervision.test_ec250_same_size_and_mtime_policy_changes_do_not_reuse_stale_parsed_config) ... ok
+test_ec346_forged_paths_and_terminal_escape_sequences_do_not_escape_the_view (test_sessions.SessionViews.test_ec346_forged_paths_and_terminal_escape_sequences_do_not_escape_the_view) ... ok
+test_ec292_brief_writes_are_serialized_with_ownership (test_startup_fences.StartupFences.test_ec292_brief_writes_are_serialized_with_ownership) ... ok
+test_ec298_crash_after_child_creation_before_commit_is_unknown (test_startup_fences.StartupFences.test_ec298_crash_after_child_creation_before_commit_is_unknown) ... ok
+test_qodercli_starts_with_its_instructions (test_swarm.Adapters.test_qodercli_starts_with_its_instructions) ... ok
+test_ec034_one_task_at_a_time (test_swarm.Claiming.test_ec034_one_task_at_a_time) ... ok
+test_ec148_git_ignored_local_files_follow_into_worktrees (test_swarm.Console.test_ec148_git_ignored_local_files_follow_into_worktrees) ... ok
+test_ec154_agent_panes_get_distinct_names (test_swarm.Console.test_ec154_agent_panes_get_distinct_names) ... ok
+test_ec193_a_dead_holders_queue_lease_is_broken_at_once (test_swarm.CrashRecovery.test_ec193_a_dead_holders_queue_lease_is_broken_at_once) ... ok
+test_ec133_environment_command_and_json (test_swarm.Environment.test_ec133_environment_command_and_json) ... ok
+test_ec144_relative_gate_paths_resolve_from_the_worktree (test_swarm.FirstRealRun.test_ec144_relative_gate_paths_resolve_from_the_worktree) ... ok
+test_ec160_work_that_serves_no_outcome_is_refused (test_swarm.Goals.test_ec160_work_that_serves_no_outcome_is_refused) ... ok
+test_ec167_the_first_wave_goes_to_machines_that_can_verify_it (test_swarm.Goals.test_ec167_the_first_wave_goes_to_machines_that_can_verify_it) ... ok
+test_ec017_coordinator_promoted_when_coordinator_goes_silent (test_swarm.JoiningAndRoles.test_ec017_coordinator_promoted_when_coordinator_goes_silent) ... ok
+test_which_many_agrees_with_shutil_which (test_swarm.Latency.test_which_many_agrees_with_shutil_which) ... ok
+test_ec185_work_left_behind_is_offered_by_next (test_swarm.Liveness.test_ec185_work_left_behind_is_offered_by_next) ... ok
+test_ec089_gates_run_on_the_rebased_tree (test_swarm.Merging.test_ec089_gates_run_on_the_rebased_tree) ... ok
+test_ec170_text_outside_the_legacy_code_page_survives_a_pipe (test_swarm.Output.test_ec170_text_outside_the_legacy_code_page_survives_a_pipe) ... ok
+test_ec056_ec057_steps_in_order_with_evidence (test_swarm.Planning.test_ec056_ec057_steps_in_order_with_evidence) ... ok
+test_ec179_the_launcher_offers_a_chosen_task (test_swarm.ReadableConsole.test_ec179_the_launcher_offers_a_chosen_task) ... ok
+test_ec063_migrations_always_locked (test_swarm.Submitting.test_ec063_migrations_always_locked) ... ok
+test_ec317_returning_owner_revalidates_unanswered_questions (test_takeover.Takeover.test_ec317_returning_owner_revalidates_unanswered_questions) ... ok
+test_ec318_silent_owner_clock_pauses_before_reclaim_grace_and_rejoin_requires_start (test_takeover.Takeover.test_ec318_silent_owner_clock_pauses_before_reclaim_grace_and_rejoin_requires_start) ... ok
+test_ec327_os_killed_cooperative_launcher_preserves_processes_until_their_observed_exit (test_terminal_supervision.TerminalSupervision.test_ec327_os_killed_cooperative_launcher_preserves_processes_until_their_observed_exit) ... ok
+test_ec322_start_commit_kills_preserve_clocks_and_ownership (test_transaction_crashes.TransactionCrashes.test_ec322_start_commit_kills_preserve_clocks_and_ownership) ... ok
+test_ec343_failed_subtest_is_failed_case_and_never_green_ci (test_validation_runner.ValidationRunner.test_ec343_failed_subtest_is_failed_case_and_never_green_ci) ... ok
+test_ec256_closure_needs_observed_outcomes_and_preserves_human_checkout_dirt (test_verification.Receipts.test_ec256_closure_needs_observed_outcomes_and_preserves_human_checkout_dirt) ... ok
+test_ec259_a_later_failed_run_cannot_be_hidden_by_an_older_passed_receipt (test_verification.Receipts.test_ec259_a_later_failed_run_cannot_be_hidden_by_an_older_passed_receipt) ... ok
+test_ec262_goal_close_crash_keeps_receipt_and_retries_without_duplicate_success (test_verification.Receipts.test_ec262_goal_close_crash_keeps_receipt_and_retries_without_duplicate_success) ... ok
+test_waive_a_question_with_a_reason (test_web_actions.Acting.test_waive_a_question_with_a_reason) ... joined as ann (slot 1, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as ann   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as ann` (5 rules for this machine)
+peers: bob
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmppw30ifsu/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  contract  1, epoch 1, deadline 2026-10-20T14:03:30+00:00; `swarm explain T1`
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmppw30ifsu/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpkcwl3s8n/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  contract  1, epoch 1, deadline 2026-10-20T14:03:35+00:00; `swarm explain T1`
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree /tmp/tmpkcwl3s8n/repo-wt/T1
+
+joined as worker (slot 2, role worker)
+environment: Linux 6.18.54.1-microsoft-standard-WSL2, shell unknown; caps bash, linux
+command: python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (5 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  /tmp/tmpb_rgqrkx/repo-wt/T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python /tmp/source/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  contract  1, epoch 1, deadline 2026-10-20T14:04:57+00:00; `swarm explain T1`
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+swarm dashboard: repo: you ran waive: done
+ok
+test_it_reminds_once_and_never_acknowledges_for_anyone (test_web_actions.Steward.test_it_reminds_once_and_never_acknowledges_for_anyone) ... ok
+test_only_get_is_served_and_unknown_paths_are_not_found (test_web_dashboard.Guards.test_only_get_is_served_and_unknown_paths_are_not_found) ... ok
+test_task_detail_and_a_goal_with_an_unapproved_brief (test_web_dashboard.Payloads.test_task_detail_and_a_goal_with_an_unapproved_brief) ... ok
+test_ec346_session_tabs_retain_failures_logs_and_are_isolated_by_board (test_web_dashboard.SessionPayloads.test_ec346_session_tabs_retain_failures_logs_and_are_isolated_by_board) ... ok
+test_events_read_as_sentences_with_display_names (test_web_dashboard.Team.test_events_read_as_sentences_with_display_names) ... ok
+
+----------------------------------------------------------------------
+Ran 71 tests in 414.285s
+
+OK

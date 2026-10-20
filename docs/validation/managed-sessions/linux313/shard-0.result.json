@@ -1,0 +1,431 @@
+{
+  "ok": true,
+  "cases": [
+    {
+      "id": "test_budget.Budgets.test_ec263_schema_seven_upgrade_rolls_back_and_keeps_legacy_terms",
+      "seconds": 4.062,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_budget.Budgets.test_ec269_owned_command_failure_is_measured_and_retry_never_launches_twice",
+      "seconds": 5.676,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_budget.Budgets.test_ec275_replacement_offer_keeps_prior_consumption_and_closed_clocks",
+      "seconds": 4.332,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus.Bus.test_ec332_expired_receipts_retry_and_renew_reject_old_consumer_authority",
+      "seconds": 2.62,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus_dispatch.Wakeups.test_ec337_wake_hints_follow_commit_and_never_rollback",
+      "seconds": 1.01,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_bus_dispatch.Wakeups.test_ec340_resume_notifies_interrupt_hook_even_without_pending_messages",
+      "seconds": 2.349,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_claim_allocation.ClaimAllocation.test_ec289_copy_failure_keeps_known_worktree_and_partial_files_inspectable",
+      "seconds": 1.246,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_claim_crashes.ClaimCrashes.test_ec312_kill_after_setup_commit_retains_published_base_and_copies",
+      "seconds": 4.614,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_claim_crashes.ClaimCrashes.test_ec314_release_kill_after_commit_retains_one_release_and_all_work",
+      "seconds": 5.798,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_communication.Envelopes.test_ec212_legacy_read_receipts_survive_schema_two_upgrade",
+      "seconds": 1.8,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_communication.Interrupts.test_ec216_attention_can_be_answered_without_stopping_an_idle_or_working_agent",
+      "seconds": 5.255,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_communication.Interrupts.test_ec220_late_gate_failure_cannot_overwrite_a_fenced_pause",
+      "seconds": 4.377,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_communication.Interrupts.test_ec222_contract_extension_cannot_resume_a_targeted_pause",
+      "seconds": 6.63,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_contracts.Contracts.test_ec201_migration_is_idempotent_and_preserves_legacy_goals",
+      "seconds": 3.703,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_contracts.Contracts.test_ec205_stale_leave_cannot_release_the_current_epoch",
+      "seconds": 4.383,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_contracts.Contracts.test_ec210_review_reserve_stops_new_implementation",
+      "seconds": 4.516,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_execution_output.ExecutionOutput.test_ec281_cooperative_overflow_caps_storage_without_signalling_and_policy_is_frozen",
+      "seconds": 2.73,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_final_transitions.FinalTransitions.test_ec329_assignment_manual_locks_and_leave_release_commit_kills_keep_single_owner",
+      "seconds": 8.73,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_hardening.DoctorAndStorage.test_ec240_doctor_cleanup_preview_retains_files_then_applies_idempotently",
+      "seconds": 5.999,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_hardening.JsonProtocol.test_ec235_argument_errors_help_refusals_and_version_mismatch_have_one_envelope",
+      "seconds": 2.638,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_hardening.VerifiedIntegration.test_ec237_hook_cannot_land_a_final_tree_that_fails_checks",
+      "seconds": 5.076,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_hardening.WorkforceBenchmark.test_ec242_untracked_runner_helpers_cannot_change_the_acceptance_environment",
+      "seconds": 0.859,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec156_claude_code_pointer",
+      "seconds": 0.964,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_ec195_ec196_the_bytecode_is_cached_and_kept_out_of_git_status",
+      "seconds": 1.644,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_installer.Installer.test_rerun_is_idempotent_and_keeps_project_config",
+      "seconds": 0.671,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup",
+      "seconds": 1.647,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec304_ec344_retired_launch_options_are_refused_before_registration",
+      "seconds": 1.131,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_interactive_launch.InteractiveLaunch.test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer",
+      "seconds": 0.681,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_legacy_cleanup.LegacyCleanup.test_ec344_replies_and_observation_never_acknowledge_a_delivery",
+      "seconds": 3.575,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_oversight.Incidents.test_ec226_forged_chat_and_confirmed_or_inconclusive_reports_cannot_clear_gates",
+      "seconds": 8.568,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_oversight.MemoryLearning.test_ec229_chat_only_candidates_need_local_events_and_commits_before_promotion",
+      "seconds": 2.85,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_oversight.MemoryLearning.test_ec233_learning_candidates_and_observations_use_actual_landed_task_evidence",
+      "seconds": 10.192,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_oversight.ReviewRecovery.test_ec226_bad_citations_and_false_alarm_clearance_cannot_skip_real_gates",
+      "seconds": 7.172,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_preservation.ActiveWork.test_ec252_unknown_supervision_retains_clean_work_until_labeled_human_reconciliation",
+      "seconds": 4.852,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_preservation.PolicySnapshot.test_ec253_invalid_toml_and_encoding_give_a_policy_repair_refusal",
+      "seconds": 0.694,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_processes.Supervision.test_ec246_expired_live_contract_fences_then_terminates_only_the_owned_group",
+      "seconds": 5.536,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_processes.Supervision.test_ec249_startup_without_an_acknowledged_group_never_reports_ready",
+      "seconds": 2.199,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_sessions.SessionLifetime.test_ec345_headless_manager_starts_workers_and_normal_stop_retains_the_log",
+      "seconds": 2.559,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_sessions.SessionViews.test_ec347_captured_helpers_use_no_window_on_windows",
+      "seconds": 0.497,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_startup_fences.StartupFences.test_ec295_supervisor_rechecks_assignment_before_creating_a_worker",
+      "seconds": 3.456,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Adapters.test_ec181_no_adapter_uses_a_cli_s_own_branching",
+      "seconds": 0.014,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Backlog.test_ec028_workers_propose_coordinator_approves",
+      "seconds": 1.616,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Claiming.test_ec065_declared_locks_are_taken_at_claim",
+      "seconds": 4.026,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Console.test_ec151_a_pane_command_with_a_separator_is_refused",
+      "seconds": 0.117,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.CrashRecovery.test_ec190_the_worker_ended_before_the_target_moved",
+      "seconds": 14.932,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Environment.test_ec130_macos_and_wsl_rules",
+      "seconds": 0.098,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.FirstRealRun.test_ec042_ec141_branch_from_outside_the_board_needs_adopt",
+      "seconds": 4.456,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.FullSwarm.test_ec005_swarm_cap",
+      "seconds": 1.704,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Goals.test_ec163_large_tasks_must_be_split",
+      "seconds": 6.295,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.JoiningAndRoles.test_ec001_duplicate_live_name_refused_and_resume_allowed",
+      "seconds": 2.469,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Latency.test_ec198_the_git_directory_is_found_without_git_and_agrees_with_git",
+      "seconds": 0.428,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Liveness.test_ec010_pid_alive",
+      "seconds": 0.15,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Merging.test_ec086_merge_queue_is_single",
+      "seconds": 5.209,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Merging.test_ec099_ec086_merge_joins_the_target_then_frees_the_agent",
+      "seconds": 10.773,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Planning.test_ec046_ec050_ec051_unknown_opens_a_question_and_answers_force_a_replan",
+      "seconds": 6.686,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.ReadableConsole.test_ec175_events_read_as_sentences_in_local_time",
+      "seconds": 2.67,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_swarm.Submitting.test_ec061_out_of_contract_files_require_revised_terms",
+      "seconds": 6.364,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_takeover.Takeover.test_ec317_answers_still_require_replanning_after_takeover",
+      "seconds": 8.171,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_takeover.Takeover.test_ec318_owner_loss_cannot_cancel_an_elapsed_deliberation_cutoff",
+      "seconds": 5.582,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec326_terminal_cooperative_policy_waits_for_actual_group_exit",
+      "seconds": 2.626,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_terminal_supervision.TerminalSupervision.test_ec328_posix_terminal_has_controlling_tty_input_resize_and_restoration",
+      "seconds": 2.614,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_transaction_crashes.TransactionCrashes.test_ec323_pause_and_resume_commit_kills_preserve_global_control",
+      "seconds": 7.457,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_verification.Receipts.test_ec255_empty_gate_configuration_cannot_verify_external_completion",
+      "seconds": 1.235,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_verification.Receipts.test_ec257_check_definitions_reject_invalid_shapes_secrets_and_unprivileged_edits",
+      "seconds": 17.731,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_verification.Receipts.test_ec260_verifier_crashes_preserve_results_and_unknown_never_restarts_blindly",
+      "seconds": 23.405,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Acting.test_reply_to_a_message_and_acknowledge_it",
+      "seconds": 4.197,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_actions.Steward.test_an_offline_recipient_is_escalated_to_the_coordinator",
+      "seconds": 1.677,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Command.test_the_command_prints_a_working_link_and_a_second_run_joins_it",
+      "seconds": 2.593,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Payloads.test_inbox_lists_messages_with_filters_and_a_message_shows_its_delivery",
+      "seconds": 3.144,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Responsive.test_the_page_declares_a_viewport_and_breakpoints_for_phone_and_tablet",
+      "seconds": 0.034,
+      "outcome": "passed",
+      "skip_reason": null
+    },
+    {
+      "id": "test_web_dashboard.Shared.test_the_link_stays_the_same_across_restarts_and_is_new_only_on_request",
+      "seconds": 2.807,
+      "outcome": "passed",
+      "skip_reason": null
+    }
+  ]
+}

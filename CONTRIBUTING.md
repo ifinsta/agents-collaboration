@@ -1,8 +1,9 @@
 # Contributing
 
-Thank you for helping. This project is small on purpose: one standard-library
-Python module behind a tiny launcher, one skill, one register of edge cases. Changes are welcome when they
-keep it that way.
+The state-changing engine stays in one standard-library Python module behind
+a small launcher, with an installed skill and edge-case register. Keep new
+interfaces subordinate to that authority. The optional browser helper is included
+in the current source manifest; publication and platform acceptance remain separate.
 
 ## Before you start
 
@@ -25,11 +26,12 @@ Rules:
 
 1. **Standard library only**, Python 3.11+. The tool must run wherever an agent
    runs, with nothing to install.
-2. **Every behaviour the service enforces is a test**, named after its edge case
+2. **Every behavior the service enforces needs a test**, named after its edge case
    (`test_ec061_...`), against a real git repository in a temporary directory.
    Update `skills/agents-collaboration/EDGE-CASES.md` and its totals in the same
    change.
-3. **Every OS is first-class.** CI runs on Linux, Windows and macOS. Commands are
+3. **Every OS is first-class.** CI is configured for Linux, Windows and macOS.
+   Report actual execution per source/runtime; configuration alone is not a pass. Commands are
    argument lists, never shell strings. Files are read and written with an
    explicit UTF-8 encoding.
 4. **A refusal says what to do next.** Every error tells the agent the exact
@@ -46,6 +48,9 @@ Rules:
    timing assertion fails at random on a busy machine. `python scripts/bench.py` measures the time for people
    (`--source ../other-checkout` compares two versions). If `Latency` fails, a command now starts a git process
    or imports something it did not before: that needs a reason, or a lazy import.
+   The environment probe uses one Git call; Python 3.11 on Windows may also run
+   its standard-library `ver` query. The suite bounds that OS probe separately
+   instead of counting it as Git work.
 
 ## Adding an agent adapter
 
@@ -53,6 +58,18 @@ Add it to `DEFAULTS["adapters"]` in `swarm_core.py` with its version, sign-in st
 and headless command. Mark it `verified: True` only after you have run
 `swarm probe --live <kind>` and a real `swarm spawn` with that CLI. Record the CLI
 version you verified in `docs/agents.md`.
+
+## Documentation
+
+Use [docs/README.md](docs/README.md) as the navigation and evidence entry point.
+Keep current instructions separate from historical proposals, generated examples
+and source-pinned validation reports. Example commands must include required
+actors/arguments or clearly identify placeholders and preconditions. Do not
+rewrite old metrics or turn unexecuted platforms into passing evidence.
+
+Documentation-only checks should validate links, command syntax and the manifest;
+run relevant installer/simulation checks when installed skill text changes. New
+runtime behavior needs the complete candidate checks and platform acceptance.
 
 ## Releases
 

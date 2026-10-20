@@ -1,23 +1,25 @@
-# Installing agents-collaboration (for agents)
+# Installing agents-collaboration
 
-If a person asked you to install agents-collaboration, follow these steps in
-order. Every command is complete; do not adapt it to an operating system you
-assume. Check the facts first.
+Use a verified Python 3.11+ executable and Git. POSIX process supervision also
+uses `ps`. Provider CLIs and their authentication are separate prerequisites.
+`PY` below is a placeholder for your verified Python command, such as `python`
+or `py -3`; replace it before running a command.
 
-## 1. Find out where you are
+## Select the destination and Python
 
-- Run `git rev-parse --show-toplevel`. If it prints a path, you are in a
-  repository: install there (steps 2 to 4). If it fails, ask the person whether to
-  install for every repository instead (step 5).
-- Find Python 3.11 or newer: try `python --version`, then `py -3 --version`. On
-  Windows, never use `python3`: it is often the Microsoft Store stub. Use whichever
-  command printed 3.11 or newer as `PY` below.
-- Find your shell: if `$PSVersionTable` means something to it, it is PowerShell;
-  otherwise use the bash form.
+Run `git rev-parse --show-toplevel` to identify the project root. Use the project
+already requested by the person. For an explicitly requested user installation,
+use `--user` instead. If neither destination is known, clarify that scope.
 
-## 2. Install into the repository
+Check `python --version` or `py -3 --version`. A Windows `python3` command may be
+a Store stub; use the executable that actually reports 3.11 or newer. Read the
+shell's facts before choosing PowerShell or POSIX syntax.
 
-From the repository's root:
+## Install the default published release
+
+Run from the destination repository root. These download the installer from
+`main`; its default payload ref is currently `v0.4.4`, not the working tree.
+Use `--ref REF` to select another reviewed tag/branch.
 
 ```bash
 # bash, zsh, Git Bash
@@ -29,45 +31,67 @@ curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/i
 irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | PY - --all
 ```
 
-`--all` adds the pointers that agent CLIs read: a marked section in `AGENTS.md`
-(opencode, Codex, Qoder, DeepSeek-TUI and others) and `.claude/skills/agents-collaboration/SKILL.md`
-(Claude Code). The installer verifies every file against the release manifest,
-never overwrites edits you made to installed files, and keeps the line endings of
-the files it edits.
+`--all` adds the pointers read by agent CLIs: a marked section in `AGENTS.md`
+and `.claude/skills/agents-collaboration/SKILL.md`. The installer verifies payload
+hashes against the selected ref's manifest. It refuses to overwrite edited
+installed files unless explicitly given `--force`, and preserves pointer-file
+line endings. `--scaffold` separately creates an explained project configuration;
+installation does not import the example backlog.
 
-## 3. Verify
+## Install reviewed local source
 
-```bash
+To evaluate the unreleased changes described in the [current documentation](docs/README.md),
+install from that checkout instead of assuming the published tag contains them.
+Replace the paths with actual source and destination directories:
+
+```text
+PY PATH_TO_SOURCE/scripts/make_manifest.py --check
+PY PATH_TO_SOURCE/install.py --source PATH_TO_SOURCE --project PATH_TO_PROJECT --all
+```
+
+A source maintainer regenerates the manifest after intentional payload edits.
+Manifest agreement verifies file integrity; it does not establish runtime test
+coverage or release readiness.
+
+## Verify and start
+
+```text
 PY .agents/skills/agents-collaboration/swarm.py version
+PY .agents/skills/agents-collaboration/swarm.py --json protocol
 PY .agents/skills/agents-collaboration/swarm.py environment
 ```
 
-`environment` lists the facts and rules for this machine. Read them before your
-next command.
+The reviewed current source uses CLI protocol **2**, database schema **12** and
+bus/message/event versions **1**. Inspect the installed protocol and skill rather
+than assuming an older published release has those contracts. Read `environment`
+and the installed `SKILL.md`, then follow its join and goal workflow. Configure
+real executable project gates before integrating tasks, and approved executable
+outcome checks before verifying and closing a goal.
 
-## 4. Start
+From task worktrees, use the verified Python executable and the **absolute** path
+to the installed launcher printed by the tool.
 
-1. Read `.agents/skills/agents-collaboration/SKILL.md` and follow it from section 1.
-2. Do not create project settings by guessing. If the person wants to state the
-   project's own facts (gates, target branch, shared files), they add `--scaffold`
-   to the install (an explained config with defaults, no tasks), or write `.agents/swarm/config.toml`
-   themselves. The board starts empty either way.
-3. Turn the work you were given into tasks with `swarm goal` (SKILL.md, section 1.5).
+## User installation
 
-## 5. Install once for every repository
+An explicitly requested installation for all repositories uses `--user`:
 
 ```bash
 curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | PY - --user --claude
 ```
 
-The tool is then `PY ~/.agents/skills/agents-collaboration/swarm.py`, and works
-in any repository. A repository still keeps its own `.agents/swarm/config.toml`.
+The launcher is under the user's `.agents/skills/agents-collaboration/` directory.
+Use its absolute path; shell expansion of `~` differs across shells. Each project
+still owns its own `.agents/swarm/config.toml` and board.
 
 ## Updating
 
-```bash
+```text
 PY .agents/skills/agents-collaboration/swarm.py update
 ```
 
-It reinstalls the latest release the same way it was installed, keeping the
-pointers already present.
+`update` downloads the installer and uses its default release ref, or the explicit
+`--ref` supplied to the command, while preserving installed pointer choices. It
+does not reproduce unpublished local edits. To keep evaluating local source,
+repeat the reviewed `install.py --source ...` installation. Read the
+[migration guide](docs/legacy-migration.md) before changing protocol/schema versions;
+forward database migration is supported, downgrade is not.

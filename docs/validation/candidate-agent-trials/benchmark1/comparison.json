@@ -1,0 +1,164 @@
+{
+  "version": 1,
+  "created_at": "2026-10-20T05:41:17.789691+00:00",
+  "results": [
+    {
+      "version": 1,
+      "workload": "duration-operations-v1",
+      "mode": "solo",
+      "runner": "external",
+      "agent_count": 1,
+      "baseline_commit": "360ecd153bb183473b1367fd0ca4a632eb069e29",
+      "task_count": 2,
+      "verified_completion": 2,
+      "full_acceptance": true,
+      "rework": 0,
+      "deadline_misses": 0,
+      "usage": {
+        "cost": 0,
+        "tokens": null,
+        "human_interventions": 0,
+        "currency": "USD"
+      },
+      "usage_source": "runner-reported; not independently metered",
+      "elapsed_seconds": 159.48400000005495,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 100.03200000000652,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 102.68800000008196,
+          "deadline_missed": false
+        },
+        {
+          "task": "T2",
+          "attempt": 1,
+          "runner_seconds": 53.14000000001397,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 55.43700000003446,
+          "deadline_missed": false
+        }
+      ],
+      "fault": null,
+      "owed": [],
+      "limitations": [
+        "Tiny shared-file conflict workload; no general productivity inference",
+        "Coordinated workers serialize the declared hotspot",
+        "Unknown cost or human intervention is null, never zero",
+        "Run repeated matched trials before drawing comparisons"
+      ]
+    },
+    {
+      "version": 1,
+      "workload": "duration-operations-v1",
+      "mode": "uncoordinated",
+      "runner": "external",
+      "agent_count": 2,
+      "baseline_commit": "b4cc286c7c21cf13947d0f333b4a0fbf2dca0f8b",
+      "task_count": 2,
+      "verified_completion": 2,
+      "full_acceptance": true,
+      "rework": 0,
+      "deadline_misses": 0,
+      "usage": {
+        "cost": 0,
+        "tokens": null,
+        "human_interventions": 0,
+        "currency": "USD"
+      },
+      "usage_source": "runner-reported; not independently metered",
+      "elapsed_seconds": 106.67200000002049,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 97.79700000002049,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 100.67200000002049,
+          "deadline_missed": false
+        },
+        {
+          "task": "T2",
+          "attempt": 1,
+          "runner_seconds": 40.68799999996554,
+          "failure": null,
+          "usage": {
+            "cost": 0,
+            "currency": "USD",
+            "tokens": null,
+            "human_interventions": 0
+          },
+          "verified": true,
+          "rework": 0,
+          "elapsed_seconds": 104.53099999995902,
+          "deadline_missed": false
+        }
+      ],
+      "fault": null,
+      "owed": [],
+      "limitations": [
+        "Tiny shared-file conflict workload; no general productivity inference",
+        "Coordinated workers serialize the declared hotspot",
+        "Unknown cost or human intervention is null, never zero",
+        "Run repeated matched trials before drawing comparisons"
+      ]
+    },
+    {
+      "version": 1,
+      "mode": "coordinated",
+      "full_acceptance": false,
+      "verified_completion": 0,
+      "task_count": 2,
+      "failure": "command failed (2): ['C:\\\\Program Files\\\\Python312\\\\python.exe', 'C:\\\\Users\\\\user\\\\AppData\\\\Local\\\\Temp\\\\workforce-candidate-1gsdaibm\\\\benchmark1\\\\coordinated\\\\repo\\\\.agents\\\\skills\\\\agents-collaboration\\\\swarm.py', 'claim', 'T2', '--as', 'worker-2']\n\nswarm: T2 needs lock duration, held by worker-1 for T1.\n",
+      "failure_type": "RuntimeError",
+      "incomplete": true,
+      "attempts": [
+        {
+          "task": "T1",
+          "attempt": 1,
+          "runner_seconds": 121.73400000005495,
+          "failure": "runner exited 1",
+          "usage": {
+            "cost": null,
+            "currency": null,
+            "tokens": null,
+            "human_interventions": null
+          },
+          "verified": false,
+          "rework": 0,
+          "elapsed_seconds": 121.73400000005495,
+          "deadline_missed": false
+        }
+      ],
+      "owed": [
+        "Trial did not finish; inspect retained artifacts before comparing modes"
+      ]
+    }
+  ],
+  "claim": "Measured local trial outcomes only; no LLM improvement claim"
+}

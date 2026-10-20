@@ -1,0 +1,6 @@
+test_ec322_submission_commit_kills_preserve_committed_work_without_integrating (test_transaction_crashes.TransactionCrashes.test_ec322_submission_commit_kills_preserve_committed_work_without_integrating) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 15.432s
+
+OK

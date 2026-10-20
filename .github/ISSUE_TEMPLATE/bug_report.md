@@ -10,6 +10,7 @@ labels: bug
 
 **How to reproduce** (commands, in order)
 
-**Environment** (paste the output of `python swarm.py environment --json`, remove anything private)
+**Environment** (use the absolute launcher command printed by join/claim with
+`environment --json`; include CLI protocol/version and remove private information)
 
 **Agents involved** (CLI names and versions, if any)

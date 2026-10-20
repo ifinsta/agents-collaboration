@@ -1,63 +1,56 @@
 # agents-collaboration
 
-Up to five coding agents (Claude Code, opencode, Qoder, Codex, Gemini, Kilo Code,
-DeepSeek through opencode, or any CLI that can run a shell command) working on one git
-repository without stepping on each other.
+Coordinate your existing coding agents through a local Git workflow with explicit
+ownership, recoverable work and verified integration.
 
-It is a **skill** that tells each agent the protocol, and a **coordination
-service** (`swarm.py` and `swarm_core.py`: standard-library Python, no dependencies) that enforces it.
+A **skill** explains the workflow; a standard-library Python **engine** enforces
+its coordination commands. Agents can use different CLIs while sharing one
+SQLite board in the Git common directory. The default pool limit is five agents
+on one machine. Agent identities are trusted local names, not security principals.
 
 [![ci](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml/badge.svg)](https://github.com/ifinsta/agents-collaboration/actions/workflows/ci.yml)
 
-![The console while three agents work: the live board on the left, the event monitor and the agent launcher on the right](docs/console.svg)
+The badge reports hosted repository CI. It does not validate an unpublished
+working tree. The source described here is **0.4.4, unreleased and experimental**.
+See the [documentation index](docs/README.md) for current contracts and evidence.
 
-_The console during a simulated session, drawn by the tool's own board and monitor:
-the goal committed, three agents working at once, the merge queue catching a
-conflict, a silent agent's task taken over, the gate catching a wrong test, and
-the goal closed on evidence._
+![The console during the scripted three-agent example](docs/console.svg)
 
-**See it before you install it:** [the whole session, step by step](docs/simulation.md).
-Three agents and a human take one goal from a sentence to merged, verified work,
-with real output from the real tool. CI replays it on every change.
+[Walk through the generated example](docs/simulation.md), or choose a
+[use case](usecases/README.md). The simulation uses scripted workers and real
+Git/SQLite operations; it establishes no real-agent productivity advantage.
 
-## What it guarantees
+## When to use it
 
-- **An agent knows whether it is alone.** `join` reports SOLO or names its peers.
-  A solo agent coordinates itself and routes questions to the human.
-- **An agent knows what machine it is on.** The OS, shell, Python command,
-  tools, encoding and git settings are detected and turned into rules. No more
-  `python3`, `sudo` or `make` on a Windows box that has none of them. Tasks a
-  machine cannot verify are never routed to it.
-- **One task per agent, never two agents on one task.** Claims are atomic. Each
-  task gets its own worktree, branch and slot (ports, test database, container
-  name).
-- **Questions before code.** A plan needs an answer to every critical question.
-  `unknown` becomes a question that blocks work until someone answers it, and
-  steps are done in order, with evidence.
-- **Conflicts are prevented, not just resolved.** Overlapping scopes are caught
-  at planning, shared files need locks to be rewritten, and agents are told to
-  rebase as soon as a merge touches their area.
-- **Work joins safely before new work starts.** A single merge queue rebases
-  each branch, runs the gates on the rebased tree, and advances the target with
-  compare-and-swap. It never overwrites a person's uncommitted work. Only then
-  is the agent free for its next task.
-- **Nothing is lost when an agent dies.** Silent agents go offline, and their
-  tasks become orphaned with branch and worktree intact, ready for
-  `claim --take-over`.
+Use it when several agents share a repository and you want consistent ownership,
+handoffs, review and integration rules across their coding tools. A solo agent
+can use the same planning, contract and verification workflow.
 
-[200 edge cases](skills/agents-collaboration/EDGE-CASES.md) are listed with how
-each is handled. 115 are proved by tests on Linux, Windows and macOS, and the few
-that are not handled are stated.
+- **Accountable work:** atomic claims, assignment epochs, task worktrees and
+  per-agent slot variables. Claims check declared machine capabilities.
+- **Bounded assignments:** fresh claims accept configured contracts. Time,
+  checkpoints and recorded usage affect coordination permissions; reclaim keeps
+  the retained deadline, allowance and usage history.
+- **Reliable communication:** typed messages, leased delivery receipts, retries
+  and replay. Reading or replying does not acknowledge delivery.
+- **Controlled recovery:** checkpoints, owned process supervision and explicit
+  recovery for uncertain Git allocation, execution and verification.
+- **Checked integration:** a serialized merge queue rebases work, runs configured
+  gates on the final commit and checks ownership/policy before target movement.
+- **Inspectable completion:** task integration and goal acceptance have separate
+  receipts. Owed checks remain visible; prose cannot replace executable checks.
+
+These controls govern engine-mediated operations. Worktrees do not prevent
+arbitrary filesystem edits, isolate credentials or authenticate agents. Code
+conflicts can still occur, and configured checks can be incomplete. Read the
+[security model](SECURITY.md) and [design limits](docs/design.md#limits).
 
 ## Install
 
-**Tell your agent:** "Install agents-collaboration by following
-https://github.com/ifinsta/agents-collaboration/blob/main/INSTALL.md". The guide is
-written for agents: it checks the OS, Python and shell before it runs anything.
+Requires Python 3.11+ and Git. Owned supervision on Linux/macOS also requires
+`ps`. Agent CLIs, credentials and optional terminal tools are supplied separately.
 
-### Into a repository
-
-Requires Python 3.11+ and git. From the repository's root:
+To install the release selected by the public installer, from your Git repository:
 
 ```bash
 # bash, zsh, Git Bash
@@ -65,95 +58,117 @@ curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/i
 ```
 
 ```powershell
-# PowerShell
+# PowerShell; first verify that python is Python 3.11+
 irm https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --all
 ```
 
-This installs `.agents/skills/agents-collaboration/`, verified against the
-release manifest. It creates no project files unless you add `--scaffold`
-(an explained `.agents/swarm/config.toml` holding defaults, nothing else). A fresh install always
-starts with an empty board: no tasks, no goals, nothing from any other project. `--all` adds the pointers agent
-CLIs look for: a short marked section in `AGENTS.md` (opencode, Codex, Qoder,
-DeepSeek-TUI) and a pointer skill in `.claude/skills/` (Claude Code). It refuses to
-overwrite files you edited unless you pass `--force`, and keeps the line endings
-of the files it edits. `swarm update` reinstalls the latest release.
+The selected release may predate this unreleased source. Read its installed skill
+and inspect its protocol before using examples from this branch. To install a
+reviewed local checkout instead, replace `PATH_TO_PROJECT` with your target repo:
 
-### Once, for every repository
-
-```bash
-curl -fsSL https://raw.githubusercontent.com/ifinsta/agents-collaboration/main/install.py | python - --user --claude
+```text
+python scripts/make_manifest.py --check
+python install.py --source . --project PATH_TO_PROJECT --all
 ```
 
-The tool is then `python ~/.agents/skills/agents-collaboration/swarm.py`, in any
-repository.
+The installer checks file hashes against the selected source's manifest. `--all`
+adds agent pointers; `--scaffold` separately creates an explained project config.
+The tool does not import its example backlog. See [INSTALL.md](INSTALL.md) for
+source/release selection, shell rules, verification and updates.
 
-## Use
+## Workflow
 
-Nothing about your project is assumed. Give the pool a piece of work, and the
-agents turn it into tasks:
+Below, `swarm` means the absolute launcher command printed by `join` or `claim`.
+Examples are outlines: fill templates with repository facts, replace placeholders
+and run all planned steps before advancing. Configure executable project gates in
+`.agents/swarm/config.toml` before integration.
 
-```bash
-S="python .agents/skills/agents-collaboration/swarm.py"
-$S goal new health "Ship a health endpoint operators can rely on"
-$S goal answer health --set done_looks_like="..." ...   # hard questions: understand, backward, forward, challenge
-$S goal outcome health "GET /health answers 200 with the version" --check "curl returns 200"
-$S goal task health H-api "Add the endpoint" --serves 1 --done-when "the endpoint test passes"
-$S goal review health                            # backward and forward views; refuses gaps
-$S goal commit health --assign                   # opens tasks, assigns the first wave
+```text
+swarm environment
+swarm join --as ann --kind claude
+swarm goal new health "Ship a health endpoint operators can rely on"
+swarm goal answer health --set done_looks_like="..." ...
+swarm goal outcome health "The endpoint returns the running version" --check "Assert version against VERSION"
+swarm goal check health 1 --command '["python","checks/health.py"]'
+swarm goal task health H-api "Add the endpoint" --scope src/ --serves 1 --done-when "The endpoint check passes"
+swarm goal architecture health --template
+# Record every architecture answer and source evidence, then approve separately.
+swarm goal architecture health --approve
+swarm goal review health
+swarm goal commit health
 ```
 
-Each agent then works one task at a time:
+Each worker claims a task, reads its contract and works in its task worktree:
 
-```bash
-$S environment                                   # the machine, and the rules for it
-$S join --as ann --kind claude                   # SOLO or peers; coordinator or worker
-$S next --as ann                                 # one task, its own worktree
-$S context --as ann                              # what it builds on, and what waits on it
-$S plan --as ann --template                      # the critical questions
-$S plan --as ann --set ... --step ... --step ...
-$S start --as ann
-$S step 1 --as ann --evidence "..."
-$S submit --as ann --evidence "..."
-$S merge --as ann                                # join the work, then ask for the next
+```text
+swarm next --as ann
+swarm explain H-api
+swarm plan --as ann --template
+# Record a complete plan and ordered steps, then start.
+swarm start --as ann
+# Implement, test, commit and record every planned step with its evidence.
+swarm submit --as ann --evidence "Acceptance command and observed result"
+swarm merge --as ann
 ```
 
-Watching and driving the pool from a terminal:
+After all goal tasks land, the coordinator or human runs the approved outcome
+checks and closes the goal against their retained receipt:
 
-```bash
-$S console                                       # monitor, live board, agent launcher: one terminal, split
-$S console --agents opencode,claude              # plus one interactive pane per agent, each on its own task
+```text
+swarm goal verify health --key health-final
+swarm goal close health
 ```
 
-The board takes the left half; the event monitor and the agent launcher share the
-right. The launcher starts each agent in its own tab, on the next task, a task you
-choose, or no task yet. On Windows this is Windows Terminal; on Linux and macOS,
-tmux in a new terminal window. The coordinating agent asks you once whether you
-want it.
+See [SKILL.md](skills/agents-collaboration/SKILL.md) for the complete workflow,
+[completion evidence](docs/completion-evidence.md) for verification, and
+[use cases](usecases/README.md) for takeover, interrupts and independent review.
 
-Running agents headless:
+## Run and observe agents
 
-```bash
-$S probe                                         # which agent CLIs are installed and signed in
-$S spawn opencode --name ola --task API-1        # headless, in its own worktree, with a brief
-$S spawn qodercli --name quinn --task DOCS-2
-$S agents                                        # who is ready, busy or silent
-$S monitor                                       # the event stream; nudges idle agents
+For one terminal with tabs over headless workers, use `swarm sessions` (or
+`swarm console --managed`). It retains failed/exited sessions and output; closing
+the viewer leaves workers running. The browser dashboard also has a Sessions page.
+See [managed sessions](docs/managed-sessions.md) for controls and audit limits.
+
+These are independent launch examples; use free names and eligible task IDs.
+
+```text
+swarm probe
+swarm spawn opencode --name ola --task API-1
+swarm launch claude --name ann --task DOCS-2
+swarm agents
+swarm console --agents opencode,claude
 ```
 
-The full protocol for agents is in [SKILL.md](skills/agents-collaboration/SKILL.md).
-How it works is in [docs/design.md](docs/design.md), and the supported CLIs in
-[docs/agents.md](docs/agents.md).
+Task-bound `spawn` and `launch` use owned supervision and, by default, an automatic
+inbox relay. Foreground launches require an eligible task; no-task launches were
+removed. A native bridge is needed for vendor-specific context injection. See
+[adapters](docs/agents.md), [supervision](docs/process-supervision.md) and the
+[bus contract/schema](skills/agents-collaboration/BUS.md).
 
-## Status
+## Status and validation
 
-**0.4.4, experimental.** The protocol and the service are tested. Headless
-command lines come from each CLI's own help, for the versions listed in
-[docs/agents.md](docs/agents.md). One machine per pool; agent names are not
-authenticated (see [SECURITY.md](SECURITY.md)).
+The current contract uses **CLI protocol 2, database schema 12, and message,
+bus and event versions 1**. JSON consumers read typed data under `result`.
+The [migration guide](docs/legacy-migration.md) lists removed options/settings.
+
+The [latest recorded broad runtime snapshot](docs/validation/managed-sessions/report.md)
+passed 425 Linux tests and 91 selected Windows checks, with three Windows skips.
+Both used the same frozen source; browser and real-terminal checks are recorded
+separately. Later working-tree changes require fresh source-bound validation. Hosted
+six-runtime acceptance and macOS remain unexecuted in these records.
+
+[Documentation alignment checks](docs/validation/markdown-alignment/report.md)
+record focused installer/bus checks and a regenerated scripted session separately.
+
+The [edge-case register](skills/agents-collaboration/EDGE-CASES.md) distinguishes
+tested, enforced, partial, rule-only and open cases. These labels are different
+from unit-test counts. [Real-agent trials](docs/workforce-benchmark.md) retain
+mixed outcomes; lower cost, less rework and faster delivery remain unproven.
 
 ## Contributing
 
-See [CONTRIBUTING.md](CONTRIBUTING.md). New edge cases are especially welcome.
+See [CONTRIBUTING.md](CONTRIBUTING.md). New edge cases are welcome.
 
 ## Licence
 

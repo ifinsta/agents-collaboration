@@ -1,0 +1,8 @@
+{
+  "staged_tree": "4a6a8d4077420653f1304c1164196ac5f4e8b8ae",
+  "archive": "agents-collaboration-push-final-4a6a8d407742.zip",
+  "fixes": [
+    "Complete buffered PTY output drain",
+    "Synchronize liveness-test worktree inspection before worker exit"
+  ]
+}

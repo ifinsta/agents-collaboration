@@ -1,0 +1,5 @@
+# Test-only image; the installed coordination tool remains standard-library-only.
+ARG PYTHON_VERSION=3.12
+FROM python:${PYTHON_VERSION}-slim-bookworm
+RUN apt-get update && apt-get install -y --no-install-recommends git procps
+WORKDIR /workspace

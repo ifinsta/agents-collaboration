@@ -1,0 +1,36 @@
+{
+  "core_sha256": "bffab9ed0273ab9705fac8beabd6c34c97e3c3f175e5f4c77d9e04032cdd2efb",
+  "scope": "Installed headless CLI version/help compatibility; no authentication output or live provider request",
+  "adapters": [
+    {
+      "kind": "claude",
+      "installed": true,
+      "live_provider_call": false,
+      "version": "2.1.303 (Claude Code)",
+      "headless_missing_options": [],
+      "option_compatibility_pass": true
+    },
+    {
+      "kind": "codex",
+      "installed": true,
+      "live_provider_call": false,
+      "version": "codex-cli 0.104.0",
+      "headless_missing_options": [],
+      "option_compatibility_pass": true
+    },
+    {
+      "kind": "opencode",
+      "installed": true,
+      "live_provider_call": false,
+      "version": "opencode v2.0.32",
+      "headless_missing_options": [],
+      "option_compatibility_pass": true
+    },
+    {
+      "kind": "qodercli",
+      "installed": true,
+      "live_provider_call": false,
+      "error": "C:\\Users\\user\\AppData\\Roaming\\npm\\qodercli.CMD --version timed out after 20s"
+    }
+  ]
+}

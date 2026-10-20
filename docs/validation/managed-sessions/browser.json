@@ -1,0 +1,22 @@
+{
+  "ok": true,
+  "checks": [
+    {
+      "width": 1280,
+      "sessions": 1,
+      "worker_output": true,
+      "supervisor_output": true,
+      "untrusted_markup_is_text": true,
+      "horizontal_overflow": false
+    },
+    {
+      "width": 390,
+      "sessions": 1,
+      "worker_output": true,
+      "supervisor_output": true,
+      "untrusted_markup_is_text": true,
+      "horizontal_overflow": false
+    }
+  ],
+  "page_errors": []
+}

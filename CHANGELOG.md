@@ -1,5 +1,186 @@
 # Changelog
 
+## Unreleased
+
+- Drain every buffered POSIX terminal-output chunk after an owned worker exits,
+  including short PTY reads, before closing the terminal bridge.
+
+- Polish the team canvas with spaced cards, recorded task-step progress, zoom,
+  background panning, fit/reset, search, relationship navigation and participant
+  focus. Preserve each board's camera across live updates, add keyboard controls
+  and keep mobile cards readable. Patch cards and inspector sections in place
+  while retaining the canvas and controls, and connect cards with smooth curves
+  and directional arrowheads. Validate interactions under the production CSP.
+
+- Add `sessions` and `console --managed`: one terminal with audit tabs over owned
+  headless workers, reusable kind-count startup, policy-bound controls and detach
+  without stopping workers. Retain failed/exited sessions and add bounded
+  `execution logs`/follow plus selected-board dashboard session views. Captured
+  Windows helper calls use CREATE_NO_WINDOW. Existing native interactive layouts
+  remain explicit; uncaptured foreground output is never invented.
+
+- Make the web dashboard a compact tool that acts as the human: answer or waive a question,
+  reply to and acknowledge messages addressed to the human, approve a brief, all in place, by
+  running the real `swarm` command through one guarded `POST /api/act` (`--read-only` turns it
+  off). Add the inbox steward (`swarm steward`, `--once`): a system participant that reminds
+  agents of messages they leave unacknowledged, escalates offline recipients and critical
+  messages to the coordinator, reports dead letters, and never acknowledges on anyone's behalf.
+  Its reminders expire by themselves. From the page, "Review inboxes now" runs one review and an
+  LLM reviewer can be started on its own `INBOX-n` task. The team canvas drops lane backgrounds
+  and shows the steward and its reminders.
+
+- Add `swarm dashboard --web`: a read-only browser view of the board (an overview with a
+  team and work table and a "waiting on you" list, a team canvas that shows agents as
+  `Alex (claude) – Orchestrator` with agent icons and solid, dotted and dashed lines for
+  assignment, collaboration and review, an inbox with delivery and receipt state, a decisions
+  page, and a page per task with its plan, evidence, checkpoints and locks). Roles are derived
+  from the board, not configured. It is `swarm_web.py`, standard library only, bound to
+  127.0.0.1, GET-only over read-only SQLite connections, guarded by a stored token and a
+  Host check, with a nonce-only Content-Security-Policy and a page that never builds markup
+  from board text. Actions stay in the terminal: each item shows a command to copy. `--port`,
+  `--no-open` and `--observe` (no sweeps) are the options. There is one dashboard per user at a
+  fixed address (port 8787, else the next free one, saved) with a stable link: a later run from
+  any repository adds its board to the running dashboard, prints the same link and returns, and a
+  board switcher lists them. `--reset-link` makes a new token. See docs/web-dashboard.md.
+
+- Remove runtime compatibility defaults: all sends use canonical typed kinds,
+  acknowledgement requires a bus receipt, replies/control acknowledgements do
+  not acknowledge transport, and every foreground launch is supervised. Remove
+  no-task launches, old readiness commands and the task_budget_min setting.
+  Give all fresh claims contracts, carry allowances across reclaim, require
+  architecture for migrated open goals and executable gates for new merges.
+  CLI protocol v2 removes duplicate top-level JSON fields; preserve forward
+  migrations and historical unverified evidence. See docs/legacy-migration.md.
+
+- Relay inboxes automatically for headless/supervised terminal adapters with
+  schema-12 loopback wake hints, bounded fallback and renewable receipts. Add
+  configured message/interrupt hooks plus `bus hook/listen`, keeping control
+  acknowledgements explicit. Configure the complete suite on six OS/Python CI jobs
+  with retained evidence and parent-case accounting for failed subtests; this
+  configuration is not an executed hosted-matrix result.
+
+- Standardize the local message bus with an installed version-1 contract and
+  JSON Schema. Add `bus publish/receive/ack/retry/renew --json`, schema-11
+  consumer receipts, bounded leases and stale-token fencing. Keep observational inbox reads and require idempotent effects across recovered delivery attempts.
+
+- Fence real Git allocation writers with schema-10 receipts committed before
+  owned process creation. Refuse reassignment and work while a writer may exist;
+  retain uncertain state, inspection and explicit human cessation attestation.
+  Add `allocation show/prepare/reconcile` recovery and interrupted-migration checks.
+- Make `launch` use foreground job/group ownership, captured stop
+  policy, descendant tracking, POSIX controlling PTY input/resize/restoration,
+  and durable uncertainty on launcher/commit failure. The redundant
+  `--supervised` flag and unsupervised path are removed.
+- Import hashed native Claude/Codex usage without guessing absent costs or
+  double-counting cached input. Bound configuration/file/command inputs and
+  expose typed lifecycle subjects and paginated questions. Add named before/after
+  hooks for changed transactions and actual lifecycle commit-kill regressions.
+- Update merge-recovery verification to start and submit again after owner
+  resume, retaining the explicit start/replan requirement.
+
+- Revalidate start after planned takeover or an offline owner's return. Retain
+  completed steps, work, deadlines and usage origin while unresolved questions
+  and changed answers block further progress. Settle running clocks on observed
+  loss and actual process exit; restart them at start, retaining blocked time
+  and elapsed expiry limits. Contracted/legacy and process-exit regressions cover
+  the previously reproduced EC-317/318 gaps.
+
+- Add real OS-kill coverage around claim, takeover, Git allocation, setup,
+  failed-allocation cleanup and plain release commits. Tests inspect refs/files,
+  atomic ownership/locks/contracts, running-clock release and a reclaimed
+  successor, preserving the distinction between planned paths and observed setup.
+
+- Fence interactive startup after preparation and terminal confirmation, including
+  changed policy/callers and replacement processes. Earlier no-task fences remain
+  historical regression evidence; current launches require tasks. Serialize
+  child creation/PID publication and preserve newer registrations at old-child
+  exit. Settle the current task of the same exiting process; retain work on
+  creation or publication failure. The supervised terminal follow-up above adds
+  owned-group behavior for every foreground launch.
+  SQLite transaction errors now attempt rollback if still active, releasing the
+  writer after a refused commit; real authorizer-denial tests cover this path.
+
+- Bind startup to the original claim receipt through brief writing, execution
+  intent and command delivery. PID publication/delivery and worker creation are
+  fenced against changed assignments, stop requests, policy edits and stopping
+  coordinators. Actual helper handles clean up unstarted supervisors; ambiguous
+  handoff/child-start crashes retain unknown state and work, with new crash tests.
+
+- Fence delayed claim setup by owner/epoch: an old Git allocation cannot release
+  a newer claim, overwrite its paths or copy local settings into its worktree.
+  Planned paths survive interruption for checkpoint/handoff; copy failures retain
+  known paths and partial files. Old preparation errors preserve newer busy agents.
+  The hook/pause regression now uses an actual subprocess instead of an obsolete
+  runner interception. Full baseline results and focused repairs are retained.
+
+- Schema-9 bounded headless output: each new execution retains a capped worker
+  log, observed byte counts/hash and a limited diagnostic tail. Excess output
+  fences work and honors captured cooperative/terminate policy. Incomplete streams
+  or capture failures cannot authorize cleanup or claim verified completion.
+
+- Schema-8 usage ledger: atomic allowance reservations, hashed numeric token/cost
+  reports, measured owned-command time, conservative human settlement and explicit
+  human budget extensions. Unknown/exhausted usage blocks new permissions and
+  completion; replacement assignments retain consumption. Provider billing quotas
+  and automatic native usage collection remain outstanding; explicit hashed
+  Claude/Codex native imports are supported.
+
+- Observed completion evidence: executable revision-bound goal checks, retained
+  verification receipts/checkouts, checked external task records, current-target
+  goal closure and explicit human resolution of owed checks with retained history.
+  Schema 7 preserves legacy closures as unverified. Verifier/record/closure crash
+  windows have durable retry/recovery semantics; prose cannot replace check proof.
+- Worktree return/cleanup preserves ignored files and edited briefs, defers for
+  live or uncertain workers even after they take another task, and retains task
+  references when Git refuses removal. Generated briefs retain content archives.
+- Parsed policy is bound to one checked UTF-8 snapshot, including transient
+  edits during loading; invalid TOML/encoding gives an actionable repair refusal.
+- Durable headless execution supervision: captured cooperative/terminate policy,
+  contract/interrupt timeout escalation, owned Windows jobs and anchored POSIX
+  groups, explicit stop previews and human reconciliation of unknown supervision.
+  Registry PIDs never authorize termination; uncertain/forced stops preserve work.
+- Gates, message hooks and benchmark runners use owned groups for timeout/error
+  cleanup, bounded captured output and descendant handling. Gate keepalives also
+  recheck current permissions. Spawn/gate policy rejects quoted permissions and
+  invalid/unbounded limits. Schema 6 adds backward-compatible execution records.
+- Stage D foundation: global JSON command envelopes, protocol negotiation,
+  versioned event replay, structured operator status and actionable diagnostics.
+  Doctor offers cleanup previews and reports ownership/evidence drift and owed
+  checks; unknown remote work is inspected only with explicit `--remote`.
+- Integration runs gates on the exact final commit, including hook changes,
+  retains check proof after cleanup, and refuses late edits or scope/hotspot
+  violations. Cleanup preserves new unmerged commits on completed task branches.
+- Deterministic conformance/storage/takeover tests and a fresh-install workforce
+  trial harness with solo, uncoordinated and coordinated modes. The scripted
+  runner validates mechanics; real-agent productivity and cost evidence remain owed.
+- Stage C: independently assigned read-only incident reviews with immutable
+  snapshots, cited reports, revision-fenced decisions, false-alarm support and
+  bounded escalation. Commit/tree/epoch/policy checks prevent stale or forged
+  review messages from authorizing integration; reviewed source refs and final
+  integration proofs survive squash and cleanup.
+- Scoped provisional/verified/contradicted/stale/retired lessons with independent
+  promotion, local event/commit provenance, full-text search/fallback, expiry and
+  history. Explicit cross-repository imports remain provisional. Experience
+  grouping and grounded utility observations support a maintainer-approved
+  learning loop without automatic code or policy rewrites.
+- Stage B: versioned typed inbox envelopes, per-recipient acknowledgement/replay,
+  sender-scoped retry keys, bounded payload retention and critical dead letters.
+- Targeted attention/pause/yield/cancel controls with fencing, explicit
+  acknowledgement, fresh checkpoints and durable handoff; interrupted integration
+  rechecks permissions at the Git target update. Common credentials are redacted
+  from new message bodies and event details (best effort).
+- Stage A of the resilient workforce design: source-backed architecture briefs
+  and revision-bound approval for every open goal. Migrated workflow-v1 metadata
+  is provenance and no longer exempts an open goal from architecture approval.
+- Bounded task contracts with offer/accept, one counter and one justified
+  extension; separate accounted running/blocked time, an absolute deadline,
+  review reserve and checkpoint interval.
+- Expiry fences the assignment and requests a checkpoint without deleting work;
+  `checkpoint` and `explain` support recovery. Merges recheck permissions after
+  gates. Schema migrations are transactional and recover after a killed process.
+- See [the implementation guide](docs/resilient-workforce.md) for policy defaults,
+  limits and the remaining hardening stage.
+
 ## v0.4.4 - 2026-10-19
 
 ### Faster: every command is about 2.4 times quicker

@@ -1,0 +1,20 @@
+{
+  "name": "luna1",
+  "started_at": "2026-10-20T05:15:48.801016+00:00",
+  "ended_at": "2026-10-20T05:16:33.572331+00:00",
+  "elapsed_seconds": 44.765,
+  "exit_code": 1,
+  "argv": [
+    "C:\\Program Files\\Python312\\python.exe",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source\\scripts\\workforce_bench.py",
+    "--output",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\luna1",
+    "--runner",
+    "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\codex-runner.json",
+    "--deadline-seconds",
+    "180"
+  ],
+  "cwd": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\source",
+  "log": "C:\\Users\\user\\AppData\\Local\\Temp\\workforce-live-imo1xci6\\luna1.log",
+  "log_sha256": "4752cba0cf01974031c6d8ab717cc8671b5bd1a97dbb48a866a27066ed19a4d0"
+}

@@ -1,6 +1,7 @@
 name: ci
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
     tags: ["v*"]
@@ -19,6 +20,10 @@ jobs:
     # proved on all three operating systems agents actually run on.
     name: tests (${{ matrix.os }}, Python ${{ matrix.python }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
+    env:
+      PYTHONUTF8: "1"
+      PYTHONFAULTHANDLER: "1"
     strategy:
       fail-fast: false
       matrix:
@@ -36,6 +41,34 @@ jobs:
       - name: The manifest matches the skill files
         run: python scripts/make_manifest.py --check
       - name: Tests
-        run: python -m unittest discover -s tests -v
+        run: python scripts/validate_candidate.py --workers 2 --output candidate-validation
+      - name: Retain exact-source test evidence
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-${{ matrix.os }}-py${{ matrix.python }}
+          path: candidate-validation/
       - name: The detected environment (for the log)
         run: python skills/agents-collaboration/swarm.py environment
+
+  acceptance:
+    name: all-platform acceptance
+    if: always()
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: candidate-*
+          path: platform-evidence
+      - name: All six runtimes passed the same complete source and suite
+        env:
+          MATRIX_RESULT: ${{ needs.test.result }}
+        run: |
+          python -c "import os; assert os.environ['MATRIX_RESULT'] == 'success', 'A matrix job failed or was cancelled'"
+          python scripts/validate_matrix.py platform-evidence

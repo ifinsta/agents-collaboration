@@ -1,0 +1,9 @@
+{
+  "source_zip_sha256": "f0eb4421bae8943628797f23aed66b75f1d8de15c0eb8185a754491a34f2c99f",
+  "transport": "native Windows pseudo terminal through the execution tool",
+  "rendered_title": "SWARM SESSIONS",
+  "sent_keys": "v<Tab>q",
+  "observed_view": "Supervisor diagnostics",
+  "observed_detach_message": "Session viewer detached. Workers continue under their supervisors; reopen with `swarm sessions`.",
+  "exit_code": 0
+}

@@ -1,0 +1,13 @@
+{
+  "core_sha256": "3ce4f8ae09924a5dbf29aa8a4f03f84cb87735919a908ac06498922156161c45",
+  "scope": "Real Git/CLI and actual owner-process loss; fake adapter only, no provider calls. Running-clock takeover observation, not a passed acceptance check.",
+  "old_contract_running": true,
+  "task_state_after_takeover": "in_progress",
+  "new_contract_state": "active",
+  "new_active_since_after_takeover": null,
+  "step_idx_after_real_step_command": 1,
+  "new_active_since_after_step": null,
+  "new_accounted_running_seconds": 0.0,
+  "wall_deadline_preserved": true,
+  "new_deliberation_clock_present": true
+}

@@ -1,0 +1,391 @@
+test_ec317_answers_still_require_replanning_after_takeover (test_takeover.Takeover.test_ec317_answers_still_require_replanning_after_takeover) ... ok
+test_ec317_contracted_takeover_cannot_bypass_unanswered_start_questions (test_takeover.Takeover.test_ec317_contracted_takeover_cannot_bypass_unanswered_start_questions) ... ok
+test_ec317_legacy_takeover_uses_the_same_start_gate (test_takeover.Takeover.test_ec317_legacy_takeover_uses_the_same_start_gate) ... ok
+test_ec317_returning_owner_revalidates_unanswered_questions (test_takeover.Takeover.test_ec317_returning_owner_revalidates_unanswered_questions) ... ok
+test_ec318_observed_headless_exit_pauses_the_running_contract (test_takeover.Takeover.test_ec318_observed_headless_exit_pauses_the_running_contract) ... ok
+test_ec318_observed_interactive_exit_pauses_the_running_contract (test_takeover.Takeover.test_ec318_observed_interactive_exit_pauses_the_running_contract) ... ok
+test_ec318_owner_loss_cannot_cancel_an_elapsed_deliberation_cutoff (test_takeover.Takeover.test_ec318_owner_loss_cannot_cancel_an_elapsed_deliberation_cutoff) ... ok
+test_ec318_returning_owner_resumes_the_same_clock_without_losing_progress (test_takeover.Takeover.test_ec318_returning_owner_resumes_the_same_clock_without_losing_progress) ... ok
+test_ec318_running_takeover_preserves_progress_and_remaining_allowance_then_restarts_clock (test_takeover.Takeover.test_ec318_running_takeover_preserves_progress_and_remaining_allowance_then_restarts_clock) ... ok
+test_ec318_silent_owner_clock_pauses_before_reclaim_grace_and_rejoin_requires_start (test_takeover.Takeover.test_ec318_silent_owner_clock_pauses_before_reclaim_grace_and_rejoin_requires_start) ... ok
+test_ec318_successor_deliberation_remains_bounded_before_restart (test_takeover.Takeover.test_ec318_successor_deliberation_remains_bounded_before_restart) ... ok
+test_ec201_a_real_version_one_database_upgrades_without_losing_messages (test_contracts.Architecture.test_ec201_a_real_version_one_database_upgrades_without_losing_messages) ... ok
+test_ec202_architecture_is_required_and_approval_tracks_goal_revision (test_contracts.Architecture.test_ec202_architecture_is_required_and_approval_tracks_goal_revision) ... ok
+test_ec203_high_risk_needs_human_and_source_evidence_must_match (test_contracts.Architecture.test_ec203_high_risk_needs_human_and_source_evidence_must_match) ... ok
+test_ec209_crashed_new_goal_owner_can_be_taken_over_with_remaining_contract (test_contracts.Architecture.test_ec209_crashed_new_goal_owner_can_be_taken_over_with_remaining_contract) ... ok
+test_ec201_future_schema_is_refused_before_upgrade (test_contracts.Contracts.test_ec201_future_schema_is_refused_before_upgrade) ... ok
+test_ec201_migration_is_idempotent_and_preserves_legacy_goals (test_contracts.Contracts.test_ec201_migration_is_idempotent_and_preserves_legacy_goals) ... ok
+test_ec202_scope_exception_cannot_widen_a_contract (test_contracts.Contracts.test_ec202_scope_exception_cannot_widen_a_contract) ... ok
+test_ec204_decision_expiry_is_durable_when_claim_is_refused (test_contracts.Contracts.test_ec204_decision_expiry_is_durable_when_claim_is_refused) ... ok
+test_ec204_offer_accept_and_one_counter_keep_the_original_decision_deadline (test_contracts.Contracts.test_ec204_offer_accept_and_one_counter_keep_the_original_decision_deadline) ... ok
+test_ec204_replaced_offer_has_a_new_epoch_and_old_grace_does_not_escalate (test_contracts.Contracts.test_ec204_replaced_offer_has_a_new_epoch_and_old_grace_does_not_escalate) ... ok
+test_ec205_expiry_fences_work_and_preserves_dirty_tree_through_restart (test_contracts.Contracts.test_ec205_expiry_fences_work_and_preserves_dirty_tree_through_restart) ... ok
+test_ec205_stale_leave_cannot_release_the_current_epoch (test_contracts.Contracts.test_ec205_stale_leave_cannot_release_the_current_epoch) ... ok
+test_ec206_active_time_and_deliberation_limits_are_enforced (test_contracts.Contracts.test_ec206_active_time_and_deliberation_limits_are_enforced) ... ok
+test_ec206_blocked_time_does_not_consume_active_time_but_wall_deadline_still_applies (test_contracts.Contracts.test_ec206_blocked_time_does_not_consume_active_time_but_wall_deadline_still_applies) ... ok
+test_ec207_checkpoint_due_and_grace_escalation_are_idempotent (test_contracts.Contracts.test_ec207_checkpoint_due_and_grace_escalation_are_idempotent) ... ok
+test_ec207_due_checkpoint_blocks_new_work_until_a_fenced_snapshot (test_contracts.Contracts.test_ec207_due_checkpoint_blocks_new_work_until_a_fenced_snapshot) ... ok
+test_ec208_expiry_during_gate_never_advances_target (test_contracts.Contracts.test_ec208_expiry_during_gate_never_advances_target) ... ok
+test_ec210_review_reserve_stops_new_implementation (test_contracts.Contracts.test_ec210_review_reserve_stops_new_implementation) ... ok
+test_ec211_crash_during_migration_rolls_back_schema_and_can_be_retried (test_contracts.Contracts.test_ec211_crash_during_migration_rolls_back_schema_and_can_be_retried) ... ok
+test_ec244_descendants_remain_owned_after_the_worker_leader_exits (test_processes.OwnedGroups.test_ec244_descendants_remain_owned_after_the_worker_leader_exits) ... ok
+test_ec244_owned_termination_removes_descendants_and_leaves_unrelated_process_alive (test_processes.OwnedGroups.test_ec244_owned_termination_removes_descendants_and_leaves_unrelated_process_alive) ... ok
+test_ec245_gate_timeout_terminates_its_owned_group_and_bounds_output_in_memory (test_processes.OwnedGroups.test_ec245_gate_timeout_terminates_its_owned_group_and_bounds_output_in_memory) ... ok
+test_ec245_raising_keepalive_cleans_up_the_gate_children_before_propagating_refusal (test_processes.OwnedGroups.test_ec245_raising_keepalive_cleans_up_the_gate_children_before_propagating_refusal) ... ok
+test_ec243_schema_five_upgrade_keeps_prior_records_and_rolls_back_killed_execution_migration (test_processes.Supervision.test_ec243_schema_five_upgrade_keeps_prior_records_and_rolls_back_killed_execution_migration) ... ok
+test_ec246_expired_live_contract_fences_then_terminates_only_the_owned_group (test_processes.Supervision.test_ec246_expired_live_contract_fences_then_terminates_only_the_owned_group) ... ok
+test_ec246_timed_out_targeted_pause_terminates_owned_execution_without_forging_ack (test_processes.Supervision.test_ec246_timed_out_targeted_pause_terminates_owned_execution_without_forging_ack) ... ok
+test_ec247_cooperative_policy_never_signals_after_grace_and_stop_preview_is_read_only (test_processes.Supervision.test_ec247_cooperative_policy_never_signals_after_grace_and_stop_preview_is_read_only) ... ok
+test_ec248_registry_pids_never_grant_authority_to_signal_unrelated_processes (test_processes.Supervision.test_ec248_registry_pids_never_grant_authority_to_signal_unrelated_processes) ... ok
+test_ec249_crash_after_execution_intent_keeps_the_task_recoverable_without_launching (test_processes.Supervision.test_ec249_crash_after_execution_intent_keeps_the_task_recoverable_without_launching) ... ok
+test_ec249_missing_or_stale_parent_context_refuses_spawn_before_allocating_a_worker (test_processes.Supervision.test_ec249_missing_or_stale_parent_context_refuses_spawn_before_allocating_a_worker) ... ok
+test_ec249_startup_without_an_acknowledged_group_never_reports_ready (test_processes.Supervision.test_ec249_startup_without_an_acknowledged_group_never_reports_ready) ... ok
+test_ec249_stopping_a_spawned_coordinator_does_not_stop_its_independent_worker (test_processes.Supervision.test_ec249_stopping_a_spawned_coordinator_does_not_stop_its_independent_worker) ... ok
+test_ec249_supervisor_crash_is_unknown_never_success_and_preserves_even_untouched_work (test_processes.Supervision.test_ec249_supervisor_crash_is_unknown_never_success_and_preserves_even_untouched_work) ... ok
+test_ec250_same_size_and_mtime_policy_changes_do_not_reuse_stale_parsed_config (test_processes.Supervision.test_ec250_same_size_and_mtime_policy_changes_do_not_reuse_stale_parsed_config) ... ok
+test_ec250_spawn_and_gate_policy_reject_quoted_permissions_and_unbounded_limits (test_processes.Supervision.test_ec250_spawn_and_gate_policy_reject_quoted_permissions_and_unbounded_limits) ... ok
+test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup (test_interactive_launch.InteractiveLaunch.test_ec301_replacement_process_in_the_same_lease_prevents_interactive_startup) ... ok
+test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation (test_interactive_launch.InteractiveLaunch.test_ec301_same_name_new_epoch_cannot_reuse_old_interactive_preparation) ... ok
+test_ec301_stale_automatic_interactive_preparation_is_refused (test_interactive_launch.InteractiveLaunch.test_ec301_stale_automatic_interactive_preparation_is_refused) ... ok
+test_ec301_stale_explicit_interactive_preparation_is_refused (test_interactive_launch.InteractiveLaunch.test_ec301_stale_explicit_interactive_preparation_is_refused) ... ok
+test_ec302_child_creation_and_pid_publication_share_the_ownership_fence (test_interactive_launch.InteractiveLaunch.test_ec302_child_creation_and_pid_publication_share_the_ownership_fence) ... joined as bob (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as bob` (11 rules for this machine)
+peers: ann
+claimed H-api: Implement the endpoint
+  worktree  C:\Users\user\AppData\Local\Temp\tmpszr5j73o\repo-wt\H-api
+  branch    swarm/H-api
+  slot      2  (`swarm env --as bob` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob
+  contract  1, epoch 1, deadline 2026-10-20T03:39:48+00:00; `swarm explain H-api`
+  goal GL: Verify the health endpoint
+    serves outcome 1: The endpoint returns a running version (checked by: Run the endpoint verification suite)
+  done when: Run the endpoint verification suite
+  builds on (previous): nothing; it can start from what exists
+  feeds (next): no task waits on this one
+next: cd into the worktree, then `swarm plan --as bob --template` and answer every question.
+
+bob (hold) takes H-api: Implement the endpoint
+  worktree C:\Users\user\AppData\Local\Temp\tmpszr5j73o\repo-wt\H-api
+
+hold cannot take a first message on its command line. Its first message must be:
+  You are swarm agent bob. Read the file .swarm-brief.md in this directory and follow it exactly.
+
+hold exited (0). H-api keeps its work; inspect `swarm explain H-api` before takeover.
+joined as bob (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as bob` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpzms8gzdj\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as bob` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as bob
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as bob --template` and answer every question.
+joined as cat (slot 3, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as cat   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as cat` (11 rules for this machine)
+peers: ann, bob
+claimed T2: Second task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpzms8gzdj\repo-wt\T2
+  branch    swarm/T2
+  slot      3  (`swarm env --as cat` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as cat
+  builds on (previous): nothing; it can start from what exists
+  feeds (next): no task waits on this one
+next: cd into the worktree, then `swarm plan --as cat --template` and answer every question.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpfsf4tjgd\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpfsf4tjgd\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp2iook431\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmp2iook431\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpz90vsmy2\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpz90vsmy2\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp3_6puqpq\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmp3_6puqpq\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp47ar9cg5\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as workerok
+test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid (test_interactive_launch.InteractiveLaunch.test_ec303_old_interactive_exit_preserves_a_resumed_agent_and_replacement_pid) ... ok
+test_ec304_no_task_launch_rechecks_after_clipboard_preparation (test_interactive_launch.InteractiveLaunch.test_ec304_no_task_launch_rechecks_after_clipboard_preparation) ... ok
+test_ec304_no_task_launch_rechecks_after_terminal_confirmation (test_interactive_launch.InteractiveLaunch.test_ec304_no_task_launch_rechecks_after_terminal_confirmation) ... ok
+test_ec305_interactive_launch_rechecks_pause_after_preparation (test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_pause_after_preparation) ... ok
+test_ec305_interactive_launch_rechecks_policy_after_preparation (test_interactive_launch.InteractiveLaunch.test_ec305_interactive_launch_rechecks_policy_after_preparation) ... ok
+test_ec305_stopped_coordinator_cannot_finish_interactive_startup (test_interactive_launch.InteractiveLaunch.test_ec305_stopped_coordinator_cannot_finish_interactive_startup) ... ok
+test_ec306_exit_settles_the_current_task_of_the_same_actual_child (test_interactive_launch.InteractiveLaunch.test_ec306_exit_settles_the_current_task_of_the_same_actual_child) ... ok
+test_ec307_interactive_process_creation_failure_preserves_the_claim (test_interactive_launch.InteractiveLaunch.test_ec307_interactive_process_creation_failure_preserves_the_claim) ... 
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmp47ar9cg5\repo-wt\T1
+
+
+fake exited (0) before starting T1; the task is back in the pool.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpdncvzxt_\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpdncvzxt_\repo-wt\T1
+
+
+fake exited (0); current registry state was preserved. Inspect `swarm status` before continuing.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+
+worker (fakeplain) joined without a task; it will ask for work.
+
+fakeplain cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file ../../../../../CascadeProjects/agents-collaboration/skills/agents-collaboration/SKILL.md and follow it. You have already joined. Ask for work with swarm next.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+
+worker (fakeplain) joined without a task; it will ask for work.
+
+fakeplain cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file ../../../../../CascadeProjects/agents-collaboration/skills/agents-collaboration/SKILL.md and follow it. You have already joined. Ask for work with swarm next.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmp7ecay6zw\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmp7ecay6zw\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpqi0cyjj4\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpqi0cyjj4\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpk2z9ii5h\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpk2z9ii5h\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpp_shom8d\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (waiter) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpp_shom8d\repo-wt\T1
+
+waiter cannot take a first message on its command line. Its first message must be:
+  You are swarm agent worker. Read the file .swarm-brief.md in this directory and follow it exactly.
+
+waiter exited (0). T2 keeps its work; inspect `swarm explain T2` before takeover.
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpp67ts3kk\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what existsok
+test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child (test_interactive_launch.InteractiveLaunch.test_ec308_uncertain_interactive_pid_commit_waits_for_the_actual_child) ... ok
+test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer (test_interactive_launch.InteractiveLaunch.test_ec309_refused_sqlite_commit_rolls_back_and_releases_the_writer) ... ok
+test_ec310_kill_after_claim_commit_retains_a_planned_path_without_inventing_setup (test_claim_crashes.ClaimCrashes.test_ec310_kill_after_claim_commit_retains_a_planned_path_without_inventing_setup) ... ok
+test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event (test_claim_crashes.ClaimCrashes.test_ec310_kill_before_claim_commit_rolls_back_owner_contract_locks_and_event) ... ok
+test_ec311_kill_after_git_creation_preserves_registered_work_without_setup_proof (test_claim_crashes.ClaimCrashes.test_ec311_kill_after_git_creation_preserves_registered_work_without_setup_proof) ... ok
+test_ec311_kill_before_git_creation_preserves_the_committed_claim (test_claim_crashes.ClaimCrashes.test_ec311_kill_before_git_creation_preserves_the_committed_claim) ... ok
+test_ec312_kill_after_setup_commit_retains_published_base_and_copies (test_claim_crashes.ClaimCrashes.test_ec312_kill_after_setup_commit_retains_published_base_and_copies) ... ok
+test_ec312_kill_before_setup_commit_keeps_physical_copies_and_the_original_claim (test_claim_crashes.ClaimCrashes.test_ec312_kill_before_setup_commit_keeps_physical_copies_and_the_original_claim) ... ok
+test_ec313_takeover_kill_after_ownership_commit_retains_one_new_epoch_and_contract (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_after_ownership_commit_retains_one_new_epoch_and_contract) ... ok
+test_ec313_takeover_kill_after_setup_commit_retains_the_published_transfer (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_after_setup_commit_retains_the_published_transfer) ... ok
+test_ec313_takeover_kill_before_ownership_commit_preserves_the_previous_owner (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_before_ownership_commit_preserves_the_previous_owner) ... ok
+test_ec313_takeover_kill_before_setup_commit_preserves_committed_transfer_and_work (test_claim_crashes.ClaimCrashes.test_ec313_takeover_kill_before_setup_commit_preserves_committed_transfer_and_work) ... ok
+test_ec314_release_kill_after_commit_retains_one_release_and_all_work (test_claim_crashes.ClaimCrashes.test_ec314_release_kill_after_commit_retains_one_release_and_all_work) ... ok
+test_ec314_release_kill_before_commit_retains_the_held_assignment (test_claim_crashes.ClaimCrashes.test_ec314_release_kill_before_commit_retains_the_held_assignment) ... ok
+test_ec315_old_release_killed_after_reclaim_cannot_mutate_the_successor (test_claim_crashes.ClaimCrashes.test_ec315_old_release_killed_after_reclaim_cannot_mutate_the_successor) ... ok
+test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting (test_claim_crashes.ClaimCrashes.test_ec316_failed_allocation_kill_after_cleanup_commit_releases_once_without_deleting) ... ok
+test_ec316_failed_allocation_kill_before_cleanup_commit_preserves_claim_and_collision (test_claim_crashes.ClaimCrashes.test_ec316_failed_allocation_kill_before_cleanup_commit_preserves_claim_and_collision) ... ok
+
+----------------------------------------------------------------------
+Ran 76 tests in 452.316s
+
+OK
+
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpp67ts3kk\repo-wt\T1
+
+joined as worker (slot 2, role worker)
+environment: Windows 10, shell powershell or cmd; caps bash, docker, windows
+command: python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker   (works from any directory)
+READ BEFORE YOUR FIRST COMMAND: `swarm environment --as worker` (11 rules for this machine)
+peers: ann
+claimed T1: First task
+  worktree  C:\Users\user\AppData\Local\Temp\tmpuxz9_pqo\repo-wt\T1
+  branch    swarm/T1
+  slot      2  (`swarm env --as worker` prints your environment)
+  command   python C:/Users/user/CascadeProjects/agents-collaboration/skills/agents-collaboration/swarm.py <subcommand> --as worker
+  builds on (previous): nothing; it can start from what exists
+  feeds (next):
+    -> T3 [open] Needs T1
+       it will work in: src/
+next: cd into the worktree, then `swarm plan --as worker --template` and answer every question.
+
+worker (fake) takes T1: First task
+  worktree C:\Users\user\AppData\Local\Temp\tmpuxz9_pqo\repo-wt\T1
+
+Interactive child started but PID publication is uncertain. Waiting for that actual child; preserve work and do not restart blindly.

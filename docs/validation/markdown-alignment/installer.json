@@ -1,0 +1,44 @@
+{
+  "started_at": "2026-10-20T09:53:08.350500+00:00",
+  "python": "3.12.2 (tags/v3.12.2:6abddd9, Feb  6 2024, 21:26:36) [MSC v.1937 64 bit (AMD64)]",
+  "platform": "win32",
+  "inputs_before": {
+    "skills/agents-collaboration/swarm_core.py": "cab0e158873e4fcaae69ba6b6735a0e5d31cca6f248d8be5458214ee0c1d6576",
+    "skills/agents-collaboration/swarm_web.py": "29578ce1dffa79c5f125f33622456c66a61f4618985fde43aff8bdb418306974",
+    "skills/agents-collaboration/SKILL.md": "c6fe5278708ab3aab1d29d7d1cd6da9ef3c247ab5fd7617a11ea4f8b7f934ea8",
+    "skills/agents-collaboration/BUS.md": "42725738fda46b4b0751b7cee156637b59c4c88ca646991eb4cb86c502afef93",
+    "skills/agents-collaboration/EDGE-CASES.md": "8dd1138f6ca5931d0577b771ad6702a724ad92101aa3692e16f556e952f45192",
+    "skills/agents-collaboration/BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
+    "skills/agents-collaboration/MANIFEST.json": "efd168242735312f170a3d9b5c1f79187759181ab43fb42abf5af780046b0f25",
+    "install.py": "bb7a90b4a97b30f0af7eef3fdd3f41cb2edc986831ef682cd37d3c7f9438fea2",
+    "scripts/make_manifest.py": "f01b93a537d877d4231ba83f4c1b7a5d52208d051b13f02bd925ea30d31dc658",
+    "examples/simulate.py": "cd7dc3203e69096646eed501f11f8cf03f11b7ef425125f41ed0a8e4e5d2a1af",
+    "tests/test_installer.py": "c117408bb18de6f1ee1fe3ee4ecf73b76103c91f2742ee34ce4cdcdeeb8c91ae",
+    "tests/test_bus.py": "f9cae4542d0b9a65e420102c302f78ca9591db191ab0e12337eda1b9faa5a996"
+  },
+  "command": [
+    "C:\\Program Files\\Python312\\python.exe",
+    "-m",
+    "unittest",
+    "-v",
+    "test_installer",
+    "test_bus.Bus.test_ec330_envelope_schema_idempotent_publish_and_installed_contract"
+  ],
+  "exit_code": 0,
+  "elapsed_seconds": 40.516,
+  "inputs_after": {
+    "skills/agents-collaboration/swarm_core.py": "cab0e158873e4fcaae69ba6b6735a0e5d31cca6f248d8be5458214ee0c1d6576",
+    "skills/agents-collaboration/swarm_web.py": "29578ce1dffa79c5f125f33622456c66a61f4618985fde43aff8bdb418306974",
+    "skills/agents-collaboration/SKILL.md": "c6fe5278708ab3aab1d29d7d1cd6da9ef3c247ab5fd7617a11ea4f8b7f934ea8",
+    "skills/agents-collaboration/BUS.md": "42725738fda46b4b0751b7cee156637b59c4c88ca646991eb4cb86c502afef93",
+    "skills/agents-collaboration/EDGE-CASES.md": "8dd1138f6ca5931d0577b771ad6702a724ad92101aa3692e16f556e952f45192",
+    "skills/agents-collaboration/BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
+    "skills/agents-collaboration/MANIFEST.json": "efd168242735312f170a3d9b5c1f79187759181ab43fb42abf5af780046b0f25",
+    "install.py": "bb7a90b4a97b30f0af7eef3fdd3f41cb2edc986831ef682cd37d3c7f9438fea2",
+    "scripts/make_manifest.py": "f01b93a537d877d4231ba83f4c1b7a5d52208d051b13f02bd925ea30d31dc658",
+    "examples/simulate.py": "cd7dc3203e69096646eed501f11f8cf03f11b7ef425125f41ed0a8e4e5d2a1af",
+    "tests/test_installer.py": "c117408bb18de6f1ee1fe3ee4ecf73b76103c91f2742ee34ce4cdcdeeb8c91ae",
+    "tests/test_bus.py": "f9cae4542d0b9a65e420102c302f78ca9591db191ab0e12337eda1b9faa5a996"
+  },
+  "inputs_unchanged": true
+}
