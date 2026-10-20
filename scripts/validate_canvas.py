@@ -33,6 +33,31 @@ def source_hashes():
     }
 
 
+def check_viewport(page):
+    """Both sections fill the space below the measured, possibly wrapped header."""
+    geometry = page.evaluate("""() => {
+        const rect = selector => {
+            const {top, bottom, left, right, height} = document.querySelector(selector).getBoundingClientRect();
+            return {top, bottom, left, right, height};
+        };
+        return {header: rect('header.top'), canvas: rect('.canvas-section'), inspector: rect('.teamfill > aside'),
+            width: innerWidth, height: innerHeight, scrollWidth: document.documentElement.scrollWidth,
+            scrollHeight: document.documentElement.scrollHeight};
+    }""")
+    header, canvas, inspector = (geometry[key] for key in ("header", "canvas", "inspector"))
+    assert geometry["scrollWidth"] <= geometry["width"], geometry
+    assert geometry["scrollHeight"] <= geometry["height"], geometry
+    assert abs(canvas["top"] - header["bottom"]) <= 1, geometry
+    assert abs(inspector["bottom"] - geometry["height"]) <= 1, geometry
+    if geometry["width"] > 760:
+        assert abs(inspector["top"] - header["bottom"]) <= 1, geometry
+        assert abs(canvas["bottom"] - geometry["height"]) <= 1, geometry
+        assert abs(canvas["right"] - inspector["left"]) <= 1, geometry
+    else:
+        assert abs(canvas["bottom"] - inspector["top"]) <= 1, geometry
+    return geometry
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
@@ -134,9 +159,12 @@ def main():
             checks.append("live update retains shell, canvas, controls, card and surviving connector elements; only Bob/gate cards mutate")
             checks.append("smooth curves for every factual relationship, with directional arrowheads; camera retained through live update")
 
+            page.get_by_role("button", name="Fit team to screen (F)").click()
+            fitted_zoom = zoom.inner_text()
             board.focus()
+            board.press("+")
             board.press("f")
-            assert int(zoom.inner_text().rstrip("%")) < 100
+            expect(zoom).to_have_text(fitted_zoom)
             board.press("0")
             expect(zoom).to_have_text("100%")
             board.press("+")
@@ -227,15 +255,31 @@ def main():
             checks.append("separate cameras per board, restored on return")
 
             dimensions = []
-            for width in (1440, 1024, 820, 600, 390):
-                page.set_viewport_size({"width": width, "height": 1000})
+            geometry = []
+            for width, height in ((1440, 1000), (1024, 1000), (820, 1000), (600, 1000), (390, 1000), (1024, 600), (820, 600), (761, 600), (390, 600), (1440, 480)):
+                page.set_viewport_size({"width": width, "height": height})
                 page.get_by_role("button", name="Fit team to screen (F)").click()
-                assert not page.evaluate("document.documentElement.scrollWidth > document.documentElement.clientWidth"), width
+                geometry.append(check_viewport(page))
                 assert board.bounding_box()["height"] >= 200, (width, board.bounding_box())
                 assert page.get_by_role("button", name="Focus on selected participant and neighbours").is_visible()
-                dimensions.append(width)
-                if width in (1440, 390):
+                dimensions.append(f"{width}x{height}")
+                if width in (1440, 390) and height == 1000:
                     page.screenshot(path=str(args.output / f"canvas-{width}.png"), full_page=True)
+            assert any(item["width"] > 760 and item["header"]["height"] > 33 for item in geometry), "Wrapped desktop header was not exercised"
+            assert page.evaluate("""() => {
+                const inspector = document.querySelector('.teamfill > aside'), board = document.querySelector('.board');
+                const before = [board.scrollLeft, board.scrollTop, scrollY];
+                const extra = document.createElement('div'); extra.style.height = '1200px'; inspector.append(extra);
+                inspector.scrollTop = 200;
+                const independent = inspector.scrollTop === 200 && JSON.stringify(before) === JSON.stringify([board.scrollLeft, board.scrollTop, scrollY]);
+                extra.remove(); inspector.scrollTop = 0; return independent;
+            }"""), "Inspector must scroll without moving the canvas or document"
+            page.get_by_role("link", name="Overview", exact=True).click()
+            expect(page.locator("#app")).not_to_have_class("team-shell")
+            page.get_by_role("link", name="Team", exact=True).click()
+            expect(page.locator(".node")).to_have_count(7)
+            check_viewport(page)
+            checks.append("two bounded sections below the actual header, including wrapped navigation and short windows; inspector scroll and route changes")
             # Phone starts at readable 100%, with native touch scrolling rather than a tiny whole graph.
             mobile = browser.new_context(viewport={"width": 390, "height": 844}, is_mobile=True, has_touch=True)
             phone = mobile.new_page()
@@ -244,14 +288,15 @@ def main():
             expect(phone.get_by_label("Canvas zoom", exact=True)).to_have_text("100%")
             assert phone.locator(".node").count() == 7
             assert phone.get_by_role("button", name="Fit team to screen (F)").is_visible()
+            geometry.append(check_viewport(phone))
             phone.screenshot(path=str(args.output / "canvas-phone.png"), full_page=True)
             mobile.close()
-            checks.append("responsive layout without horizontal page overflow at " + ", ".join(map(str, dimensions)) + "px; touch phone starts at 100%")
+            checks.append("responsive layout without page overflow at " + ", ".join(dimensions) + "; touch phone starts at 100%")
             assert not errors, errors
             browser.close()
         after = source_hashes()
         assert before == after, "Source changed during browser validation"
-        report = {"ok": True, "browser": args.channel, "source_sha256": before, "checks": checks, "browser_errors": errors}
+        report = {"ok": True, "browser": args.channel, "source_sha256": before, "checks": checks, "viewport_geometry": geometry, "browser_errors": errors}
         (args.output / "browser.json").write_text(json.dumps(report, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(report, indent=2))
     finally:

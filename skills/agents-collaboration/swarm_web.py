@@ -1498,150 +1498,160 @@ PAGE = r"""<!doctype html>
 <meta name="color-scheme" content="light">
 <title>swarm</title>
 <style nonce="__NONCE__">
-:root{color-scheme:light;--bg:#F5F6F8;--line:#DCE0E6;--line2:#E8EBEF;--text:#111827;--mute:#566070;--dim:#7A8494;--accent:#2F5BD0;--accentbg:#EEF3FD;--accentink:#1F3F9E;--good:#1B7F4B;--warn:#8A5A00;--warnbg:#FFF8E6;--warnline:#EBD9A8;--bad:#B3261E;--badbg:#FDF4F3;--info:#3A4A66;--tile:#EEF1F5}
+:root{color-scheme:light;--bg:#F5F6F8;--line:#DCE0E6;--line2:#E8EBEF;--text:#111827;--mute:#566070;--dim:#66717F;--accent:#2F5BD0;--accentbg:#EEF3FD;--accentink:#1F3F9E;--good:#1B7F4B;--warn:#8A5A00;--warnbg:#FFF8E6;--warnline:#EBD9A8;--bad:#B3261E;--badbg:#FDF4F3;--info:#3A4A66;--tile:#EEF1F5}
 *{box-sizing:border-box}
 html,body{margin:0;background:var(--bg);color:var(--text)}
 body{font:13px/18px ui-sans-serif,system-ui,"Segoe UI",Inter,Roboto,sans-serif}
 a{color:var(--accent);text-decoration:none}
 a:hover{text-decoration:underline}
-:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
-h1{margin:0;font-size:16px;line-height:22px;font-weight:600;letter-spacing:-.005em}
-h2{margin:0;font-size:11px;line-height:16px;font-weight:600;color:var(--mute);text-transform:uppercase;letter-spacing:.05em}
+:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+h1{margin:0;font-size:14px;line-height:20px;font-weight:600;letter-spacing:-.005em}
+h2{margin:0;font-size:12px;line-height:16px;font-weight:600;color:var(--mute)}
 .mono{font-family:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;font-size:12px}
 .muted{color:var(--mute)}.dim{color:var(--dim)}.small{font-size:12px;line-height:16px}.b{font-weight:600}.m{font-weight:500}.err{color:var(--bad)}.ok{color:var(--good)}
-.top{height:44px;background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:20px;padding:0 16px;flex-wrap:wrap;position:sticky;top:0;z-index:5}
-.brand{display:flex;align-items:center;gap:8px}
-.brand b{font-size:14px;font-weight:600}
-.tabs{display:flex;gap:2px;height:44px;overflow-x:auto;scrollbar-width:none}
+.top{background:#fff;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;padding:0 12px;flex-wrap:wrap;position:sticky;top:0;z-index:5;min-height:33px}
+.brand{display:flex;align-items:center;gap:6px}
+.brand b{font-size:13px;font-weight:600}
+.tabs{display:flex;gap:2px;height:32px;overflow-x:auto;scrollbar-width:none}
 .tabs::-webkit-scrollbar{display:none}
-.tabs a{display:flex;align-items:center;gap:6px;padding:0 10px;color:var(--mute);font-weight:500;white-space:nowrap}
+.tabs a{display:flex;align-items:center;gap:4px;padding:0 8px;color:var(--mute);font-weight:500;white-space:nowrap}
 .tabs a:hover{color:var(--text);text-decoration:none}
-.tabs a.on{color:var(--text);box-shadow:inset 0 -2px 0 var(--accent)}
+.tabs a.on{color:var(--text);box-shadow:inset 0 -1px 0 var(--accent)}
 .grow{flex:1}
-.meta{display:flex;align-items:center;gap:10px}
-.tag{border:1px solid var(--line);border-radius:4px;padding:0 6px;font-size:11px;line-height:18px;color:var(--mute)}
+.meta{display:flex;align-items:center;gap:8px}
+.tag{border:1px solid var(--line);border-radius:2px;padding:0 6px;font-size:11px;line-height:18px;color:var(--mute)}
 .tag.live{border-color:#C9D7F7;color:var(--accentink);background:var(--accentbg)}
-.switch{height:26px;max-width:180px;border:1px solid #CDD3DB;border-radius:5px;background:#fff;color:var(--text);font:inherit;padding:0 6px}
+.switch{height:26px;max-width:180px;border:1px solid #CDD3DB;border-radius:2px;background:#fff;color:var(--text);font:inherit;padding:0 8px}
 .page p{margin:0}
-.page{max-width:1440px;margin:0 auto;padding:14px 20px 28px;display:flex;flex-direction:column;gap:14px}
-.panel{background:#fff;border:1px solid var(--line);border-radius:6px}
-.row{display:flex;align-items:center;gap:8px}
+.page{max-width:1440px;margin:0 auto;padding:8px 12px 16px;display:flex;flex-direction:column;gap:8px}
+.panel{background:#fff;border:1px solid var(--line);border-radius:4px}
+.row{display:flex;align-items:center;gap:6px}
 .wrap{flex-wrap:wrap}
-.col{display:flex;flex-direction:column;gap:6px}
+.col{display:flex;flex-direction:column;gap:4px}
 .between{justify-content:space-between}
-.cols{display:flex;flex-wrap:wrap;gap:14px;align-items:flex-start}
+.cols{display:flex;flex-wrap:wrap;gap:8px;align-items:flex-start}
 .cols>.c2{flex:2 1 680px;min-width:0}
 .cols>.c1{flex:1 1 320px;min-width:0}
-.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;height:28px;padding:0 10px;border:1px solid #CDD3DB;background:#fff;border-radius:5px;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;text-decoration:none;white-space:nowrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:4px;height:26px;padding:0 8px;border:1px solid #CDD3DB;background:#fff;border-radius:2px;font:inherit;font-size:12.5px;font-weight:500;color:var(--text);cursor:pointer;text-decoration:none;white-space:nowrap}
 .btn:hover{background:#F6F7F9;text-decoration:none}
 .btn:disabled{opacity:.55;cursor:default}
 .btn.on{background:var(--accentbg);border-color:#9FB6EC;color:var(--accentink)}
 .btn.pri{background:var(--accent);border-color:var(--accent);color:#fff}
 .btn.pri:hover{background:#2850BC}
 .btn.sm{height:24px;padding:0 8px;font-size:12px}
-.field{width:100%;font:inherit;color:var(--text);border:1px solid #CDD3DB;border-radius:5px;padding:5px 8px;background:#fff;resize:vertical;min-height:30px}
-.field:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,91,208,.15)}
+.field{width:100%;font:inherit;color:var(--text);border:1px solid #CDD3DB;border-radius:2px;padding:4px 8px;background:#fff;resize:vertical;min-height:28px}
+.field:focus,.canvas-find input:focus{outline:1px solid var(--accent);outline-offset:-1px;border-color:var(--accent);box-shadow:none}
 select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-size:12px}
 .stats{display:flex;flex-wrap:wrap}
-.stat{flex:1 1 200px;display:flex;align-items:baseline;gap:8px;padding:8px 14px;border-right:1px solid var(--line2);min-width:0}
+.stat{flex:1 1 200px;display:flex;align-items:baseline;gap:6px;padding:6px 10px;border-right:1px solid var(--line2);min-width:0}
 .stat:last-child{border-right:0}
 .stat .v{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums}
 .stat .n{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .tbl{overflow-x:auto}
 .tbl>div{min-width:760px}
-.tr{display:grid;gap:12px;align-items:center;padding:6px 12px;border-top:1px solid var(--line2)}
-.tr.head{border-top:0;padding:6px 12px;color:var(--mute);font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.tr{display:grid;gap:8px;align-items:center;padding:4px 10px;border-top:1px solid var(--line2)}
+.tr.head{border-top:0;padding:4px 10px;color:var(--mute);font-size:12px;font-weight:600}
 .tr.alert{background:var(--badbg)}
-.tile{position:relative;flex:none;border-radius:6px;background:var(--tile);color:#1F2937;display:flex;align-items:center;justify-content:center}
+.tile{position:relative;flex:none;border-radius:3px;background:var(--tile);color:#1F2937;display:flex;align-items:center;justify-content:center}
 .tile.bad{background:#FBE7E5;color:var(--bad)}
 .tile .badge{position:absolute;right:-4px;bottom:-4px;background:#fff;border:1px solid #CDD3DB;border-radius:50%;display:flex;align-items:center;justify-content:center;color:#374151}
 .shape{display:inline-block;width:7px;height:7px;margin-right:6px;flex:none;border-radius:50%}
 .shape.sq{border-radius:2px}.shape.di{border-radius:1px;transform:rotate(45deg)}.shape.ring{border:1.5px solid}
-.bar{height:3px;border-radius:2px;background:#E3E7ED;overflow:hidden;width:72px;display:inline-block;vertical-align:middle;margin-left:6px}
+.bar{height:3px;border-radius:1px;background:#E3E7ED;overflow:hidden;width:72px;display:inline-block;vertical-align:middle;margin-left:6px}
 .bar>i{display:block;height:100%;background:var(--accent)}
-.item{padding:10px 12px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:4px}
+.item{padding:6px 10px;border-top:1px solid var(--line2);display:flex;flex-direction:column;gap:4px}
 .item:first-child{border-top:0}
-.cmd{display:flex;align-items:center;gap:6px;background:#F5F6F8;border:1px solid var(--line2);border-radius:5px;padding:3px 3px 3px 8px}
+.cmd{display:flex;align-items:center;gap:6px;background:#F5F6F8;border:1px solid var(--line2);border-radius:2px;padding:3px 3px 3px 8px}
 .cmd code{flex:1;min-width:0;overflow-wrap:anywhere;color:#374151}
-.note{border:1px solid var(--warnline);background:var(--warnbg);border-radius:6px;padding:8px 10px;display:flex;flex-direction:column;gap:6px;color:#6B4400}
+.note{border:1px solid var(--warnline);background:var(--warnbg);border-radius:4px;padding:6px 8px;display:flex;flex-direction:column;gap:4px;color:#6B4400}
 .note.bad{border-color:#F0C6C2;background:var(--badbg);color:#7A1F18}
 .filters{display:flex;gap:2px;flex-wrap:wrap}
-.filters a{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:5px;color:var(--mute);font-weight:500;border:1px solid transparent;font-size:12.5px}
+.filters a{display:inline-flex;align-items:center;gap:5px;height:26px;padding:0 8px;border-radius:2px;color:var(--mute);font-weight:500;border:1px solid transparent;font-size:12.5px}
 .filters a:hover{text-decoration:none;background:#ECEEF2}
 .filters a.on{background:var(--accentbg);border-color:#C9D7F7;color:var(--accentink)}
-.msg{display:block;padding:8px 12px;border-top:1px solid var(--line2);color:inherit}
+.msg{display:block;padding:6px 10px;border-top:1px solid var(--line2);color:inherit}
 .msg:first-child{border-top:0}
 .msg:hover{background:#F8F9FB;text-decoration:none}
 .msg.sel{background:#EEF3FD}
-.drow{display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(90px,1fr) minmax(80px,.8fr) minmax(90px,.8fr);gap:10px;padding:5px 0;border-top:1px solid var(--line2)}
-.step{display:flex;gap:10px}
+.drow{display:grid;grid-template-columns:minmax(150px,1.4fr) minmax(90px,1fr) minmax(80px,.8fr) minmax(90px,.8fr);gap:8px;padding:4px 0;border-top:1px solid var(--line2)}
+.step{display:flex;gap:8px}
 .step .rail{display:flex;flex-direction:column;align-items:center}
 .step .rail i{flex:1;width:1.5px;background:var(--line);margin:3px 0}
 .step .no{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;border:1.5px solid #B8C0CC;color:var(--dim);background:#fff}
 .step.done .no{background:var(--good);border-color:var(--good);color:#fff}
 .step.cur .no{border-color:var(--accent);color:var(--accent)}
-.empty{padding:16px 12px;text-align:center;color:var(--dim)}
+.empty{padding:10px;text-align:center;color:var(--dim)}
 .kv{display:grid;grid-template-columns:92px 1fr;gap:3px 10px}
 .kv>span:nth-child(odd){color:var(--mute)}
 .break{overflow-wrap:anywhere}.pre{white-space:pre-wrap;overflow-wrap:anywhere}
-.board{position:relative;overflow:auto;border:1px solid #E4E8EF;border-radius:12px;background-color:#F8FAFC;background-image:radial-gradient(circle,#CDD5E1 .8px,transparent 1px);background-size:20px 20px;overscroll-behavior:contain;cursor:grab;touch-action:pan-x pan-y}
-.board.panning{cursor:grabbing;user-select:none}.board:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.board{position:relative;overflow:auto;border:1px solid #E4E8EF;border-radius:4px;background-color:#F8FAFC;background-image:radial-gradient(circle,#CDD5E1 .8px,transparent 1px);background-size:20px 20px;overscroll-behavior:contain;cursor:grab;touch-action:pan-x pan-y}
+.board.panning{cursor:grabbing;user-select:none}.board:focus-visible{outline:1px solid var(--accent);outline-offset:-1px}
 .canvas-plane{position:absolute;left:0;top:0;transform-origin:0 0}
 .canvas-plane>svg{position:absolute;left:0;top:0;pointer-events:none}
 .canvas-stage{position:relative;min-width:100%;min-height:100%}
-.lane{position:absolute;font-size:11px;line-height:14px;font-weight:600;color:var(--dim);text-transform:uppercase;letter-spacing:.05em}
-.node{position:absolute;display:flex;flex-direction:column;gap:8px;padding:12px 14px;background:#fff;border:1px solid #D9DFE8;border-radius:10px;color:var(--text);box-shadow:0 2px 4px rgba(17,24,39,.05);cursor:pointer}
-.node:hover{text-decoration:none;border-color:#8CA6D8;box-shadow:0 3px 10px rgba(17,24,39,.09)}
-.node:focus-visible{outline:2px solid var(--accent);outline-offset:3px}
-.node.quiet{opacity:.28}.node.match{border-color:#7297E6;box-shadow:0 0 0 2px #DBE6FD}
-.node-head{display:flex;align-items:center;gap:9px;width:100%;min-width:0}
-.node-progress{height:4px;background:#EDF0F5;border-radius:4px;overflow:hidden;width:100%}
-.node-progress>span{display:block;height:100%;background:var(--accent);border-radius:4px}
-.node.sel{border-color:var(--accent);box-shadow:0 0 0 2px rgba(47,91,208,.18)}
+.lane{position:absolute;font-size:12px;line-height:16px;font-weight:600;color:var(--dim)}
+.node{position:absolute;display:flex;flex-direction:column;gap:4px;padding:8px 10px;background:#fff;border:1px solid #D9DFE8;border-radius:4px;color:var(--text);box-shadow:0 1px 3px rgba(17,24,39,.04);cursor:pointer}
+.node:hover{text-decoration:none;border-color:#8CA6D8;box-shadow:0 2px 5px rgba(17,24,39,.06)}
+.node:focus-visible{outline:1px solid var(--accent);outline-offset:1px}
+.node.quiet{opacity:.28}.node.match{border-color:#7297E6;background:#F8FAFF;box-shadow:none}
+.node-head{display:flex;align-items:center;gap:6px;width:100%;min-width:0}
+.node-progress{height:4px;background:#EDF0F5;border-radius:1px;overflow:hidden;width:100%}
+.node-progress>span{display:block;height:100%;background:var(--accent);border-radius:1px}
+.node.sel{border-color:var(--accent);box-shadow:none}
 .node.alert{border-color:#E8B4AF}
 .node .nm{display:block;font-size:13px;line-height:18px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node .ln{display:block;font-size:12px;line-height:16px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .node.flow{position:static;height:auto}
 .node.flow .ln{white-space:normal}
-.elabel{position:absolute;font-size:11.5px;line-height:14px;color:var(--mute);white-space:nowrap;background:rgba(248,250,252,.95);padding:2px 4px;border-radius:3px;pointer-events:none}
-.canvas-head{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
-.canvas-head h1{font-size:18px}.canvas-find{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.canvas-find input{width:210px;max-width:100%;height:34px;padding:0 10px;border:1px solid var(--line);border-radius:7px;font:inherit;background:#fff}
+.elabel{position:absolute;font-size:11.5px;line-height:14px;color:var(--mute);white-space:nowrap;background:rgba(248,250,252,.95);padding:2px 4px;border-radius:2px;pointer-events:none}
+.canvas-head{display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;padding:3px 12px;background:#fff;border-bottom:1px solid var(--line);flex-shrink:0}
+.canvas-head h1{font-size:14px;line-height:20px}.canvas-find{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.canvas-find input{appearance:none;width:210px;max-width:100%;height:26px;padding:0 8px;border:1px solid var(--line);border-radius:2px;font:inherit;font-size:12px;background:#fff}
 .canvas-count{font-size:12px;color:var(--mute);min-width:60px}
-.canvas-controls{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:3px;padding:5px 7px;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:0 4px 18px #1F293714;white-space:nowrap}
-.canvas-controls button{height:34px;min-width:34px;border:0;border-radius:6px;background:#fff;color:var(--text);font:inherit;font-size:12px;font-weight:500;cursor:pointer;padding:0 8px}
+.canvas-controls{position:absolute;left:50%;bottom:10px;transform:translateX(-50%);z-index:3;display:flex;align-items:center;gap:3px;padding:4px 5px;background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 8px #1F293710;white-space:nowrap}
+.canvas-controls button{height:28px;min-width:28px;border:0;border-radius:2px;background:#fff;color:var(--text);font:inherit;font-size:12px;font-weight:500;cursor:pointer;padding:0 7px}
 .canvas-controls button:hover{background:var(--accentbg)}.canvas-controls button:disabled{opacity:.35;cursor:default}
 .canvas-controls output{font-size:12px;color:var(--mute);width:44px;text-align:center}
 .canvas-controls .sep{height:20px;width:1px;background:var(--line);margin:0 4px}
 .canvas-hint{position:absolute;top:12px;left:14px;font-size:11px;color:var(--dim);pointer-events:none}
 .canvas-controls button[aria-pressed="true"]{background:var(--accentbg);color:var(--accentink)}
 .legend{display:flex;gap:18px;flex-wrap:wrap;align-items:center;color:var(--mute);font-size:12px}
-.page.fill{height:calc(100vh - 44px);overflow:hidden;padding-bottom:12px;max-width:none}
-.teamfill{flex:1;min-height:0;display:flex;gap:12px}
+.page.fill{height:calc(100vh - 33px);overflow:hidden;padding-bottom:8px;max-width:none}
+.page.fill.work{max-width:1440px}
+.workfill{flex:1;min-height:0;align-items:stretch !important;flex-wrap:nowrap !important}
+.workfill>.c2,.workfill>.c1{overflow:auto;max-height:100%;overscroll-behavior:contain;padding-right:2px}
+.workfill>.c2{flex:2 1 0}.workfill>.c1{flex:1 1 320px}
+.teamfill{flex:1;min-height:0;min-width:0;display:flex}
+.canvas-section{display:flex;flex-direction:column;flex:1;min-width:0;min-height:0;overflow:hidden}
 .boardwrap{position:relative;flex:1 1 auto;min-width:0;min-height:0;display:flex}
-.boardwrap>.board{flex:1;min-height:0}
-.teamfill>aside{overflow:auto;max-height:100%}
-.toolrail{position:absolute;right:12px;top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 6px;background:#fff;border:1px solid var(--line);border-radius:24px;box-shadow:0 2px 12px rgba(17,24,39,.08)}
-.rbtn{width:36px;height:36px;border-radius:50%;border:0;background:transparent;color:#1F2937;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
+.boardwrap>.board{flex:1;min-width:0;min-height:0;border:0;border-radius:0}
+.teamfill>aside{overflow:auto;min-height:0;max-height:100%;border:0;border-left:1px solid var(--line);border-radius:0;overscroll-behavior:contain}
+.teamfill>aside>*{flex-shrink:0}
+#app.team-shell{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}
+.team-shell>.top{height:auto;min-height:33px;flex-shrink:0}
+#app.team-shell>.page{flex:1;min-height:0;width:100%;height:auto;margin:0;padding:0;overflow:hidden}
+@media (min-width:761px){#app.inbox-shell{height:100vh;height:100dvh;display:flex;flex-direction:column;overflow:hidden}.inbox-shell>.top{flex-shrink:0}.inbox-shell>.page.fill{height:auto;min-height:0;flex:1;width:100%;margin:0}}
+.toolrail{position:absolute;right:10px;top:50%;transform:translateY(-50%);z-index:3;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px;background:#fff;border:1px solid var(--line);border-radius:4px;box-shadow:0 2px 6px rgba(17,24,39,.05)}
+.rbtn{width:32px;height:32px;border-radius:2px;border:0;background:transparent;color:#1F2937;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:0}
 .rbtn:hover{background:#EEF0F3}
 .rbtn.filter[aria-pressed="false"]{color:#A0A7B2}
 .rbtn.filter[aria-pressed="true"]{color:var(--accentink)}
-.inboxfill{flex:1;min-height:0;display:flex;gap:14px}
+.inboxfill{flex:1;min-height:0;display:flex;gap:8px}
 .inboxfill>.list{flex:0 1 420px !important;align-self:stretch;overflow:auto !important}
 .inboxfill>.thread{flex:1 1 auto !important;align-self:stretch;display:flex;flex-direction:column;min-height:0;overflow:hidden}
 .thread>.tbody{flex:1;min-height:0;overflow:auto}
-.boardlegend{position:absolute;right:12px;top:12px;z-index:2;gap:8px;background:#FFFFFFF2;border:1px solid var(--line);border-radius:9px;padding:10px 12px;box-shadow:0 2px 8px rgba(17,24,39,.04);flex-direction:column;align-items:flex-start}
+.boardlegend{position:absolute;right:10px;top:10px;z-index:2;gap:6px;background:#FFFFFFF2;border:1px solid var(--line);border-radius:4px;padding:8px 10px;box-shadow:0 1px 4px rgba(17,24,39,.03);flex-direction:column;align-items:flex-start}
 .legend span{display:inline-flex;align-items:center;gap:6px}
 .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:8px}
-.seg{display:inline-flex;border:1px solid #CDD3DB;border-radius:5px;overflow:hidden;background:#fff}
+.seg{display:inline-flex;border:1px solid #CDD3DB;border-radius:2px;overflow:hidden;background:#fff}
 .seg button{border:0;background:#fff;height:26px;padding:0 10px;font:inherit;font-size:12.5px;font-weight:500;color:var(--mute);cursor:pointer}
 .seg button.on{background:var(--accentbg);color:var(--accentink)}
 .conn{display:flex;flex-direction:column;gap:1px;margin-top:6px;padding-top:6px;border-top:1px solid var(--line2);color:var(--mute);font-size:12px;line-height:16px}
-.toast{position:fixed;right:16px;bottom:16px;z-index:9;background:#111827;color:#fff;border-radius:6px;padding:8px 12px;font-size:12.5px;box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .15s,transform .15s;pointer-events:none;max-width:420px}
+.toast{position:fixed;right:16px;bottom:16px;z-index:9;background:#111827;color:#fff;border-radius:4px;padding:8px 12px;font-size:12.5px;box-shadow:0 4px 16px rgba(0,0,0,.18);opacity:0;transform:translateY(6px);transition:opacity .15s,transform .15s;pointer-events:none;max-width:420px}
 .toast.show{opacity:1;transform:none}
 .toast.bad{background:var(--bad)}
 @media (prefers-reduced-motion:reduce){.toast{transition:none}}
-@media (max-width:1000px){.cols>.thread{order:-1}.cols>.list{max-width:none !important}.inboxfill{flex-direction:column}.inboxfill>.thread{order:-1;flex:1 1 60% !important}.inboxfill>.list{flex:1 1 40% !important;max-width:none !important}.teamfill{flex-direction:column}.teamfill>aside{flex:0 0 auto !important;max-height:38%;width:100%}}
+@media (max-width:1000px){.page.fill.work{height:auto;overflow:visible}.workfill{flex:none;flex-wrap:wrap !important;align-items:flex-start !important}.workfill>.c2,.workfill>.c1{flex:1 1 100% !important;overflow:visible;max-height:none}.cols>.thread{order:-1}.cols>.list{max-width:none !important}.inboxfill{flex-direction:column}.inboxfill>.thread{order:-1;flex:1 1 60% !important}.inboxfill>.list{flex:1 1 40% !important;max-width:none !important}}
 @media (max-width:860px){
 .tr{grid-template-columns:1fr 1fr !important;gap:4px 12px;padding:8px 12px}
 .tr>:first-child,.tr>.wide{grid-column:1/-1}
@@ -1651,13 +1661,14 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .tbl>div{min-width:0}
 }
 @media (max-width:760px){
-.top{height:auto;padding:6px 12px;gap:4px 12px}
+.top{height:auto;padding:4px 12px;gap:2px 10px}
 .brand{order:1}.top .grow{display:none}.meta{order:2;margin-left:auto}
 .tabs{order:3;flex:1 1 100%;height:40px;margin:0 -12px;padding:0 2px;border-top:1px solid var(--line2);justify-content:space-between}
 .tabs a{padding:0 6px;gap:3px;font-size:12.5px}
-.page{padding:12px 12px 28px;gap:12px}
+.page{padding:8px 10px 16px;gap:8px}
 .stat{flex:1 1 45%;border-bottom:1px solid var(--line2);flex-wrap:wrap;gap:0 8px}.stat .n{white-space:normal;flex-basis:100%}
 .btn{min-height:44px}.btn.sm{min-height:40px}
+.rbtn{width:44px;height:44px}
 .seg button,.switch,select.field{height:36px}
 .cmd{flex-wrap:wrap}
 .drow{grid-template-columns:1fr 1fr}
@@ -1668,11 +1679,11 @@ select.field{height:24px;padding:0 4px;width:auto;resize:none;min-height:0;font-
 .page.fill{height:auto;overflow:visible}
 .inboxfill>.list,.inboxfill>.thread{flex:none !important}
 .thread>.tbody{overflow:visible}
-.teamfill>aside{max-height:none}
-.boardwrap{height:72vh;flex:none}
+.teamfill{flex-direction:column}
+.canvas-section{flex:1 1 60%}
+.teamfill>aside{flex:1 1 40% !important;max-height:40%;width:100%;border-left:0;border-top:1px solid var(--line)}
 .boardlegend{display:none}
-.boardwrap{flex-direction:column}
-.canvas-head{gap:8px}.canvas-find{width:100%}.canvas-find input{flex:1;min-width:0;width:160px;height:40px}
+.canvas-head{gap:4px;padding:4px 10px}.canvas-find{width:100%}.canvas-find input{flex:1;min-width:0;width:160px;height:40px}
 .canvas-controls{bottom:10px;padding:4px;gap:0}.canvas-controls button{min-width:38px;height:44px;padding:0 7px}
 .canvas-controls output{width:38px}.canvas-controls .sep{margin:0 2px}.canvas-hint{display:none}
 }
@@ -1888,9 +1899,12 @@ function topBar(active, data) {
 }
 function shell(active, data, content) {
   saveScroll();
+  app.classList.toggle('team-shell', active === 'team');
+  app.classList.toggle('inbox-shell', active === 'inbox');
+  if (active !== 'team' && boardResize) boardResize.disconnect();
   app.replaceChildren(
     topBar(active, data),
-    h('main', { class: 'page' + ([].concat(content).some((c) => c && c.classList && (c.classList.contains('teamfill') || c.classList.contains('inboxfill'))) ? ' fill' : '') }, content));
+    h('main', { class: 'page' + (() => { const has = (n) => [].concat(content).some((c) => c && c.classList && c.classList.contains(n)); return has('teamfill') || has('inboxfill') ? ' fill' : has('workfill') ? ' fill work' : ''; })() }, content));
   restoreScroll(app);
 }
 
@@ -1975,11 +1989,11 @@ VIEWS[''] = {
         stat('Merged', d.totals.done + '/' + d.totals.tasks, d.totals.working + ' in progress · ' + d.totals.merge + ' queued'),
         stat('Waiting on you', String(d.needs.length), critical ? critical + ' critical' : 'nothing urgent', d.needs.length ? 'var(--warn)' : ''),
         stat('Blocked', String(blocked.length), blocked.length ? blocked.map((t) => t.id).join(', ') : 'nothing blocked', blocked.length ? 'var(--bad)' : '')),
-      h('div', { class: 'cols' },
-        h('div', { class: 'c2 col', style: { gap: '14px' } },
+      h('div', { class: 'cols workfill' },
+        h('div', { class: 'c2 col', 'data-keep': 'ov-c2', style: { gap: '8px' } },
           section('Team', link('#/team', { class: 'small' }, 'Canvas'), teamTable(d)),
           section('Work', link('#/tasks', { class: 'small' }, 'All tasks (' + open + ' open)'), workTable(d, 8))),
-        h('div', { class: 'c1 col', style: { gap: '14px' } },
+        h('div', { class: 'c1 col', 'data-keep': 'ov-c1', style: { gap: '8px' } },
           section('Waiting on you', d.needs.length ? h('span', { class: 'b small', style: { color: 'var(--warn)' } }, d.needs.length) : null, panel(d.needs.length ? d.needs.map(needItem) : empty('Nothing is waiting for you.'))),
           section('Activity', null, activityList(d.events, 12))))];
   },
@@ -2004,7 +2018,7 @@ function layout(nodes, edges, avail) {
   const laneRow = (l) => lanes.indexOf(l);
   const cols = Math.max(exec.length, 2);
   const narrow = avail < 900, labelW = narrow ? 96 : 132;
-  const cardH = 124, gap = 72, step = cardH + gap;
+  const cardH = 104, gap = 56, step = cardH + gap;
   const G = narrow ? 28 : 44;
   const W = Math.max(narrow ? 208 : 224, Math.min(260, Math.floor((avail - (labelW + 24) - (cols - 1) * G) / cols)));
   const content = cols * W + (cols - 1) * G;
@@ -2284,7 +2298,7 @@ function inspector(d, node) {
       cmd('steward', 'Keeps reviewing every minute in a terminal or console pane.'),
       canAct ? reviewerForm() : null);
   }
-  return h('aside', { class: 'panel', 'data-selected': node.id, 'aria-label': 'Selected participant', style: { flex: '0 0 300px', 'max-width': '100%', padding: '16px', display: 'flex', 'flex-direction': 'column', gap: '16px' } },
+  return h('aside', { class: 'panel', 'data-selected': node.id, 'aria-label': 'Selected participant', style: { flex: '0 0 300px', 'max-width': '100%', padding: '10px', display: 'flex', 'flex-direction': 'column', gap: '12px' } },
     inspectorPart('identity', [node.name, node.kind, node.role, node.status],
       h('div', { class: 'row', style: { gap: '10px' } }, tile(node.kind, node.role, 32, bad), h('div', { style: { 'min-width': 0 } }, h('div', { class: 'b break' }, title), h('div', { class: 'small' }, status(node.status))))),
     inspectorPart('work', [t, det.seen_s, det.model, det.slot, det.reminders, det.escalations],
@@ -2332,11 +2346,10 @@ function railButton(icon, label, on, filter, onClick) {
   b.addEventListener('click', onClick);
   return b;
 }
-let boardRef = null, boardData = null, boardSel = null, teamMount = null;
+let boardRef = null, boardData = null, boardSel = null, teamMount = null, boardResize = null;
 function selectedTeamNode(d) {
   return d.nodes.find((n) => n.id === d.pick) || d.nodes.find((n) => n.status.tone === 'bad') || d.nodes.find((n) => n.lane === 1 && n.type === 'agent') || d.nodes[1] || d.nodes[0];
 }
-window.addEventListener('resize', () => { if (boardRef && boardRef.isConnected && boardData) { saveScroll(); drawBoard(boardRef, boardData, boardSel); } });
 VIEWS.team = {
   load: async (p) => { const d = await get('/api/team'); d.pick = p[1] || null; return d; },
   update(next) {
@@ -2360,6 +2373,9 @@ VIEWS.team = {
     const boardEl = h('div', { class: 'board', tabindex: 0, role: 'region', 'aria-label': 'Team canvas', 'aria-describedby': 'canvas-help' });
     canvasNavigation(boardEl, d, () => sel.id);
     boardRef = boardEl; boardData = d; boardSel = sel.id;
+    if (boardResize) boardResize.disconnect();
+    boardResize = new ResizeObserver(() => { if (boardEl.isConnected) { saveScroll(); drawBoard(boardEl, d, sel.id); } });
+    boardResize.observe(boardEl);
     setTimeout(() => { if (boardEl.isConnected) drawBoard(boardEl, d, sel.id); }, 0);
     const insp = inspector(d, picked);
     teamMount = { data: d, selection: sel, inspector: insp, board: boardEl };
@@ -2390,10 +2406,11 @@ VIEWS.team = {
       control('Reset', 'Reset zoom to 100% (0)', () => { zoomCanvas(boardEl, 1); centerCanvasNode(boardEl, sel.id); }),
       h('span', { class: 'sep', 'aria-hidden': 'true' }), focus);
     const legendLine = (style) => svgEl('svg', { width: 28, height: 8, 'aria-hidden': 'true' }, svgEl('line', { x1: 1, y1: 4, x2: 27, y2: 4, stroke: { solid: '#6B7585', dots: '#7C8696', review: '#2F5BD0' }[style], 'stroke-width': style === 'dots' ? 2 : 1.5, 'stroke-linecap': 'round', 'stroke-dasharray': { dots: '1 5', review: '5 4' }[style] || '' }));
-    return [h('div', { class: 'canvas-head' },
-      h('div', { class: 'row', style: { gap: '10px' } }, h('h1', null, 'Team canvas'), h('span', { class: 'tag' }, 'Live board')),
+    return [h('div', { class: 'teamfill', id: 'team-workspace' },
+      h('section', { class: 'canvas-section', 'aria-label': 'Team workspace' },
+      h('div', { class: 'canvas-head' },
+      h('div', { class: 'row' }, h('h1', null, 'Team canvas'), h('span', { class: 'tag' }, 'Live board')),
       h('div', { class: 'canvas-find' }, search, h('span', { class: 'canvas-count', role: 'status', 'aria-live': 'polite' }))),
-      h('div', { class: 'teamfill', id: 'team-workspace' },
       h('div', { class: 'boardwrap' }, boardEl,
         h('span', { class: 'canvas-hint', id: 'canvas-help' }, 'Drag to pan · Ctrl/⌘ + scroll to zoom · + / − · F to fit'), controls,
         h('div', { class: 'toolrail', role: 'toolbar', 'aria-label': 'Canvas tools', 'aria-orientation': 'vertical' },
@@ -2403,7 +2420,7 @@ VIEWS.team = {
               e.currentTarget.setAttribute('aria-label', (filterState[key] ? 'Hide ' : 'Show ') + label);
               e.currentTarget.title = e.currentTarget.getAttribute('aria-label'); drawBoard(boardEl, d, sel.id);
             }))),
-        h('div', { class: 'legend boardlegend' }, h('span', null, legendLine('solid'), 'Accountability'), h('span', null, legendLine('dots'), 'Collaboration, reminders (' + d.window_hours + 'h)'), h('span', null, legendLine('review'), 'Independent review'))),
+        h('div', { class: 'legend boardlegend' }, h('span', null, legendLine('solid'), 'Accountability'), h('span', null, legendLine('dots'), 'Collaboration, reminders (' + d.window_hours + 'h)'), h('span', null, legendLine('review'), 'Independent review')))),
       insp)];
   },
 };
@@ -2415,11 +2432,11 @@ const ACK = { pending: ['pending', 'var(--warn)'], acked: ['acknowledged', 'var(
 function composer(det) {
   const m = det.message, other = m.sender === 'human' ? m.recipient : m.sender;
   if (['swarm', 'steward', '*'].includes(other)) return null;
-  if (!canAct) return h('div', { class: 'col', style: { padding: '10px 14px', 'border-top': '1px solid var(--line2)' } }, h('h2', null, 'Reply'), cmd('send ' + other + ' "your reply" --kind decision --reply-to ' + m.id));
+  if (!canAct) return h('div', { class: 'col', style: { padding: '6px 10px', 'border-top': '1px solid var(--line2)' } }, h('h2', null, 'Reply'), cmd('send ' + other + ' "your reply" --kind decision --reply-to ' + m.id));
   const key = 'r:' + m.id, ta = field(key, 'Reply to ' + who(other).display, 3), out = h('span', { class: 'small' });
   const kind = h('select', { class: 'field', 'aria-label': 'Message kind' }, ['decision', 'status', 'question', 'warning'].map((k) => h('option', { value: k, selected: (drafts[key + ':kind'] || 'decision') === k ? true : null }, KIND_TEXT[k])));
   kind.addEventListener('change', () => { drafts[key + ':kind'] = kind.value; });
-  return h('div', { class: 'col', style: { padding: '10px 14px', 'border-top': '1px solid var(--line2)', gap: '6px' } }, ta,
+  return h('div', { class: 'col', style: { padding: '6px 10px', 'border-top': '1px solid var(--line2)', gap: '6px' } }, ta,
     h('div', { class: 'row wrap', style: { gap: '6px' } }, kind, button('Send reply', true, (b) => act({ action: 'send', to: other, kind: kind.value, reply_to: m.id, text: ta.value }, b, out, key, 'Reply sent to ' + who(other).display + '.')), out,
       h('span', { class: 'grow' }), h('span', { class: 'small dim' }, 'A reply does not acknowledge the message.')));
 }
@@ -2446,16 +2463,16 @@ VIEWS.inbox = {
       const ackable = canAct && mine && !mine.acked_at && m.ack_state === 'pending';
       const out = h('span', { class: 'small' });
       thread = h('section', { class: 'panel thread', style: { flex: '2 1 540px', 'min-width': 0 } },
-        h('div', { class: 'row between wrap', style: { padding: '10px 14px', 'border-bottom': '1px solid var(--line2)', gap: '8px' } },
+        h('div', { class: 'row between wrap', style: { padding: '6px 10px', 'border-bottom': '1px solid var(--line2)', gap: '8px' } },
           h('div', { style: { 'min-width': 0 } }, h('div', { class: 'small b', style: { color: m.priority === 'critical' ? 'var(--bad)' : 'var(--mute)' } }, (m.priority === 'critical' ? 'Critical ' : '') + (KIND_TEXT[m.kind] || m.kind).toLowerCase() + (m.task ? ' · ' + m.task : '') + ' · #' + m.id + (m.epoch != null ? ' · epoch ' + m.epoch : '')),
             h('div', { class: 'muted small' }, nameRole(m.sender) + ' to ' + nameText(m.recipient) + ' · ' + new Date(m.created_at).toLocaleString())),
           ackable ? h('div', { class: 'row', style: { gap: '6px' } }, out, button('Acknowledge', false, (b) => act({ action: 'ack', message: m.id }, b, out, null, 'Acknowledged.'))) : null),
-        h('div', { class: 'tbody', 'data-keep': 'inbox-body:' + m.id }, h('div', { class: 'col', style: { padding: '12px 14px', gap: '12px' } },
+        h('div', { class: 'tbody', 'data-keep': 'inbox-body:' + m.id }, h('div', { class: 'col', style: { padding: '8px 10px', gap: '8px' } },
           det.thread.map((t) => h('div', { class: 'row', style: { 'align-items': 'flex-start', gap: '10px' } }, tile(who(t.sender).kind, who(t.sender).role, 26),
             h('div', { style: { flex: 1, 'min-width': 0 } }, h('div', { class: 'row wrap', style: { gap: '6px', 'align-items': 'baseline' } }, h('b', { class: 'b' }, nameText(t.sender)), h('span', { class: 'muted small' }, who(t.sender).role), h('span', { class: 'mono dim', style: { 'margin-left': 'auto' } }, clockTime(t.created_at))),
               h('div', { class: 'pre', style: { margin: '2px 0 0', 'max-width': '720px' } }, t.pruned ? '[payload pruned; envelope retained]' : t.body)))),
           expiry(m)),
-        h('div', { style: { padding: '6px 14px 10px', 'border-top': '1px solid var(--line2)' } },
+        h('div', { style: { padding: '4px 10px 6px', 'border-top': '1px solid var(--line2)' } },
           h('div', { class: 'drow small', style: { 'border-top': 0, color: 'var(--mute)', 'font-weight': 600 } }, h('span', null, 'Recipient'), h('span', null, 'Status'), h('span', null, 'Delivered'), h('span', null, 'Acknowledged')),
           det.recipients.length ? det.recipients.map((r) => { const st = r.acked_at ? ['Acknowledged', 'var(--good)'] : r.claim && r.claim.lease_left_s > 0 ? ['Leased', 'var(--info)'] : r.delivered_at ? ['Delivered', 'var(--info)'] : ['Pending', 'var(--warn)'];
             return h('div', { class: 'drow small' }, h('span', null, nameRole(r.agent)), h('span', { class: 'm', style: { color: st[1] } }, st[0]), h('span', { class: 'mono dim' }, r.delivered_at ? clockTime(r.delivered_at) : '–'), h('span', { class: 'mono dim' }, r.acked_at ? clockTime(r.acked_at) : '–')); }) : [h('div', { class: 'small dim' }, 'No recipient rows.')])),
@@ -2491,11 +2508,11 @@ VIEWS.decisions = {
       ...d.decisions.map((m) => h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small', style: { color: '#3F3A9E' } }, 'Decision'), h('span', { class: 'dim small' }, ago(m.age_s))), h('div', { class: 'break' }, m.text), h('div', { class: 'muted small' }, nameText(m.sender) + ' to ' + nameText(m.recipient)))),
       ...d.incidents.filter((i) => i.resolved).map(incidentItem)];
     return [h('div', { class: 'row wrap', style: { gap: '10px', 'align-items': 'baseline' } }, h('h1', null, 'Decisions'), h('span', { class: 'muted small' }, 'Bounded: one counter per contract, timed decision windows, reviews that cite evidence.')),
-      h('div', { class: 'cols' },
-        h('div', { class: 'c2 col', style: { gap: '14px' } },
+      h('div', { class: 'cols workfill' },
+        h('div', { class: 'c2 col', 'data-keep': 'dc-c2', style: { gap: '8px' } },
           section('Awaiting a decision', awaiting.length ? h('span', { class: 'b small', style: { color: 'var(--warn)' } }, awaiting.length + ' open') : null, panel(awaiting.length ? awaiting : empty('No open questions, approvals or reviews.'))),
           section('Contract negotiations', null, d.negotiations.length ? panel(d.negotiations.map(contractItem)) : panel(empty('No contract is being negotiated.')))),
-        h('div', { class: 'c1 col', style: { gap: '14px' } },
+        h('div', { class: 'c1 col', 'data-keep': 'dc-c1', style: { gap: '8px' } },
           section('Recently settled', null, panel(settled.length ? settled : empty('Nothing settled yet.'))),
           d.interrupts.length ? section('Interrupts', null, panel(d.interrupts.map((r) => h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small', style: { color: r.mode === 'cancel' ? 'var(--bad)' : 'var(--warn)' } }, r.mode + ' · ' + r.state), h('span', { class: 'dim small' }, ago(r.age_s))),
             h('div', { class: 'break' }, nameText(r.by) + ' to ' + nameText(r.target) + (r.task ? ' on ' + r.task : '') + ': ' + r.reason))))) : null))];
@@ -2521,7 +2538,7 @@ VIEWS.task = {
     const [label, tone] = [LABEL[t.state] || t.state, TASK_TONE[t.state] || 'mute'];
     const steps = d.steps.length ? d.steps.map((s) => h('div', { class: 'step ' + (s.done ? 'done' : s.current ? 'cur' : '') },
       h('div', { class: 'rail' }, h('div', { class: 'no' }, s.done ? '✓' : s.n), h('i')),
-      h('div', { style: { flex: 1, 'min-width': 0, 'padding-bottom': '10px' } }, h('div', { class: 'row wrap', style: { gap: '6px' } }, h('span', { class: s.done || s.current ? 'm' : 'm muted' }, s.text), h('span', { class: 'grow' }), s.at ? h('span', { class: 'mono dim' }, clockTime(s.at)) : s.current ? h('span', { class: 'small m', style: { color: 'var(--accent)' } }, 'In progress') : null),
+      h('div', { style: { flex: 1, 'min-width': 0, 'padding-bottom': '6px' } }, h('div', { class: 'row wrap', style: { gap: '6px' } }, h('span', { class: s.done || s.current ? 'm' : 'm muted' }, s.text), h('span', { class: 'grow' }), s.at ? h('span', { class: 'mono dim' }, clockTime(s.at)) : s.current ? h('span', { class: 'small m', style: { color: 'var(--accent)' } }, 'In progress') : null),
         s.evidence ? h('div', { class: 'muted small break', style: { 'margin-top': '2px' } }, h('span', { class: 'b' }, 'Evidence: '), s.evidence) : null))) : [h('div', { class: 'small dim' }, 'No plan yet. The holder runs `plan` first.')];
     let contract = null;
     if (k && k.active_min) {
@@ -2535,14 +2552,14 @@ VIEWS.task = {
       h('div', { class: 'col', style: { gap: '4px' } }, h('div', { class: 'small dim' }, link('#/tasks', null, 'Tasks'), ' / ', h('span', { class: 'mono' }, t.id)),
         h('div', { class: 'row wrap', style: { gap: '12px', 'align-items': 'baseline' } }, h('h1', null, t.title), status({ label, tone: tone === 'mute' ? 'info' : tone }), h('span', { class: 'dim mono' }, 'epoch ' + t.epoch), t.goal ? h('span', { class: 'muted small' }, 'Goal ' + t.goal) : null, t.merged_sha ? h('span', { class: 'mono dim' }, 'merged ' + t.merged_sha) : null)),
       t.failure ? h('div', { class: 'note bad' }, t.failure) : null, t.owed ? h('div', { class: 'note small' }, 'Owed checks: ' + t.owed) : null,
-      h('div', { class: 'cols' },
-        h('div', { class: 'c2 col', style: { gap: '14px' } },
-          section('Plan, in order, with evidence', h('span', { class: 'mono dim' }, t.step[0] + '/' + t.step[1]), panel(h('div', { style: { padding: '10px 12px 2px' } }, steps))),
-          h('div', { class: 'cols', style: { gap: '14px' } },
+      h('div', { class: 'cols workfill' },
+        h('div', { class: 'c2 col', 'data-keep': 'tk-c2', style: { gap: '8px' } },
+          section('Plan, in order, with evidence', h('span', { class: 'mono dim' }, t.step[0] + '/' + t.step[1]), panel(h('div', { style: { padding: '6px 10px 2px' } }, steps))),
+          h('div', { class: 'cols', style: { gap: '8px' } },
             h('div', { class: 'c1' }, section('Scope and locks', null, panel(h('div', { class: 'item' }, t.scope ? h('div', { class: 'mono break' }, t.scope) : h('div', { class: 'small dim' }, 'No scope recorded.'),
               d.locks.length ? d.locks.map((l) => h('div', { class: 'row small' }, h('span', { class: 'mono break', style: { flex: 1 } }, l.name), h('span', { class: 'muted' }, 'locked by ' + nameText(l.agent)))) : h('div', { class: 'small dim' }, 'No locks held.'), t.done_when ? h('div', { class: 'small muted' }, 'Done when: ' + t.done_when) : null)))),
             h('div', { class: 'c1' }, section('Recent events', null, activityList(d.events, 10))))),
-        h('aside', { class: 'c1 col', style: { gap: '14px' } },
+        h('aside', { class: 'c1 col', 'data-keep': 'tk-c1', style: { gap: '8px' } },
           a ? panel(h('div', { class: 'item' }, h('div', { class: 'row', style: { gap: '10px' } }, tile(a.kind, who(a.name).role, 30, a.state === 'offline'), h('div', { style: { flex: 1, 'min-width': 0 } }, h('div', { class: 'b break' }, nameRole(a.name)), h('div', { class: 'small m', style: { color: a.state === 'offline' ? 'var(--bad)' : 'var(--good)' } }, a.state === 'offline' ? 'Offline' : a.state === 'busy' ? 'Working' : 'Ready'))),
             h('div', { class: 'kv small' }, h('span', null, 'Last seen'), h('span', null, ago(a.seen_s)), h('span', null, 'Branch'), h('span', { class: 'mono break' }, t.branch || '–'), h('span', null, 'Worktree'), h('span', { class: 'mono break' }, t.worktree || '–'), h('span', null, 'Slot'), h('span', null, a.slot == null ? '–' : String(a.slot)))))
             : panel(h('div', { class: 'item muted' }, 'No agent holds this task.')),

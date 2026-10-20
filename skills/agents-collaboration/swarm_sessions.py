@@ -250,12 +250,11 @@ VIEWS.sessions = {
     const tabs = h('nav', { class: 'row', 'aria-label': 'Worker sessions', style: { 'overflow-x': 'auto', 'max-width': '100%', 'white-space': 'nowrap', padding: '4px 0' } },
       d.sessions.map((s) => link('#/sessions/' + s.id, { class: 'btn' + (selected && s.id === selected.id ? ' on' : ''), 'aria-current': selected && s.id === selected.id ? 'page' : null },
         s.agent + ' (' + (s.kind || '?') + ') / ' + s.state + ' / ' + s.id.slice(-6))));
-    const top = [h('h1', null, 'Sessions'),
-      h('p', { class: 'muted' }, 'Workers run headlessly under their supervisors. Closing this viewer leaves workers running. Failed and completed sessions stay available.'),
-      cmd('sessions', 'One terminal with worker tabs and start/stop controls.'), tabs];
-    if (!selected) return [...top, empty('No owned sessions yet. Start one with swarm spawn CLI --name NAME --task TASK.')];
+    const top = [h('div', { class: 'row wrap', style: { gap: '10px', 'align-items': 'baseline' } }, h('h1', null, 'Sessions'),
+      h('span', { class: 'muted small' }, 'Headless workers under their supervisors. Closing this viewer leaves them running; failed and finished sessions stay here.')), tabs];
+    if (!selected) return [...top, panel(h('div', { class: 'item' }, h('span', { class: 'm' }, 'No owned sessions yet'), h('span', { class: 'muted small' }, 'Start a worker on a task, or open every session in one terminal with tabs and start/stop controls:'), cmd('spawn CLI --name NAME --task TASK'), cmd('sessions')))];
     const capture = d.detail[d.stream];
-    const excerpt = (text) => h('pre', { class: 'mono', style: { 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere', 'max-height': '60vh', overflow: 'auto', padding: '16px', margin: '0' } }, text);
+    const excerpt = (text) => h('pre', { class: 'mono', style: { 'white-space': 'pre-wrap', 'overflow-wrap': 'anywhere', 'max-height': '60vh', overflow: 'auto', padding: '10px', margin: '0' } }, text);
     const streams = h('div', { class: 'row wrap' }, ...['worker', 'supervisor'].map((s) => link('#/sessions/' + selected.id + '/' + s, { class: 'btn' + (d.stream === s ? ' on' : ''), 'aria-current': d.stream === s ? 'page' : null }, s === 'worker' ? 'Worker output' : 'Supervisor diagnostics')));
     const t = d.detail.task;
     const audit = t ? panel(h('div', { class: 'item col' },

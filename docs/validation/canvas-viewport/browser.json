@@ -1,0 +1,297 @@
+{
+  "ok": true,
+  "browser": "msedge",
+  "source_sha256": {
+    "skills/agents-collaboration/swarm_web.py": "03eb0d816143ee7fa5689bbaf821e227229e70ba0408c87c0600829d579dc277",
+    "skills/agents-collaboration/swarm_sessions.py": "2615c30b82171396ad0bd2491706a9669980fdd285cf453443192402c3fc8035",
+    "skills/agents-collaboration/swarm_core.py": "9db43262f82a937dddf0b99e1adaef310ffb24a6e009af0d86bce7b41075323d",
+    "tests/test_web_dashboard.py": "7b97c0cce2c01415e1f2262dfca619665cd404765b11d766393ee35864827787",
+    "tests/test_swarm.py": "b430a112dbe840ad3141a8458bf2fcb0f73936fc2d0f551e80a940e1a1e41be9",
+    "tests/test_hardening.py": "6cfe876d118e6b314b712921c62fa126dc84372e6a712e3cf512ab8280cd903e",
+    "scripts/validate_canvas.py": "32e035fb56ece144807db4287826b5172a8098b7e220e7c483563637c451f09b"
+  },
+  "checks": [
+    "live update retains shell, canvas, controls, card and surviving connector elements; only Bob/gate cards mutate",
+    "smooth curves for every factual relationship, with directional arrowheads; camera retained through live update",
+    "canvas keyboard shortcuts and Ctrl+wheel zoom",
+    "search, no-result handling, focus, edge filters and inspector relationship navigation",
+    "steward form and selected CLI survive live updates and a successful local inbox-review action",
+    "recorded step progress and untrusted display text under the production CSP",
+    "separate cameras per board, restored on return",
+    "two bounded sections below the actual header, including wrapped navigation and short windows; inspector scroll and route changes",
+    "responsive layout without page overflow at 1440x1000, 1024x1000, 820x1000, 600x1000, 390x1000, 1024x600, 820x600, 390x600, 1440x480; touch phone starts at 100%"
+  ],
+  "viewport_geometry": [
+    {
+      "header": {
+        "top": 0,
+        "bottom": 45,
+        "left": 0,
+        "right": 1440,
+        "height": 45
+      },
+      "canvas": {
+        "top": 45,
+        "bottom": 1000,
+        "left": 0,
+        "right": 1140,
+        "height": 955
+      },
+      "inspector": {
+        "top": 45,
+        "bottom": 1000,
+        "left": 1140,
+        "right": 1440,
+        "height": 955
+      },
+      "width": 1440,
+      "height": 1000,
+      "scrollWidth": 1440,
+      "scrollHeight": 1000
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 45,
+        "left": 0,
+        "right": 1024,
+        "height": 45
+      },
+      "canvas": {
+        "top": 45,
+        "bottom": 1000,
+        "left": 0,
+        "right": 724,
+        "height": 955
+      },
+      "inspector": {
+        "top": 45,
+        "bottom": 1000,
+        "left": 724,
+        "right": 1024,
+        "height": 955
+      },
+      "width": 1024,
+      "height": 1000,
+      "scrollWidth": 1024,
+      "scrollHeight": 1000
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 85,
+        "left": 0,
+        "right": 820,
+        "height": 85
+      },
+      "canvas": {
+        "top": 85,
+        "bottom": 1000,
+        "left": 0,
+        "right": 520,
+        "height": 915
+      },
+      "inspector": {
+        "top": 85,
+        "bottom": 1000,
+        "left": 520,
+        "right": 820,
+        "height": 915
+      },
+      "width": 820,
+      "height": 1000,
+      "scrollWidth": 820,
+      "scrollHeight": 1000
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 93,
+        "left": 0,
+        "right": 600,
+        "height": 93
+      },
+      "canvas": {
+        "top": 93,
+        "bottom": 637.203125,
+        "left": 0,
+        "right": 600,
+        "height": 544.203125
+      },
+      "inspector": {
+        "top": 637.203125,
+        "bottom": 1000,
+        "left": 0,
+        "right": 600,
+        "height": 362.796875
+      },
+      "width": 600,
+      "height": 1000,
+      "scrollWidth": 600,
+      "scrollHeight": 1000
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 93,
+        "left": 0,
+        "right": 390,
+        "height": 93
+      },
+      "canvas": {
+        "top": 93,
+        "bottom": 637.203125,
+        "left": 0,
+        "right": 390,
+        "height": 544.203125
+      },
+      "inspector": {
+        "top": 637.203125,
+        "bottom": 1000,
+        "left": 0,
+        "right": 390,
+        "height": 362.796875
+      },
+      "width": 390,
+      "height": 1000,
+      "scrollWidth": 390,
+      "scrollHeight": 1000
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 45,
+        "left": 0,
+        "right": 1024,
+        "height": 45
+      },
+      "canvas": {
+        "top": 45,
+        "bottom": 600,
+        "left": 0,
+        "right": 724,
+        "height": 555
+      },
+      "inspector": {
+        "top": 45,
+        "bottom": 600,
+        "left": 724,
+        "right": 1024,
+        "height": 555
+      },
+      "width": 1024,
+      "height": 600,
+      "scrollWidth": 1024,
+      "scrollHeight": 600
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 85,
+        "left": 0,
+        "right": 820,
+        "height": 85
+      },
+      "canvas": {
+        "top": 85,
+        "bottom": 600,
+        "left": 0,
+        "right": 520,
+        "height": 515
+      },
+      "inspector": {
+        "top": 85,
+        "bottom": 600,
+        "left": 520,
+        "right": 820,
+        "height": 515
+      },
+      "width": 820,
+      "height": 600,
+      "scrollWidth": 820,
+      "scrollHeight": 600
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 93,
+        "left": 0,
+        "right": 390,
+        "height": 93
+      },
+      "canvas": {
+        "top": 93,
+        "bottom": 397.203125,
+        "left": 0,
+        "right": 390,
+        "height": 304.203125
+      },
+      "inspector": {
+        "top": 397.203125,
+        "bottom": 600,
+        "left": 0,
+        "right": 390,
+        "height": 202.796875
+      },
+      "width": 390,
+      "height": 600,
+      "scrollWidth": 390,
+      "scrollHeight": 600
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 45,
+        "left": 0,
+        "right": 1440,
+        "height": 45
+      },
+      "canvas": {
+        "top": 45,
+        "bottom": 480,
+        "left": 0,
+        "right": 1140,
+        "height": 435
+      },
+      "inspector": {
+        "top": 45,
+        "bottom": 480,
+        "left": 1140,
+        "right": 1440,
+        "height": 435
+      },
+      "width": 1440,
+      "height": 480,
+      "scrollWidth": 1440,
+      "scrollHeight": 480
+    },
+    {
+      "header": {
+        "top": 0,
+        "bottom": 93,
+        "left": 0,
+        "right": 390,
+        "height": 93
+      },
+      "canvas": {
+        "top": 93,
+        "bottom": 543.609375,
+        "left": 0,
+        "right": 390,
+        "height": 450.609375
+      },
+      "inspector": {
+        "top": 543.609375,
+        "bottom": 844,
+        "left": 0,
+        "right": 390,
+        "height": 300.390625
+      },
+      "width": 390,
+      "height": 844,
+      "scrollWidth": 390,
+      "scrollHeight": 844
+    }
+  ],
+  "browser_errors": []
+}

@@ -155,9 +155,14 @@ camera and search in memory until the page reloads. Wide screens initially fit t
 use 100% zoom so cards remain readable.
 
 Navigation is a browser view of the board; moving the view does not change assignments or relationships.
-For reproducible browser checks and screenshots, see [canvas validation](validation/canvas-live/report.md).
+For reproducible browser checks, viewport measurements and screenshots, see
+[canvas validation](validation/canvas-viewport/report.md).
 
 ## Screen sizes
+
+Desktop navigation and the canvas toolbar are each 33 px high when they fit on
+one row. Pages use compact section gaps, table rows, cards and inspector padding;
+body text remains readable and phone controls keep their larger touch targets.
 
 The page adapts from a phone to a wide monitor. It was measured in a browser at 390, 600, 820, 1024,
 1280 and 1440 px wide with no horizontal page scroll on the original pages. The
@@ -168,13 +173,21 @@ new Sessions page was separately checked at 390 and 1280 px; see its validation 
   first, then the list.
 - **Tablet (up to 860 px for tables, 1000 px for the inbox).** Tables stack and the inbox puts the thread
   before the list.
-- **Team page.** The team is always the canvas, on every screen. Wide screens show it as one workspace
-  exactly as high as the window: the canvas and the inspector scroll on their own. The workspace has a
+- **Team page.** Two sections fill the window below the main header, accounting for wrapped navigation.
+  Wide screens place the canvas section beside the inspector. The title and search belong to the canvas
+  section; the canvas and inspector scroll independently, without scrolling the page. The workspace has a
   dotted background, a vertical tool rail on its right with the three line filters (icon buttons with labels),
-  a legend in its top-right and navigation at the bottom. On a phone the canvas sits in a frame you pan,
-  with the inspector below and the line buttons available beside the canvas.
+  a legend in its top-right and navigation at the bottom. On a phone the two sections stack within the
+  available height, with a scrollable inspector below and the line buttons beside the canvas.
   The Inbox works the same way on wide screens: list and thread fill the window and scroll separately, the
   reply box stays in view, and scroll positions survive the live refresh.
+
+## Look and accessibility
+
+The interface is deliberately plain: one neutral palette and one accent, sentence-case labels, tables instead of card
+grids, and status always shown as a shape plus a word. Every text colour is at least 4.5:1 against white, the page
+background and the tinted alert backgrounds (the lowest is 4.6:1). On wide screens the Overview, Decisions and task pages
+fill the window and their two columns scroll independently, and the live refresh keeps each scroll position.
 
 ## Security model
 
