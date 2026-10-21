@@ -101,7 +101,7 @@ class SenderIdentity(ProposalCase):
 
 class AdditiveScope(ProposalCase):
     def test_ec368_scope_add_is_coordinator_only_audited_and_preserves_assignment(self):
-        wt = self.activate_with_contract()
+        self.activate_with_contract()
         before_task, before_contract = self.task("T1"), self.contract()
         reason = "The closure record belongs to this task"
 

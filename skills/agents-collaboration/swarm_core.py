@@ -12308,6 +12308,27 @@ def protocol_result(sw: Swarm, args, output: str):
         return result
 
 
+HEARTBEAT_THROTTLE_SEC = 60
+
+
+def touch_identified(sw: Swarm, who: str | None) -> None:
+    """Any command that names a live agent is a heartbeat, read-only ones included.
+
+    It runs before the sweep, so the outcome does not depend on whether another agent swept first. An agent already
+    past its timeout or already offline is not revived: that still takes `join --resume`. Writes are throttled so
+    polling cannot contend on the board.
+    """
+    if not who or who == HUMAN:
+        return
+    row = sw.agent(who)
+    if not row or row["state"] in ("offline", "left"):
+        return
+    age_sec = seconds_since(row["heartbeat_at"])
+    if age_sec < HEARTBEAT_THROTTLE_SEC or age_sec >= sw.config["swarm"]["agent_timeout_min"] * 60:
+        return
+    sw.update_agent(who, heartbeat_at=iso())
+
+
 def execute_command(args) -> tuple[int, object, int | None, int]:
     """Execute once; closing the board matters for embedded harnesses and Windows cleanup."""
     sw = None
@@ -12328,6 +12349,7 @@ def execute_command(args) -> tuple[int, object, int | None, int]:
         sw = Swarm()
         sw.client_epoch = args.epoch
         with sw.tx():
+            touch_identified(sw, args.as_)
             sw.sweep()
         reviewer_command_guard(sw, args)
         if (

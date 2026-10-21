@@ -359,7 +359,8 @@ hivewire step 2 --as <name> --evidence "..."
   for example) are always locked. Locks never wait: if one is taken, do another
   step or ask its holder.
 - Commit on your branch as often as you like.
-- Every command is a heartbeat. Before a long-running command, run
+- Every command that names you (`--as` or `SWARM_AS`) is a heartbeat, written at most
+  once a minute; it does not revive you once you are offline. Before a long-running command, run
   `hivewire heartbeat`; after 20 silent minutes you are marked offline.
 - Read `hivewire inbox` whenever a command shows unread messages. Ask readiness
   questions with `send --kind question`; acknowledge deliveries with bus receipts

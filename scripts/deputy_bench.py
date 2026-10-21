@@ -27,7 +27,6 @@ import subprocess
 import sys
 import tempfile
 import time
-from datetime import timedelta
 from pathlib import Path
 
 SOURCE = Path(__file__).resolve().parents[1]

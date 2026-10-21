@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Make every command that names a live agent a heartbeat, read-only ones such as
+  `status --as` included, refreshed before the sweep and throttled to one write a
+  minute; an agent past its timeout or offline is still not revived. Polling no
+  longer gets a coordinator demoted. Correct the edge-case totals, which had drifted.
+
 - Refuse a missing identity on `send`, contract mutations and incident mutations
   instead of recording `human`. Identity resolves from `--as`, then `SWARM_AS`,
   then refuses; the send confirmation names the recorded sender. This closes the

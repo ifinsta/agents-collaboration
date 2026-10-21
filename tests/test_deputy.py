@@ -9,7 +9,6 @@ import threading
 import time
 import unittest
 from datetime import timedelta
-from pathlib import Path
 
 import test_swarm as fixtures
 

@@ -419,9 +419,9 @@ class Submitting(SwarmCase):
         self.commit("src/a.txt", "a")
         self.commit("other/x.txt", "x")
         self.assertIn(
-            "outside contracted scope", self.sw("--as", "ann", "submit", "--evidence", "e", cwd=self.wt, ok=False)
+            "outside the approved scope", self.sw("--as", "ann", "submit", "--evidence", "e", cwd=self.wt, ok=False)
         )
-        self.assertIn("cannot widen a contract", self.sw("--as", "ann", "submit", "--evidence", "e", "--out-of-scope-reason", "fixture needed", cwd=self.wt, ok=False))
+        self.assertIn("contract scope add", self.sw("--as", "ann", "submit", "--evidence", "e", "--out-of-scope-reason", "fixture needed", cwd=self.wt, ok=False))
 
     def test_ec062_ec063_hotspot_rules(self):
         self.commit("src/a.txt", "a")
