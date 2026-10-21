@@ -1,8 +1,10 @@
 # Proposal: dead-hand authority and the liveness fixes
 
-**Status:** revision 2, for approval. Author: claude-worker (coordinator of the ifinpay pool).
+**Status:** revision 3, for approval. Author: claude-worker (coordinator of the ifinpay pool).
 Revision 1 (`415e51c`) was reviewed by deputy `deputy-review` (lease 1) with verdict
 APPROVE WITH REQUIRED CHANGES; every required change is adopted below and marked **[Rn]**.
+Revision 2 (`7c99840`) was re-checked (pass 2): R4, R5, R6, R9, R10 resolved; the gaps it
+found in R1, R2, R3, R7 and R8 are closed in this revision and marked **(pass 2)**.
 Written against Hivewire 0.4.4, CLI protocol 2, board schema 13 (`e6dd239`).
 
 ## Summary
@@ -52,12 +54,19 @@ with two narrow additions:
    `generated_paths`. `--verbatim` keeps whitespace significant, so a Python indentation change
    is new content; `--binary --full-index` stops binary changes from colliding.
 
-Owner and epoch binding are **kept** (EC-225: a new claim needs a fresh review). The policy hash
-keeps every input that changes enforcement: target, gates, merge, hotspots, review
-configuration, scope, acceptance, `goal_revision`, architecture approval, risk level,
-`submission.out_of_scope_reason` and `submission.changelog` (it feeds the hook) [R7]. It drops
-only contract timing fields (deadline, active time), so an extension alone does not stale a
-review.
+The final check composes both cases (a rebased **and** hooked commit is the common one), and
+`incident resolve` applies the same head rule (pass 2).
+
+Owner and epoch binding are **kept** (EC-225: a new claim needs a fresh review). The policy
+hash is computed from an explicit, exact field list in code, not "everything minus timing"
+[R7, pass 2]. Kept: target, gates, merge, hotspots, review configuration, the plan, the whole
+submission except its free-text evidence, contract scope, risk level, budget terms,
+`goal_revision`, architecture approval, acceptance, and specifically
+`submission.out_of_scope_reason` and `submission.changelog` (it feeds the hook). Dropped, and
+only these: contract `deadline_at`, `active_time_min`, `active_seconds`, `blocked_seconds`,
+`checkpoint_at`, `extension_count`, and `submission.evidence` prose. The same list is used by the
+merge-time re-checks after the gates (today's lines 7133, 7172, 7196), which this therefore
+narrows by exactly those fields.
 
 ### F2. Liveness of identified agents (P2)
 
@@ -65,10 +74,14 @@ review.
   once per 60 seconds to avoid SQLite contention (optional suggestion adopted).
 - A rejoin within `reclaim_after_min` restores the prior task state instead of `planning`, only
   if the task's epoch, the worktree HEAD and its open interrupts are unchanged [R8].
-- **Coordinator return [R8].** The role returns to the previous coordinator only when quiescent:
-  no approved-but-unconsumed dead-hand ticket, no merge lease held, and no ticket naming the
-  returner. The return is broadcast. Promotion skips agents that are an incident subject or
-  reserved as a reviewer.
+- **Coordinator return [R8, pass 2].** Evaluated **once, at the returner's `join --resume`**,
+  never flipped later by a sweep in the middle of someone's workflow. The role returns only if
+  the returner rejoins within `[swarm] coordinator_return_min` (default 30) and the board is
+  quiescent: no approved-but-unconsumed dead-hand ticket, no merge lease held, no ticket naming
+  the returner, and the returner is neither an open incident subject nor a reserved reviewer.
+  Otherwise the current coordinator keeps it until an explicit `coordinator hand-over`. The
+  change is broadcast, and, like any term change, it revokes the active triage deputy lease
+  (swarm_deputy.py 1329). Promotion skips agents that are an incident subject or a reviewer.
 
 ### F3. Provably dead merge, dead lease (P3)
 
@@ -79,8 +92,10 @@ review.
   no such pid or a different start time. Access-denied is **not** gone [R9]. The owned gate and
   hook process group must also be gone. Otherwise the 45-minute timeout still applies.
 - Breaking the lease does not release task-held hotspot locks [R9]; those stay with the task.
+- The namespace id is the host name plus the boot id (Linux `/proc/sys/kernel/random/boot_id`,
+  Windows last boot time) plus the WSL distro name when present (pass 2).
 - A tool-time-only usage run whose supervisor is provably gone by the same test is settled with
-  the label `agent attestation: supervisor gone (verified by pid)`.
+  the label `engine-verified: supervisor gone`, charged at the reservation (pass 2).
 - `merge --detach` runs the merge as an engine-owned background job and returns its attempt id;
   `merge` warns when stdout is not a terminal.
 
@@ -123,9 +138,25 @@ reviewer. If none exists, the ticket waits. The requester must not be the coordi
    decision waiting on the human, with the exact command.
 
 **Join secret [R1].** `join` returns a random token, stored hashed on the agent row and kept by
-the agent's process; review, approve and consume require it. Rejoin rotates it. Tickets record
-kind and model; `[deadhand] require_distinct_model` (default off) requires the deputy and the
-coordinator to differ in model (optional suggestion adopted).
+the agent's process; review, approve and consume require it. The token is read from
+`SWARM_TOKEN` or stdin, never from argv, and is redacted from events and messages (pass 2).
+`join --resume` of a name that holds a token requires that token, or the human; otherwise a
+resume could mint a fresh token for someone else's name (pass 2). Rejoin with proof rotates it.
+Tickets record kind and model; `[deadhand] require_distinct_model` (default off) requires the
+deputy and the coordinator to differ in model (optional suggestion adopted).
+
+**Eligible deputies [R2, pass 2].** At `arm` the human names the agents eligible to review
+(`--deputies a,b`), or accepts the default: agents live at arm time that were not started by
+`spawn` on behalf of any party. Agents joined or spawned after arming are never eligible, so a
+coordinator cannot steer the choice by keeping others busy or spawning a fresh agent. The
+**engine issues the delegation**: when a ticket is requested it creates a dead-hand delegation
+row for the selected eligible deputy (separate from the single triage lease that
+`deputy activate` grants, so the coordinator never issues it), with capability
+`deadhand.review`, scoped to that one ticket and expiring with it.
+
+**Arming needs a person [R3, pass 2].** `deadhand arm` refuses unless stdin is a terminal and
+the operator types the confirmation phrase shown (`arm dead hand until <T>`); an agent running
+headless without `--as` therefore cannot arm it by accident.
 
 ### F5. Plans and deliberation (P5)
 
@@ -161,8 +192,9 @@ ceiling holds. F6: an author edit to a generated path is refused.
 
 ## Delivery
 
-Feature branch `deadhand-liveness`. Phase A: F2, F5, F6, F1 (smallest and highest value
-first). Phase B: F3. Phase C: F4. One commit per fix with its tests, ruff clean, manifest
+Feature branch `deadhand-liveness`. Phase A: F2 with the join token, then F5, F6, F1
+(smallest and highest value first; the token lands with F2 so R1 and R8 are testable together,
+pass 2). Phase B: F3. Phase C: F4, which starts only after the deputy confirms R1-R3. One commit per fix with its tests, ruff clean, manifest
 regenerated, EDGE-CASES and CHANGELOG updated, the existing suite run before each push. The
 deputy reviews the final diff of each phase before the coordinator merges it to `main`.
 
