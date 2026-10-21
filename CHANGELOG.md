@@ -2,11 +2,11 @@
 
 ## Unreleased
 
-- Fix every merge exit that does not land: the engine now drops its own squash and hook
-  writes, so a retry or a failed gate no longer leaves a version bump the author is
-  told to revert (`merge_blocked` after a refused fast-forward keeps it for recovery). Record a POSIX owned group by its leader so the group
-  probe means something. Keep the join token out of terminal launchers and the rescue
-  snapshot, and log an agent's decision under the agent, not as the human's.
+- Fix every merge exit that does not land: the engine records a marker before the hook
+  runs and drops its own squash and hook writes afterwards, so a retry, a failed gate, a
+  failed hook, a dirty main checkout or a crash after the merge intent no longer leaves a
+  version bump the author is told to revert. Recovery keeps ownership of a set intent; a
+  fast-forward refused after the intent keeps the commit for recovery.
 
 - Add dead-hand authority for when the human is away: off unless the human arms
   it from a terminal (`deadhand arm --until T`, at most 72 hours), it delegates a

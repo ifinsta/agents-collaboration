@@ -30,7 +30,9 @@ expired arm can no longer block that return.
 The second review (pass 6) rejected that tip for one regression and one ineffective check: (N1) after
 the target moved during the final gate, the retry compared a branch holding the hook's own
 version write with the submitted head and refused a legitimate merge; the retry now resets to the
-reviewed source head first. (S1) a POSIX group was recorded by the worker's pid, which is not
+reviewed source head first (a later review, pass 7, widened that to every exit that does not land: the engine
+marks its own commit before the hook runs and drops it afterwards, keeping the marker while recovery owns a set
+intent). (S1) a POSIX group was recorded by the worker's pid, which is not
 its leader, so the group probe always reported it gone; the anchor is recorded. EC-392 covers both.
 
 ## Summary
