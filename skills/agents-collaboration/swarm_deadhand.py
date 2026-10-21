@@ -238,10 +238,10 @@ def waiting(sw, action: str, subject: str) -> dict | None:
     return json.loads(raw) if raw else None
 
 
-def clear_waiting(sw, action: str, subject: str, who: str = core.HUMAN) -> None:
+def clear_waiting(sw, action: str, subject: str, who: str) -> None:
     if sw.meta(f"human_waiting:{action}:{subject}"):
         sw.set_meta(f"human_waiting:{action}:{subject}", None)
-        sw.event("human_decision_taken", who, None, f"{action} {subject}")
+        sw.event("human_decision_taken" if who == core.HUMAN else "waiting_decision_taken", who, None, f"{action} {subject}")
 
 
 def cmd_human_pending(sw, a) -> None:

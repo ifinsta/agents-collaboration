@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import sys
 from contextlib import contextmanager
+from pathlib import Path
 from unittest import mock
 
 from test_hardening import core
@@ -190,3 +191,43 @@ class GeneratedPaths(OversightCase):
             for bound in ({"debate_min": 10}, {"future_term": True}, {"scope": ["src/", "docs/"]}):
                 self.assertNotEqual(policy({**base, **bound}), same, bound)  # unknown fields fail closed
             self.assertNotEqual(policy(base, changelog="a different line for the hook"), same)
+
+    def move_the_target_during_the_final_gate(self):
+        """Swap the gate for one that, on its second run (the final integration commit), lands a commit on main."""
+        script = Path(self.tmp.name) / "move_target.py"
+        script.write_text(
+            "import pathlib, subprocess, sys\n"
+            f"count = pathlib.Path(r'{self.tmp.name}') / 'gate-runs'\n"
+            "n = int(count.read_text()) + 1 if count.exists() else 1\n"
+            "count.write_text(str(n))\n"
+            "if n == 2:\n"
+            f"    subprocess.run(['git', '-C', r'{self.root}', 'commit', '--allow-empty', '-qm', 'target moved mid-merge'], check=True)\n",
+            encoding="utf-8",
+        )
+        path = self.root / ".agents" / "swarm" / "config.toml"
+        text = path.read_text(encoding="utf-8")
+        start = text.index("commands = [[", text.index("[gates]"))
+        end = text.index("\n", start)
+        gate = json.dumps([[sys.executable, str(script)]])
+        path.write_text(text[:start] + f"commands = {gate}" + text[end:], encoding="utf-8")
+        self.git("add", ".agents/swarm/config.toml")
+        self.git("commit", "-qm", "gate that moves the target once")
+
+    def test_ec392_a_retry_after_the_target_moves_keeps_the_hooks_own_writes(self):
+        self.with_version_hook()
+        self.move_the_target_during_the_final_gate()
+        self.join("ann")
+        self.to_ready("ann", "T1")
+        out = self.sw("merge", "--as", "ann")
+        self.assertEqual(self.task("T1")["state"], "done", out)
+        self.assertEqual((Path(self.tmp.name) / "gate-runs").read_text(), "4", "two passes of two gates each")
+        self.assertEqual(self.git("show", "main:VERSION").strip(), "2", "bumped once, not twice")
+
+    def test_ec392_the_same_retry_for_an_incident_gated_task(self):
+        self.with_version_hook()
+        self.move_the_target_during_the_final_gate()
+        self.setup_incident()
+        self.clear()
+        out = self.sw("merge", "--as", "bob")
+        self.assertEqual(self.task("T1")["state"], "done", out)
+        self.assertEqual(self.git("show", "main:VERSION").strip(), "2")

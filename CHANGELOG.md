@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Fix the merge retry after the target moves: it no longer mistakes the hook's own
+  version write for the author's. Record a POSIX owned group by its leader so the group
+  probe means something. Keep the join token out of terminal launchers and the rescue
+  snapshot, and log an agent's decision under the agent, not as the human's.
+
 - Add dead-hand authority for when the human is away: off unless the human arms
   it from a terminal (`deadhand arm --until T`, at most 72 hours), it delegates a
   short allowlist of human-only decisions through an engine-chosen deputy's review

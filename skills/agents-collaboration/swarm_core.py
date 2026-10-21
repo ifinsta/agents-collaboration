@@ -861,6 +861,15 @@ def process_identity(pid: int, group: int | None = None) -> dict:
     return ident
 
 
+def owned_identity(child) -> dict:
+    """The identity to record for an owned child: the anchor that leads its group on POSIX (the worker is only a
+    member of it), the process itself on Windows, where the job object bounds the group."""
+    anchor = getattr(getattr(child, "proc", None), "pid", None)
+    if os.name != "nt" and anchor:
+        return process_identity(anchor, anchor)
+    return process_identity(child.pid)
+
+
 def group_gone(group: int) -> bool:
     """POSIX only: a group outlives its leader while any member remains. Probe it; never signal it."""
     try:
@@ -3033,7 +3042,7 @@ def _cmd_incident(sw: Swarm, a) -> None:
                 sw.event("incident_resolved", who, r["task"], f"I{incident_id}: {a.outcome}; {a.reason}{authority}")
                 import swarm_deadhand as deadhand
 
-                deadhand.clear_waiting(sw, "incident.resolve", str(incident_id))
+                deadhand.clear_waiting(sw, "incident.resolve", str(incident_id), who)
             elif a.incident_action == "refresh":
                 sw.require_coordinator(who)
                 if len(a.reason.strip()) < MIN_ANSWER:
@@ -4357,7 +4366,7 @@ def cmd_usage(sw: Swarm, a) -> None:
             sw.event("usage_reconciled", who, row["task"], row["id"])
             import swarm_deadhand as deadhand
 
-            deadhand.clear_waiting(sw, "usage.reconcile", a.run)
+            deadhand.clear_waiting(sw, "usage.reconcile", a.run, who)
             sweep_contracts(sw)
         print(json.dumps({"run": usage_data(usage_row(sw, a.run))}))
         return
@@ -4908,7 +4917,7 @@ def cmd_contract(sw: Swarm, a) -> None:
                 task=a.task,
             )
             sw.event("contract_extended", who, a.task, a.reason + authority)
-            deadhand.clear_waiting(sw, "contract.extend.high_risk", a.task)
+            deadhand.clear_waiting(sw, "contract.extend.high_risk", a.task, who)
     print(f"contract {a.contract_action} recorded for {a.task}; `hivewire explain {a.task}` shows the next step")
 
 
@@ -6028,9 +6037,9 @@ def rescue_uncommitted(sw: Swarm, t) -> str | None:
         return None
     try:
         with tempfile.TemporaryDirectory() as tmp:
-            env = {**os.environ, "GIT_INDEX_FILE": str(Path(tmp) / "index"), "GIT_AUTHOR_NAME": "hivewire",
-                   "GIT_AUTHOR_EMAIL": "hivewire@localhost", "GIT_COMMITTER_NAME": "hivewire",
-                   "GIT_COMMITTER_EMAIL": "hivewire@localhost"}
+            env = child_env(GIT_INDEX_FILE=str(Path(tmp) / "index"), GIT_AUTHOR_NAME="hivewire",
+                            GIT_AUTHOR_EMAIL="hivewire@localhost", GIT_COMMITTER_NAME="hivewire",
+                            GIT_COMMITTER_EMAIL="hivewire@localhost")  # git add may run repository clean filters
             head = run(["git", "rev-parse", "--verify", "HEAD"], cwd=tree, check=False).stdout.strip()
             if head:
                 run(["git", "read-tree", head], cwd=tree, env=env)
@@ -6509,7 +6518,7 @@ def cmd_allocation(sw: Swarm, a) -> None:
                 sw.event("allocation_reconciled", who, a.task, f"{row['id']}: {redact_text(a.reason)}")
                 import swarm_deadhand as deadhand
 
-                deadhand.clear_waiting(sw, "allocation.reconcile", a.task)
+                deadhand.clear_waiting(sw, "allocation.reconcile", a.task, who)
         rows = [dict(r) for r in sw.db.execute("SELECT * FROM allocations WHERE task=? ORDER BY rowid", (a.task,))]
     print(json.dumps({"allocations": rows}, indent=2))
 
@@ -7171,9 +7180,9 @@ def run_owned(
         deadline, keep_at, finished, timed_out = time.monotonic() + timeout_s, time.monotonic() + every_s, False, False
         try:
             if on_start and getattr(child, "pid", None):
-                on_start(child.pid)
+                on_start(child)
             if OWNED_CHILD_HOOK and getattr(child, "pid", None):
-                OWNED_CHILD_HOOK(child.pid)
+                OWNED_CHILD_HOOK(child)
             while child.active():
                 now = time.monotonic()
                 if os.fstat(output.fileno()).st_size + os.fstat(errors.fileno()).st_size > 1024 * 1024:
@@ -7317,11 +7326,9 @@ def metered_run(
         if alive:
             alive()
 
-    def record_group(pid):
-        group = pid if os.name != "nt" else None
-
+    def record_group(child):
         def write():
-            sw.set_meta(f"usage_group:{row['id']}", json.dumps([process_identity(pid, group)]))
+            sw.set_meta(f"usage_group:{row['id']}", json.dumps([owned_identity(child)]))
 
         if sw.db.in_transaction:
             write()
@@ -7535,7 +7542,7 @@ def cmd_merge(sw: Swarm, a) -> None:
         )
     os.chdir(sw.main_root)  # never hold the worktree we may remove
     global OWNED_CHILD_HOOK
-    OWNED_CHILD_HOOK = lambda pid: record_lease_group(sw, attempt, pid)  # noqa: E731
+    OWNED_CHILD_HOOK = lambda child: record_lease_group(sw, attempt, child)  # noqa: E731
     try:
         outcome = merge_locked(sw, who, t)
     finally:
@@ -7556,13 +7563,12 @@ def merge_attempt_id() -> str:
     return secrets.token_hex(8)
 
 
-def record_lease_group(sw: Swarm, attempt: str, pid: int) -> None:
+def record_lease_group(sw: Swarm, attempt: str, child) -> None:
     def write():
         raw = sw.meta("merge_lock")
         info = json.loads(raw) if raw else None
         if info and info.get("attempt") == attempt:
-            group = pid if os.name != "nt" else None  # an owned POSIX group is led by its anchor pid
-            info["groups"] = (info.get("groups", []) + [process_identity(pid, group)])[-20:]
+            info["groups"] = (info.get("groups", []) + [owned_identity(child)])[-20:]
             sw.set_meta("merge_lock", json.dumps(info))
 
     if sw.db.in_transaction:
@@ -7777,6 +7783,9 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         }
         if git("rev-parse", f"refs/heads/{target}", cwd=sw.main_root) != target_sha:
             sw_event(sw, "target_moved", who, t["id"], "retrying")
+            # Drop this pass's squash and hook edits: the retry replays the author's own commits onto the new
+            # target, so the generated-path check never mistakes the hook's earlier write for the author's.
+            git("reset", "--hard", review_source, cwd=path)
             continue
         if not holds_queue(sw, t["id"]):  # the lease was broken while we worked: never move the target
             with sw.tx():
@@ -8808,7 +8817,7 @@ def cmd_verification(sw: Swarm, a) -> None:
             sw.event("verification_reconciled", who, row["subject"] if row["kind"] == "task" else None, row["id"])
             import swarm_deadhand as deadhand
 
-            deadhand.clear_waiting(sw, "verification.reconcile", a.receipt)
+            deadhand.clear_waiting(sw, "verification.reconcile", a.receipt, who)
         attribution = "dead-hand authority" if ticket else "human attestation"
         print(f"Verification abandoned by {attribution}; no passed result was inferred and artifacts remain")
     else:
@@ -9942,7 +9951,7 @@ def cmd_execution(sw: Swarm, a) -> None:
             sw.event("execution_reconciled", who, row["task"], f"{row['id']}: {kind}; {a.reason}")
             import swarm_deadhand as deadhand
 
-            deadhand.clear_waiting(sw, "execution.reconcile", row["id"])
+            deadhand.clear_waiting(sw, "execution.reconcile", row["id"], who)
     print("recorded; inspect execution status for actual exit/termination proof")
 
 
@@ -10533,12 +10542,15 @@ def open_in_new_tab(cwd: Path, title: str, argv: list[str]) -> bool:
             stdin=subprocess.DEVNULL,
             stdout=subprocess.DEVNULL,
             stderr=subprocess.DEVNULL,
+            env=child_env(),
             **flags,
         )
         return True
     if os.environ.get("TMUX") and shutil.which("tmux"):
         subprocess.run(
-            ["tmux", "new-window", "-c", str(cwd), "-n", title, shlex.join(argv) + '; exec "${SHELL:-sh}"'], check=False
+            ["tmux", "new-window", "-c", str(cwd), "-n", title, shlex.join(argv) + '; exec "${SHELL:-sh}"'],
+            check=False,
+            env=child_env(),
         )
         return True
     return False
@@ -11176,6 +11188,7 @@ def cmd_console(sw: Swarm, a) -> None:
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=child_env(),
                 **flags,
             )
         else:
@@ -11188,6 +11201,7 @@ def cmd_console(sw: Swarm, a) -> None:
                 stdin=subprocess.DEVNULL,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL,
+                env=child_env(),
                 **flags,
             )
         else:

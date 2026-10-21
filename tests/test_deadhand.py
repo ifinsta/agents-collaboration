@@ -270,6 +270,15 @@ class DeadHand(OversightCase):
             ).fetchone()[0]
         self.assertIn("approved but not yet used", refused)
 
+    def test_ec391_a_coordinators_decision_is_not_logged_as_the_humans(self):
+        self.waiting_incident()
+        with self.board() as sw, sw.tx():
+            deadhand.clear_waiting(sw, "incident.resolve", "1", "ann")
+            deadhand.note_waiting(sw, "incident.resolve", "1", "hivewire incident resolve 1 ...", "bob")
+            deadhand.clear_waiting(sw, "incident.resolve", "1", core.HUMAN)
+            kinds = {(r["kind"], r["agent"]) for r in sw.db.execute("SELECT kind, agent FROM events WHERE kind LIKE '%decision_taken'")}
+        self.assertEqual(kinds, {("waiting_decision_taken", "ann"), ("human_decision_taken", "human")})
+
     def test_ec388_arming_needs_a_person_at_a_terminal(self):
         until = core.iso(core.utcnow() + timedelta(hours=2))
         piped = self.sw("deadhand", "arm", "--until", until, input_text=f"arm dead hand until {until}\n", ok=False)

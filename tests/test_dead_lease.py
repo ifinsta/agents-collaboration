@@ -190,3 +190,30 @@ class DeadMergeLease(HardeningCase):
         with self.board() as sw:
             started = sw.db.execute("SELECT detail FROM events WHERE kind='merge_started'").fetchone()[0]
         self.assertIn(attempt, started)
+
+    def test_ec382_the_recorded_identity_is_the_group_leader_not_the_worker(self):
+        """On POSIX the worker is only a member of the group its anchor leads; recording the worker made the group
+        probe vacuous (killpg on a non-leader is always 'no such process')."""
+        import tempfile
+        from pathlib import Path
+        from types import SimpleNamespace
+
+        worker = SimpleNamespace(pid=4242, proc=SimpleNamespace(pid=4200), job=None)
+        ident = core.owned_identity(worker)
+        if os.name == "nt":
+            self.assertEqual((ident["pid"], "group" in ident), (4242, False), "a job object bounds the group on Windows")
+            return
+        self.assertEqual((ident["pid"], ident["group"]), (4200, 4200))
+        with tempfile.TemporaryFile() as out:
+            child = core.OwnedProcess([sys.executable, "-c", "import time; time.sleep(30)"], Path.cwd(), dict(os.environ), out)
+            try:
+                recorded = core.owned_identity(child)
+                self.assertEqual(recorded["group"], os.getpgid(child.pid), "the recorded group is the one the worker is in")
+                self.assertFalse(core.proven_gone(recorded), "a live group is not gone")
+            finally:
+                child.kill()
+                for _ in range(100):
+                    if not child.active():
+                        break
+                    time.sleep(0.05)
+                child.close()
