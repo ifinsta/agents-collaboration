@@ -2,8 +2,9 @@
 
 ## Unreleased
 
-- Fix the merge retry after the target moves: it no longer mistakes the hook's own
-  version write for the author's. Record a POSIX owned group by its leader so the group
+- Fix every merge exit that does not land: the engine now drops its own squash and hook
+  writes, so a retry or a failed gate no longer leaves a version bump the author is
+  told to revert (`merge_blocked` after a refused fast-forward keeps it for recovery). Record a POSIX owned group by its leader so the group
   probe means something. Keep the join token out of terminal launchers and the rescue
   snapshot, and log an agent's decision under the agent, not as the human's.
 

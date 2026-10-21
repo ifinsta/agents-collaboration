@@ -192,6 +192,25 @@ class GeneratedPaths(OversightCase):
                 self.assertNotEqual(policy({**base, **bound}), same, bound)  # unknown fields fail closed
             self.assertNotEqual(policy(base, changelog="a different line for the hook"), same)
 
+    def fail_the_final_gate_once(self):
+        """Swap the gate for one that fails on its second run (the final integration commit), then passes."""
+        script = Path(self.tmp.name) / "fail_once.py"
+        script.write_text(
+            "import pathlib, sys\n"
+            f"count = pathlib.Path(r'{self.tmp.name}') / 'fail-runs'\n"
+            "n = int(count.read_text()) + 1 if count.exists() else 1\n"
+            "count.write_text(str(n))\n"
+            "sys.exit(1 if n == 2 else 0)\n",
+            encoding="utf-8",
+        )
+        path = self.root / ".agents" / "swarm" / "config.toml"
+        text = path.read_text(encoding="utf-8")
+        start = text.index("commands = [[", text.index("[gates]"))
+        end = text.index("\n", start)
+        path.write_text(text[:start] + "commands = " + json.dumps([[sys.executable, str(script)]]) + text[end:], encoding="utf-8")
+        self.git("add", ".agents/swarm/config.toml")
+        self.git("commit", "-qm", "gate that fails once")
+
     def move_the_target_during_the_final_gate(self):
         """Swap the gate for one that, on its second run (the final integration commit), lands a commit on main."""
         script = Path(self.tmp.name) / "move_target.py"
@@ -231,3 +250,15 @@ class GeneratedPaths(OversightCase):
         out = self.sw("merge", "--as", "bob")
         self.assertEqual(self.task("T1")["state"], "done", out)
         self.assertEqual(self.git("show", "main:VERSION").strip(), "2")
+
+    def test_ec392_a_failed_final_gate_leaves_no_hook_write_for_the_author_to_revert(self):
+        self.with_version_hook()
+        self.fail_the_final_gate_once()
+        self.join("ann")
+        wt = self.to_ready("ann", "T1")
+        self.assertIn("Gates failed on the final integration commit", self.sw("merge", "--as", "ann"))
+        self.assertEqual((wt / "VERSION").read_text().strip(), "1", "the hook's bump is not left on the branch")
+        self.sw("--as", "ann", "submit", "--evidence", "The failed gate was a flake; nothing changed", cwd=wt)
+        out = self.sw("merge", "--as", "ann")
+        self.assertEqual(self.task("T1")["state"], "done", out)
+        self.assertEqual(self.git("show", "main:VERSION").strip(), "2", "bumped once, by the hook")

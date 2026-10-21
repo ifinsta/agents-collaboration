@@ -191,7 +191,7 @@ class DeadMergeLease(HardeningCase):
             started = sw.db.execute("SELECT detail FROM events WHERE kind='merge_started'").fetchone()[0]
         self.assertIn(attempt, started)
 
-    def test_ec382_the_recorded_identity_is_the_group_leader_not_the_worker(self):
+    def test_ec392_the_recorded_identity_is_the_group_leader_not_the_worker(self):
         """On POSIX the worker is only a member of the group its anchor leads; recording the worker made the group
         probe vacuous (killpg on a non-leader is always 'no such process')."""
         import tempfile

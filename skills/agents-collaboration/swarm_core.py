@@ -7038,6 +7038,7 @@ def cmd_submit(sw: Swarm, a) -> None:
     if t["needs_replan"]:
         raise SwarmError("Answers arrived after your plan; re-run `hivewire plan` first.")
     path = Path(t["worktree"])
+    discard_integration(sw, t["id"], a.as_)
     submitted_head = git("rev-parse", "HEAD", cwd=path)
     if any(
         Path(git("rev-parse", "--path-format=absolute", "--git-path", d, cwd=path)).exists()
@@ -7544,14 +7545,45 @@ def cmd_merge(sw: Swarm, a) -> None:
     global OWNED_CHILD_HOOK
     OWNED_CHILD_HOOK = lambda child: record_lease_group(sw, attempt, child)  # noqa: E731
     try:
+        discard_integration(sw, t["id"], who)  # a previous attempt that died after its commit
         outcome = merge_locked(sw, who, t)
     finally:
         OWNED_CHILD_HOOK = None
+        try:
+            discard_integration(sw, t["id"], who)
+        except (SwarmError, OSError, sqlite3.Error):
+            pass  # the lease below still has to be released; the next merge or submit retries the discard
         with sw.tx():
             info = sw.meta("merge_lock")
             if info and json.loads(info).get("attempt") == attempt:
                 sw.set_meta("merge_lock", None)
     print(outcome)
+
+
+def discard_integration(sw: Swarm, task_id: str, who: str) -> None:
+    """The squash commit and the hook's writes are the engine's, not the author's. When a merge ends without
+    landing them, take them off the branch, so the author is never asked to revert a change they did not make.
+    Only while the agent still owns the task, nothing is about to land (no merge intent), and the branch still
+    sits exactly on the engine's commit with a clean tracked tree: anything else is left for a person."""
+    key = f"integration:{task_id}"
+    with sw.tx():
+        raw = sw.meta(key)
+        if not raw:
+            return
+        sw.set_meta(key, None)
+        mark = json.loads(raw)
+        t = sw.task(task_id)
+        if t["assignee"] != who or t["epoch"] != mark["epoch"] or t["merge_intent"] or t["state"] == "done":
+            return
+        path = Path(t["worktree"]) if t["worktree"] else None
+        if not path or not path.is_dir():
+            return
+        if git("rev-parse", "HEAD", cwd=path, check=False) != mark["sha"]:
+            return
+        if git("status", "--porcelain", "--untracked-files=no", cwd=path, check=False):
+            return
+        git("reset", "--hard", mark["source"], cwd=path)
+        sw.event("integration_discarded", who, task_id, f"the engine's commit {mark['sha'][:10]} was dropped; the branch is back at {mark['source'][:10]}")
 
 
 def merge_attempt_id() -> str:
@@ -7757,6 +7789,10 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         new_sha = git("rev-parse", "HEAD", cwd=path)
         with sw.tx():
             check_merge_attempt(sw, who, t)
+            if new_sha != review_source:
+                sw.set_meta(
+                    f"integration:{t['id']}", json.dumps({"sha": new_sha, "source": review_source, "epoch": t["epoch"]})
+                )
             check_integration_files(sw, t, path, target_sha, submit)
             incident_clearance(sw, t, source_head=review_source, integrated_head=new_sha)
             policy_hash = request_hash(review_policy(sw, sw.task(t["id"])))
@@ -7785,7 +7821,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
             sw_event(sw, "target_moved", who, t["id"], "retrying")
             # Drop this pass's squash and hook edits: the retry replays the author's own commits onto the new
             # target, so the generated-path check never mistakes the hook's earlier write for the author's.
-            git("reset", "--hard", review_source, cwd=path)
+            discard_integration(sw, t["id"], who)
             continue
         if not holds_queue(sw, t["id"]):  # the lease was broken while we worked: never move the target
             with sw.tx():
