@@ -2,6 +2,67 @@
 
 ## Unreleased
 
+- Refuse a missing identity on `send`, contract mutations and incident mutations
+  instead of recording `human`. Identity resolves from `--as`, then `SWARM_AS`,
+  then refuses; the send confirmation names the recorded sender. This closes the
+  impersonation-by-omission path in `docs/proposals/identity-scope-offers.md`
+  without removing explicit `--as human` as an operator assertion.
+
+- Let a coordinator or human widen an active contract additively with
+  `contract scope add TASK --path P [--path P ...] --reason R`. The addition is
+  recorded in the terms and event log, preserves the task, epoch, queue position
+  and review state, and notifies the owner. Submit still checks every changed file
+  against plan scope plus additions, and absolute or `..` paths are refused.
+
+- Keep queue and review waiting out of the active budget. Submission stops
+  accounted running time, and a `ready_to_merge` task behind a busy merge queue or
+  a held task lock now receives one automatic, audited `queue_grace` extension
+  when its deadline is within `[liveness] ready_to_merge_grace_min` (default 240
+  minutes). It does not consume the owner's one manual extension and a second
+  expiry still applies. `explain` retains the blocking queue/lock and reason.
+
+- Add `hivewire why TASK [--json]`, which composes the current state, owner, epoch
+  and enforced blockers (dependencies, reservations, locks, merge queue, contract,
+  checkpoints, merging and a recorded failure) with one concrete next action.
+
+- Add `hivewire inbox --wait [--after ID] --timeout N`: one versioned JSON envelope
+  per stdout line, no human footer, exit 0 on timeout. An empty stream is silence,
+  not an error, so watchers no longer parse prose.
+
+- Add a deterministic operations scout and a bounded deputy coordinator. The scout
+  converts critical messages, unanswered human decisions, stuck or orphaned tasks,
+  failing verification, expiring contracts and aging incidents into one durable,
+  deduplicated attention queue with lease-based claims and retained history. It never
+  interrupts a productive agent, never creates a sixth worker, and never treats an
+  unread message, a missing heartbeat or an open incident as misconduct. A coordinator
+  or human can grant one scoped, time-bounded deputy lease for triage only: the deputy
+  cannot pass coordinator checks, merge, cancel work, resolve its own findings, approve
+  architecture or acknowledge another agent's inbox, and the lease is revoked when its
+  coordinator term, policy digest, role or holder changes. Two capabilities can be
+  granted explicitly: `incident.propose` opens a task-scoped incident whose opener is
+  never the reviewer, and `interrupt.request` asks for attention or a safety pause on a
+  scoped target. The scout also reports inconsistent review reservations without
+  reassigning them or inferring misconduct. Unowned P0/P1 items past their response
+  deadline, or past the queue SLA when they have none, get one visible reminder to the
+  coordinator or human without changing the item's status. Add `hivewire deputy status/nominate/activate/release/scan` and
+  `hivewire attention list/show/claim/investigate/report/escalate/resolve/reopen`.
+
+- Type verification attention subjects as `goal:`, `task:` or `verification:`
+  so a failed goal check is never addressed as a task, and skip writes when a
+  repeated scan finds unchanged evidence.
+
+- Add a recorded comparative benchmark for solo, coordinator-only and
+  coordinator+deputy triage with crash, scope, all-busy and coordinator-term
+  fault checks. On the tested Windows host all arms completed every scripted
+  task and lost no work; the deputy arm was about 7.6% slower because a second
+  agent consumed a slot on a three-task workload. The results are coordination
+  measurements, not evidence of model-driven throughput.
+
+- Show the attention queue and the live deputy lease in the web dashboard: a new
+  Attention tab lists open items with severity, owner, deadline and history, and the
+  overview names an active deputy, its scope and remaining time. The panels are
+  read-only views over the same SQLite data.
+
 - Show read versus unread in the web inbox: each message counts opened recipient
   copies, an Unread filter finds messages with an unopened copy, the recipient
   table shows per-agent read and acknowledgement timestamps, and opening a message

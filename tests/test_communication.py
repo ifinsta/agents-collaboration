@@ -793,6 +793,8 @@ class Interrupts(CommunicationCase):
             "5",
             "--reason",
             "Allow a bounded recovery window for the retained work",
+            "--as",
+            "human",
         )
         self.assertIn("Interrupt", self.sw("start", "--as", "bob", ok=False))
         self.assertEqual(self.task("T1")["state"], "interrupted")

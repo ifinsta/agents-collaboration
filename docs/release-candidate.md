@@ -1,7 +1,7 @@
 # Unreleased source and acceptance
 
 The working source identifies itself as **0.4.4**. It uses CLI protocol **2**,
-database schema **12**, and bus/message/event versions **1**. It has not been
+database schema **13**, and bus/message/event versions **1**. It has not been
 published as a release by this implementation work. The default remote installer
 selects its configured release ref; it does not install an unpublished working tree.
 

@@ -30,6 +30,7 @@ class TransactionCrashes(HardeningCase):
             db.close()
 
     def boundary(self, command, label, check):
+        self.sw("status")
         before = self.snapshot()
         target = self.git("rev-parse", "main")
         with self.paused(f"before_{label}_commit", *command) as child:
@@ -118,4 +119,4 @@ class TransactionCrashes(HardeningCase):
                 rows = sw.db.execute("SELECT * FROM task_contracts WHERE task='T1'").fetchall()
                 self.assertEqual(len(rows), 1)
                 self.assertEqual(rows[0]["state"], "offered")
-        self.boundary(["contract", "offer", "T1", "ann"], "cmd_contract", check)
+        self.boundary(["contract", "offer", "T1", "ann", "--as", "human"], "cmd_contract", check)

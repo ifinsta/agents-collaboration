@@ -89,7 +89,7 @@ The page is a tool, not only a view. These actions run as **you** (the human), f
 |---|---|---|
 | Overview, Decisions | Answer or waive a question | `hivewire answer` / `hivewire waive` |
 | Overview, Decisions | Approve an architecture brief (after a confirmation) | `hivewire goal architecture GOAL --approve` |
-| Inbox | Reply to a message, with its kind | `hivewire send AGENT TEXT --kind KIND --reply-to ID` |
+| Inbox | Reply to a message, with its kind | `hivewire send AGENT TEXT --kind KIND --reply-to ID --as human` |
 | Inbox | Open a message addressed to you (records that you read it, without acknowledging it) | `hivewire inbox --id ID --as human` |
 | Inbox | Acknowledge a message addressed to you | `hivewire bus receive` then `hivewire bus ack`, with its receipt |
 | Team, Inbox | Review inboxes now | `hivewire steward --once` |
@@ -135,7 +135,8 @@ See [managed sessions](managed-sessions.md) for lifetime and capture limits.
 
 | Page | Contents |
 |---|---|
-| Overview | A summary strip (agents online, tasks merged, waiting on you, blocked), a team table (status, task, step, contract clock, last seen), a work table, a "waiting on you" list (answer or waive a question, approve a brief, in place) and a plain-language activity log |
+| Overview | A summary strip (agents online, tasks merged, waiting on you, blocked, open attention), a team table (status, task, step, contract clock, last seen), a work table, a "waiting on you" list (answer or waive a question, approve a brief, in place) and a plain-language activity log. When a scoped deputy lease is active, the page names the deputy, its scope and remaining time |
+| Attention | Open items from the deterministic scout and from agents (severity, kind, subject, evidence, status, owner, deadline, age), P0–P3 queue counts, recent claim/report/resolve history, and the last deputy leases. The page is a read-only view; claims and decisions use `hivewire attention` and `hivewire deputy` |
 | Team | A canvas of the team in lanes (Governance, Orchestration, Execution, Assurance, Integration) with solid, dotted and dashed lines between agents, and an inspector for the selected one. See [the team canvas](#the-team-canvas) |
 | Inbox | Every message with its kind, priority, read/unread count and acknowledgement state; filters for unread, questions, decisions, warnings, reviews and dead letters; a thread view that renders the author's Markdown (lists, tables and code blocks stay aligned); per-recipient read and acknowledgement timestamps, receipt lease and envelope fields |
 | Decisions | Open questions, architecture briefs awaiting approval, contracts being negotiated with their decision window, incident reviews, interrupts, and what was recently settled |

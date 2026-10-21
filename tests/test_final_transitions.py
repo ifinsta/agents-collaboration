@@ -56,11 +56,11 @@ class FinalTransitions(HardeningCase):
 
     def test_ec329_counter_decision_and_acceptance_commit_kills_keep_one_bounded_offer(self):
         self.join("ann")
-        self.sw("contract", "offer", "T1", "ann")
+        self.sw("contract", "offer", "T1", "ann", "--as", "human")
         deadline = self.row("task_contracts")["decision_at"]
         self.boundary(["contract", "counter", "T1", "--as", "ann", "--reason", "The fixture needs a reviewed validation allowance"], "cmd_contract",
                       lambda: self.assertEqual(self.row("task_contracts")["state"], "countered"))
-        self.boundary(["contract", "decide", "T1", "--active-time-min", "35", "--reason", "Allow five more minutes for the source fixture check"], "cmd_contract",
+        self.boundary(["contract", "decide", "T1", "--active-time-min", "35", "--reason", "Allow five more minutes for the source fixture check", "--as", "human"], "cmd_contract",
                       lambda: self.assertEqual(self.row("task_contracts")["state"], "offered"))
         self.boundary(["contract", "accept", "T1", "--as", "ann"], "cmd_contract",
                       lambda: self.assertEqual(self.row("task_contracts")["state"], "accepted"))

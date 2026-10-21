@@ -199,6 +199,13 @@ def describer(db, ctx):
     return describe
 
 
+def _table(db, name: str) -> bool:
+    return bool(db.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (name,)).fetchone())
+
+
+ATTENTION_OPEN = ("new", "claimed", "investigating", "proposed_action", "escalated", "reopened")
+
+
 def counts(db, now) -> dict:
     pending = db.execute("SELECT COUNT(*) FROM messages WHERE ack_state='pending'").fetchone()[0]
     dead = db.execute("SELECT COUNT(*) FROM messages WHERE ack_state='dead_letter'").fetchone()[0]
@@ -207,13 +214,113 @@ def counts(db, now) -> dict:
     incidents = db.execute("SELECT COUNT(*) FROM incidents WHERE resolved_at IS NULL").fetchone()[0]
     approvals = len(pending_approvals(db))
     merge = db.execute("SELECT COUNT(*) FROM tasks WHERE removed=0 AND state='ready_to_merge'").fetchone()[0]
+    attention = 0
+    if _table(db, "attention_items"):
+        marks = ",".join("?" * len(ATTENTION_OPEN))
+        attention = db.execute(
+            f"SELECT COUNT(*) FROM attention_items WHERE status IN ({marks})", ATTENTION_OPEN
+        ).fetchone()[0]
     return {
         "inbox": pending + dead,
         "dead_letters": dead,
         "questions": questions,
         "decisions": questions + contracts + incidents + approvals + dead,
         "merge": merge,
+        "attention": attention,
     }
+
+
+def attention_panel(db, now) -> dict:
+    """Open signals with severity, SLA, owner and evidence; no inference of misconduct, no actions."""
+    out = {"open": 0, "queue": {"P0": 0, "P1": 0, "P2": 0, "P3": 0}, "oldest_s": None, "overdue": 0, "items": [], "history": []}
+    if not _table(db, "attention_items"):
+        return out
+    marks = ",".join("?" * len(ATTENTION_OPEN))
+    rows = _rows(
+        db,
+        f"SELECT * FROM attention_items WHERE status IN ({marks}) ORDER BY "
+        "CASE severity WHEN 'P0' THEN 0 WHEN 'P1' THEN 1 WHEN 'P2' THEN 2 ELSE 3 END, "
+        "COALESCE(due_at,'9999'), id LIMIT 60",
+        ATTENTION_OPEN,
+    )
+    for r in rows:
+        due = _parse(r["due_at"])
+        out["items"].append(
+            {
+                "id": r["id"],
+                "kind": r["kind"],
+                "severity": r["severity"],
+                "status": r["status"],
+                "subject": r["subject_ref"],
+                "evidence": r["evidence_ref"],
+                "summary": _clip(r["summary"], 260),
+                "owner": r["owner"],
+                "due_at": r["due_at"],
+                "overdue": bool(due and due < now),
+                "age_s": round(_age(r["detected_at"], now) or 0),
+                "finding": _clip(r["finding"], 320) if r["finding"] else None,
+                "recommendation": _clip(r["recommendation"], 320) if r["recommendation"] else None,
+                "decision_owner": r["decision_owner"],
+            }
+        )
+    out["open"] = len(out["items"])
+    out["queue"] = {sev: sum(1 for i in out["items"] if i["severity"] == sev) for sev in ("P0", "P1", "P2", "P3")}
+    out["oldest_s"] = max((i["age_s"] for i in out["items"]), default=None)
+    out["overdue"] = sum(1 for i in out["items"] if i["overdue"])
+    if _table(db, "attention_history"):
+        for h in _rows(db, "SELECT * FROM attention_history ORDER BY id DESC LIMIT 40"):
+            out["history"].append(
+                {
+                    "at": h["at"],
+                    "item": h["attention"],
+                    "actor": h["actor"],
+                    "from": h["old_status"],
+                    "to": h["new_status"],
+                    "note": _clip(h["note"], 240),
+                }
+            )
+    return out
+
+
+def deputy_panel(db, now) -> dict:
+    """The live lease, its fence, and the latest revoked/expired leases for audit."""
+    out = {
+        "active": None,
+        "nominee": _meta(db, "deputy_nominee"),
+        "cooldown_until": _meta(db, "deputy_cooldown_until"),
+        "recent": [],
+    }
+    if not _table(db, "deputy_delegations"):
+        return out
+    row = db.execute(
+        "SELECT d.*, a.state AS agent_state FROM deputy_delegations d "
+        "LEFT JOIN agents a ON a.name=d.deputy WHERE d.state='active' ORDER BY d.id DESC LIMIT 1"
+    ).fetchone()
+    if row:
+        end = _parse(row["expires_at"])
+        out["active"] = {
+            "id": row["id"],
+            "deputy": row["deputy"],
+            "issuer": row["issuer"],
+            "capabilities": _load(row["capabilities"], []),
+            "scope": _load(row["subject_scope"], []),
+            "granted_at": row["granted_at"],
+            "expires_at": row["expires_at"],
+            "remaining_s": max(0, round((end - now).total_seconds())) if end else None,
+            "live": row["agent_state"] not in (None, "offline", "left"),
+        }
+    for r in _rows(db, "SELECT * FROM deputy_delegations ORDER BY id DESC LIMIT 6"):
+        out["recent"].append(
+            {
+                "id": r["id"],
+                "deputy": r["deputy"],
+                "issuer": r["issuer"],
+                "state": r["state"],
+                "reason": _clip(r["reason"], 200),
+                "at": r["revoked_at"] or r["granted_at"],
+            }
+        )
+    return out
 
 
 def pending_approvals(db) -> list:
@@ -421,6 +528,8 @@ def overview(db, ctx, now) -> dict:
         "totals": totals,
         "tasks": [cards[t["id"]] for t in tasks][:300],
         "events": events,
+        "attention": attention_panel(db, now),
+        "deputy": deputy_panel(db, now),
     }
 
 
@@ -2121,8 +2230,8 @@ function approveForm(n) {
 }
 
 // ---- shell
-const TABS = [['', 'Overview', null], ['team', 'Team', null], ['inbox', 'Inbox', 'inbox'], ['decisions', 'Decisions', 'decisions'], ['tasks', 'Tasks', null]];
-const BADGE_COLOR = { inbox: 'var(--bad)', decisions: 'var(--warn)' };
+const TABS = [['', 'Overview', null], ['attention', 'Attention', 'attention'], ['team', 'Team', null], ['inbox', 'Inbox', 'inbox'], ['decisions', 'Decisions', 'decisions'], ['tasks', 'Tasks', null]];
+const BADGE_COLOR = { inbox: 'var(--bad)', decisions: 'var(--warn)', attention: 'var(--warn)' };
 function boardSwitch(data) {
   const sel = h('select', { class: 'switch', 'aria-label': 'Board' }, data.boards.map((b) => h('option', { value: b.id, selected: b.id === (data.active && data.active.id) ? true : null }, b.name)));
   sel.addEventListener('change', () => { rememberBoard(sel.value); lastSig = ''; poolCache = null; tick(); });
@@ -2208,6 +2317,59 @@ function activityList(events, limit) {
   return panel(rows.length ? h('div', { style: { padding: '4px 0' } }, rows.slice(0, limit).map((e) => h('div', { class: 'row', style: { padding: '3px 12px', 'align-items': 'flex-start', gap: '10px' } },
     h('span', { class: 'mono dim', style: { flex: '0 0 38px' } }, clockTime(e.at)), h('span', { class: 'break' }, e.text, e.n > 1 ? h('span', { class: 'dim' }, ' \u00d7' + e.n) : null)))) : empty('No events yet.'));
 }
+const SEV_TONE = { P0: 'bad', P1: 'warn', P2: 'info', P3: 'mute' };
+function attentionItem(a, withFinding) {
+  const tone = SEV_TONE[a.severity] || 'mute';
+  return h('div', { class: 'item' },
+    h('div', { class: 'row between' }, h('span', { class: 'b small', style: { color: COLOR[tone] } },
+      a.severity + ' · ' + a.kind + ' · ' + a.subject), h('span', { class: 'dim small' }, ago(a.age_s) + (a.overdue ? ' · overdue' : ''))),
+    h('div', { class: 'm break' }, a.summary),
+    h('div', { class: 'muted small' }, a.status + (a.owner ? ' · owner ' + nameText(a.owner) : ' · unclaimed') + (a.evidence ? ' · evidence ' + a.evidence : '')),
+    withFinding && a.finding ? h('div', { class: 'small break', style: { 'margin-top': '3px' } }, h('b', null, 'Finding: '), a.finding) : null,
+    withFinding && a.recommendation ? h('div', { class: 'small break' }, h('b', null, 'Recommended: '), a.recommendation,
+      a.decision_owner ? h('span', { class: 'muted' }, ' · decides: ' + nameText(a.decision_owner)) : null) : null);
+}
+function deputyNote(d) {
+  const dep = d.deputy || {}, lease = dep.active, a = d.attention || { queue: {} };
+  const state = lease
+    ? h('span', { class: 'small' }, h('b', null, 'Deputy ' + nameText(lease.deputy)), ' · lease ' + lease.id + ' until ' + clockTime(lease.expires_at) +
+      ' · scope ' + (lease.scope.length ? lease.scope.join(', ') : 'none') + (lease.live ? '' : ' · agent not live'),
+      h('span', { class: 'muted' }, ' · triage only'))
+    : h('span', { class: 'small muted' }, 'No deputy lease; the deterministic scout keeps watching.');
+  const counts = 'Attention: ' + (d.attention ? d.attention.open : 0) + ' open · P0 ' + (a.queue.P0 || 0) + ' · P1 ' + (a.queue.P1 || 0);
+  return h('div', { class: 'note row between wrap' }, state, h('span', { class: 'small dim' }, counts));
+}
+const ATT_COLS = '58px minmax(200px,2.2fr) 112px minmax(110px,1fr) minmax(150px,1.4fr) 86px';
+function attentionTable(d) {
+  const a = d.attention || { items: [] }, grid = { 'grid-template-columns': ATT_COLS };
+  return h('div', { class: 'panel tbl' }, h('div', null,
+    h('div', { class: 'tr head', style: grid }, h('span', null, 'Sev'), h('span', null, 'Signal'), h('span', null, 'State'), h('span', null, 'Owner'), h('span', null, 'Evidence'), h('span', null, 'Age')),
+    a.items.length ? a.items.map((i) => h('div', { class: 'tr' + (i.overdue ? ' alert' : ''), style: grid },
+      h('span', { class: 'b', style: { color: COLOR[SEV_TONE[i.severity] || 'mute'] } }, i.severity),
+      h('span', { class: 'wide break', 'data-label': 'Signal' }, h('b', null, i.kind + ' ' + i.subject), h('br'), h('span', { class: 'muted' }, i.summary),
+        i.finding ? h('div', { class: 'small break', style: { 'margin-top': '2px' } }, h('b', { class: 'b' }, 'Finding: '), i.finding) : null,
+        i.recommendation ? h('div', { class: 'small break' }, h('b', { class: 'b' }, 'Recommended: '), i.recommendation) : null),
+      h('span', { class: 'm small', 'data-label': 'State' }, i.status),
+      h('span', { class: 'small', 'data-label': 'Owner' }, i.owner ? nameText(i.owner) : h('span', { class: 'dim' }, 'Unclaimed')),
+      h('span', { class: 'mono small break', 'data-label': 'Evidence' }, i.evidence || '—'),
+      h('span', { class: 'small muted', 'data-label': 'Age' }, ago(i.age_s) + (i.overdue ? ' · due' : '')))) : empty('No open attention items. The scout found nothing that needs a person.')));
+}
+function historyTable(d) {
+  const rows = ((d.attention || {}).history) || [];
+  return panel(rows.length ? rows.map((r) => h('div', { class: 'item' }, h('div', { class: 'row between' },
+    h('span', { class: 'b small' }, 'A' + r.item + ' · ' + (r.actor || 'system')), h('span', { class: 'dim small' }, clockTime(r.at))),
+    h('div', { class: 'small' }, (r.from || '—') + ' → ' + (r.to || '—'), r.note ? h('span', { class: 'muted break' }, ' · ' + r.note) : null))) : empty('No attention history yet.'));
+}
+function leaseHistory(d) {
+  const dep = d.deputy || {}, active = dep.active, recent = dep.recent || [];
+  const body = [];
+  if (active) body.push(h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small' }, 'Active: ' + nameText(active.deputy)), h('span', { class: 'dim small' }, 'expires ' + clockTime(active.expires_at))),
+    h('div', { class: 'small muted break' }, 'scope ' + active.scope.join(', ') + ' · caps ' + active.capabilities.join(', ')),
+    h('div', { class: 'small muted' }, 'proposed actions only; the coordinator or human decides. ' + (active.live ? '' : 'Agent is not live.'))));
+  for (const r of recent) body.push(h('div', { class: 'item' }, h('div', { class: 'row between' }, h('span', { class: 'b small' }, 'Lease ' + r.id + ' · ' + nameText(r.deputy)), h('span', { class: 'dim small' }, r.state + ' · ' + clockTime(r.at))),
+    h('div', { class: 'small muted break' }, r.reason || 'no reason recorded')));
+  return panel(body.length ? body : empty('No deputy leases yet.'));
+}
 const VIEWS = {};
 VIEWS[''] = {
   load: () => get('/api/overview'),
@@ -2216,6 +2378,8 @@ VIEWS[''] = {
     const blocked = d.tasks.filter((t) => taskTone(t, byName)[1] === 'bad');
     const silent = d.agents.filter((a) => a.state === 'offline');
     const critical = d.needs.filter((n) => n.critical || n.type === 'dead_letter').length;
+    const attention = d.attention || { open: 0, queue: {}, items: [] };
+    const urgent = (attention.queue.P0 || 0) + (attention.queue.P1 || 0);
     const goal = d.goals[0];
     const stat = (label, value, note, color) => h('div', { class: 'stat' }, h('span', { class: 'muted' }, label), h('span', { class: 'v', style: { color: color || 'var(--text)' } }, value), h('span', { class: 'n small muted' }, note));
     const open = d.tasks.filter((t) => t.state !== 'done').length;
@@ -2225,11 +2389,13 @@ VIEWS[''] = {
           h('span', { class: 'muted small' }, goal ? 'Goal ' + goal.id + (goal.architecture ? (goal.architecture.approved ? ' · architecture approved' : ' · architecture awaiting approval') + (goal.architecture.risk ? ' · risk ' + goal.architecture.risk : '') : '') : d.pool.project)),
         link('#/team', { class: 'btn' }, 'Team canvas')),
       d.pool.paused ? h('div', { class: 'note' }, 'Paused by ' + d.pool.paused + ': no claims or merges until `resume`.') : null,
+      deputyNote(d),
       goal ? null : panel(h('div', { class: 'item' }, h('span', { class: 'm' }, 'No goal yet. Start one from a terminal:'), cmd('goal new ID "what you want done"'))),
       h('section', { class: 'panel stats', 'aria-label': 'Summary' },
         stat('Agents', d.pool.live + '/' + d.pool.max_agents, (silent.length ? silent.length + ' silent or offline' : 'all responding') + (d.pool.retired ? ' · ' + d.pool.retired + ' earlier hidden' : ''), silent.length ? 'var(--bad)' : ''),
         stat('Merged', d.totals.done + '/' + d.totals.tasks, d.totals.working + ' in progress · ' + d.totals.merge + ' queued'),
         stat('Waiting on you', String(d.needs.length), critical ? critical + ' critical' : 'nothing urgent', d.needs.length ? 'var(--warn)' : ''),
+        stat('Attention', String(attention.open), urgent ? urgent + ' P0/P1 · ' + (attention.overdue || 0) + ' overdue' : 'nothing urgent', urgent ? 'var(--warn)' : ''),
         stat('Blocked', String(blocked.length), blocked.length ? blocked.map((t) => t.id).join(', ') : 'nothing blocked', blocked.length ? 'var(--bad)' : '')),
       h('div', { class: 'cols workfill' },
         h('div', { class: 'c2 col', 'data-keep': 'ov-c2', style: { gap: '8px' } },
@@ -2237,12 +2403,32 @@ VIEWS[''] = {
           section('Work', link('#/tasks', { class: 'small' }, 'All tasks (' + open + ' open)'), workTable(d, 8))),
         h('div', { class: 'c1 col', 'data-keep': 'ov-c1', style: { gap: '8px' } },
           section('Waiting on you', d.needs.length ? h('span', { class: 'b small', style: { color: 'var(--warn)' } }, d.needs.length) : null, panel(d.needs.length ? d.needs.map(needItem) : empty('Nothing is waiting for you.'))),
+          section('Attention', link('#/attention', { class: 'small' }, attention.open + ' open'), panel(attention.items.length ? attention.items.slice(0, 5).map((i) => attentionItem(i, false)) : empty('The scout has no open signals.'))),
           section('Activity', null, activityList(d.events, 12))))];
   },
 };
 VIEWS.tasks = {
   load: () => get('/api/overview'),
   render(d) { return [h('h1', null, 'Tasks'), workTable(d, 0)]; },
+};
+VIEWS.attention = {
+  load: () => get('/api/overview'),
+  render(d) {
+    const a = d.attention || { open: 0, queue: {}, items: [], history: [] };
+    const box = (label, value, note, color) => h('div', { class: 'stat' }, h('span', { class: 'muted' }, label), h('span', { class: 'v', style: { color: color || 'var(--text)' } }, value), h('span', { class: 'n small muted' }, note));
+    return [
+      h('div', { class: 'row between wrap' }, h('h1', null, 'Attention'), deputyNote(d)),
+      h('p', { class: 'muted small', style: { 'margin-top': '0' } }, 'The deterministic scout queues signals. A deputy investigates only inside its scoped lease; findings are evidence-backed recommendations, never sanctions or merge authority.'),
+      h('section', { class: 'panel stats', 'aria-label': 'Attention summary' },
+        box('Open', String(a.open), (a.oldest_s != null ? 'oldest ' + ago(a.oldest_s) : 'nothing queued')),
+        box('P0', String(a.queue.P0 || 0), 'needs a decision now', a.queue.P0 ? 'var(--bad)' : ''),
+        box('P1', String(a.queue.P1 || 0), 'urgent but bounded', a.queue.P1 ? 'var(--warn)' : ''),
+        box('Overdue', String(a.overdue || 0), 'past the response SLA', a.overdue ? 'var(--bad)' : '')),
+      attentionTable(d),
+      h('div', { class: 'cols' },
+        h('div', { class: 'c1 col' }, section('Leases', null, leaseHistory(d))),
+        h('div', { class: 'c1 col' }, section('Action history', null, historyTable(d))))];
+  },
 };
 
 // ---- team canvas: lanes without backgrounds, lines that are facts

@@ -88,6 +88,10 @@ can use the same planning, contract and verification workflow.
   gates on the final commit and checks ownership/policy before target movement.
 - **Inspectable completion:** task integration and goal acceptance have separate
   receipts. Owed checks remain visible; prose cannot replace executable checks.
+- **Bounded coordination:** a deterministic scout turns urgent signals into one
+  durable attention queue, and an optional coordinator-granted lease lets one
+  available agent triage a scoped slice without a sixth slot or coordinator
+  authority.
 
 These controls govern engine-mediated operations. Worktrees do not prevent
 arbitrary filesystem edits, isolate credentials or authenticate agents. Code
@@ -211,7 +215,7 @@ removed. A native bridge is needed for vendor-specific context injection. See
 
 ## Status and validation
 
-The current contract uses **CLI protocol 2, database schema 12, and message,
+The current contract uses **CLI protocol 2, database schema 13, and message,
 bus and event versions 1**. JSON consumers read typed data under `result`.
 The [migration guide](docs/legacy-migration.md) lists removed options/settings.
 
@@ -228,6 +232,10 @@ The [edge-case register](skills/agents-collaboration/EDGE-CASES.md) distinguishe
 tested, enforced, partial, rule-only and open cases. These labels are different
 from unit-test counts. [Real-agent trials](docs/workforce-benchmark.md) retain
 mixed outcomes; lower cost, less rework and faster delivery remain unproven.
+The [deputy benchmark](docs/deputy-benchmark.md) records a scripted Windows
+comparison: every arm verified all tasks, the deputy arm was slower on that
+small workload, and four fault checks passed. It reports one host and makes no
+productivity claim.
 
 ## Contributing
 

@@ -315,7 +315,7 @@ def run(sim: Sim) -> None:
     )
     sim.swarm("environment", expect=("rules:",))
     sim.swarm(
-        "join", "--kind", "claude", "--model", "sonnet", who="claude-1", expect=("SOLO", "coordinator", "ASK THE HUMAN")
+        "join", "--kind", "claude", "--model", "sonnet", who="claude-1", expect=("SOLO", "coordinator", "OPEN WORKSPACE NOW")
     )
     sim.note(
         "The human says yes: the console opens with the board, the event monitor and a launcher. From the "
@@ -849,6 +849,7 @@ def run(sim: Sim) -> None:
         "opencode-1",
         "--key",
         "health-fixture-review",
+        who="human",
     )
     review = json.loads(sim.swarm("incident", "brief", "1", show=False))
     sim.swarm(
@@ -875,6 +876,7 @@ def run(sim: Sim) -> None:
         "cleared",
         "--reason",
         "The independently cited fixture now checks status ok and the running version",
+        who="human",
     )
     sim.swarm("merge", who="claude-1", cwd=repo, expect=("merged H-tests",))
 

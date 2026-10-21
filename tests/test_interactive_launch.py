@@ -21,7 +21,7 @@ class InteractiveLaunch(ProcessCase):
     def replace(self, old="T1", new="T2"):
         self.sw("release", "--task", old, "Preserve existing work before replacing the interactive assignment.")
         if new == old:
-            self.sw("contract", "offer", new, "worker")
+            self.sw("contract", "offer", new, "worker", "--as", "human")
             self.sw("contract", "accept", new, "--as", "worker")
         self.sw("claim", new, "--as", "worker")
         with self.board() as board:

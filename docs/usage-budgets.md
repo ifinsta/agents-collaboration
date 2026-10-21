@@ -33,7 +33,7 @@ remain outstanding proposal work. Local role names are not authenticated users.
 For an open backlog task, a human can offer explicit allowances:
 
 ```text
-hivewire contract offer T1 ann --token-limit 10000 --cost-limit 0.50 --currency USD --tool-time-min 5
+hivewire contract offer T1 ann --token-limit 10000 --cost-limit 0.50 --currency USD --tool-time-min 5 --as human
 hivewire contract accept T1 --as ann
 hivewire claim T1 --as ann
 hivewire usage reserve T1 --as ann --tokens 2000 --cost 0.10 --key window-1

@@ -14,6 +14,7 @@ from pathlib import Path
 import tempfile
 import threading
 import unittest
+from datetime import timedelta
 from urllib.parse import parse_qs, urlparse
 
 from test_hardening import HardeningCase, core, fixtures
@@ -180,6 +181,35 @@ class Payloads(WebCase):
         unread = self.api(f"/api/message/{decision['id']}")["recipients"][0]
         self.assertIsNone(unread["read_at"])
         self.assertIsNone(unread["acked_at"], "reading is an observation, not an acknowledgement")
+
+    def test_overview_carries_attention_ownership_and_the_live_deputy_lease(self):
+        self.join("cat")
+        self.sw("--as", "ann", "send", "bob", "The release decision needs an owner", "--priority", "critical", "--kind", "warning")
+        con = sqlite3.connect(self.root / ".git" / "swarm" / "swarm.db")
+        con.execute(
+            "UPDATE messages SET created_at=? WHERE id=(SELECT MAX(id) FROM messages)",
+            (core.iso(core.utcnow() - timedelta(hours=1)),),
+        )
+        con.commit()
+        con.close()
+        self.sw("deputy", "scan", "--once")
+        data = self.api("/api/overview")
+        signal = next(i for i in data["attention"]["items"] if i["kind"] == "message")
+        self.assertEqual(signal["severity"], "P1")
+        self.assertEqual(signal["status"], "new")
+        self.assertIsNone(signal["owner"])
+        self.assertEqual(data["counts"]["attention"], data["attention"]["open"])
+        self.sw("deputy", "activate", "cat", "--scope", "message:*", "--as", "ann")
+        self.sw("attention", "claim", str(signal["id"]), "--as", "cat")
+        data = self.api("/api/overview")
+        lease = data["deputy"]["active"]
+        self.assertEqual(lease["deputy"], "cat")
+        self.assertEqual(lease["scope"], ["message:*"])
+        self.assertIn("attention.report", lease["capabilities"])
+        self.assertTrue(lease["live"])
+        claimed = next(i for i in data["attention"]["items"] if i["id"] == signal["id"])
+        self.assertEqual(claimed["owner"], "cat")
+        self.assertTrue(any(h["item"] == signal["id"] and h["to"] == "claimed" for h in data["attention"]["history"]))
 
     def test_decisions_show_open_and_settled_questions(self):
         self.sw("--as", "bob", "claim", "T2")

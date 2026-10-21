@@ -1,6 +1,6 @@
 # Hivewire documentation
 
-Current source: **0.4.4, unreleased**; CLI protocol **2**, database schema **12**,
+Current source: **0.4.4, unreleased**; CLI protocol **2**, database schema **13**,
 bus/message/event versions **1**. These guides target the current Hivewire source.
 The [migration guide](legacy-migration.md) describes the breaking cleanup.
 
@@ -28,6 +28,7 @@ The [migration guide](legacy-migration.md) describes the breaking cleanup.
 | Browser dashboard, demo board, actions, access token and observation mode | [Web dashboard](web-dashboard.md) |
 | Regenerating the dashboard pictures | [dashboard_demo.py](../examples/dashboard_demo.py), [dashboard_screenshots.py](../scripts/dashboard_screenshots.py), [images](images/) |
 | Adapter command snapshots and readiness checks | [Agent CLIs](agents.md) |
+| Reviewed liveness and identity proposals, with implementation status | [Merge liveness](proposals/merge-liveness.md), [identity, scope and offers](proposals/identity-scope-offers.md) |
 | Implemented behavior and known gaps | [Edge-case register](../skills/agents-collaboration/EDGE-CASES.md) |
 
 ## Evidence and release readiness
@@ -46,6 +47,7 @@ by the retained local results.
 | [Proposal conformance](workforce-conformance.md) | Original requirements mapped to code/tests and remaining work |
 | [Transition audit](transition-crash-audit.md) | Selected race/crash evidence and historical counterexamples |
 | [Workforce trials](workforce-benchmark.md) | Scripted mechanics and mixed live-agent results; no productivity claim |
+| [Deputy coordinator benchmark](deputy-benchmark.md) | Scripted solo/coordinator/deputy comparison, p95 triage and four fault checks; no productivity claim |
 | [Managed-session validation](validation/managed-sessions/report.md) | Complete 425-case Linux run, 94 selected Windows cases and browser/terminal checks |
 | [Assignment workspace startup](validation/assignment-workspace/report.md) | Live Windows viewer startup/reuse, hidden-server integration, 94 selected cases with one skip |
 | [Pre-push validation](validation/github-push/report.md) | Terminal-output fix, synchronized liveness fixture, retained full-run failures and final CI acceptance scope |

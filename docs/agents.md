@@ -45,7 +45,7 @@ config` beforehand.
 hivewire probe                 # installed? version? signed in? (no requests sent)
 hivewire probe --live          # also asks each installed CLI to reply READY (one request each)
 hivewire agents                # agents already in the pool: state, OS, task, last heartbeat
-hivewire send ds1 "free for the API task?" --kind question # acknowledge via bus; reply with --reply-to ID
+hivewire send ds1 "free for the API task?" --kind question --as human # acknowledge via bus; reply with --reply-to ID
 ```
 
 `probe` runs each CLI's own sign-in status command and reports only its exit

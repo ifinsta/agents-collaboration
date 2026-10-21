@@ -108,7 +108,7 @@ class Receipts(VerificationCase):
 
     def test_ec255_external_record_requires_actual_gates_and_preserves_failed_work(self):
         self.join("ann")
-        self.sw("contract", "offer", "T1", "ann")
+        self.sw("contract", "offer", "T1", "ann", "--as", "human")
         self.sw("contract", "accept", "T1", "--as", "ann")
         self.sw("claim", "T1", "--as", "ann")
         tree = Path(self.task("T1")["worktree"])

@@ -6,7 +6,7 @@ SQLite/Git authority. Read the [skill](../skills/agents-collaboration/SKILL.md)
 for commands, [bus contract](../skills/agents-collaboration/BUS.md) for transport,
 and [security policy](../SECURITY.md) for the trust boundary.
 
-Current source: CLI protocol 2, schema 12, bus/message/event versions 1;
+Current source: CLI protocol 2, schema 13, bus/message/event versions 1;
 0.4.4 remains unreleased. The [evidence index](README.md#evidence-and-release-readiness)
 distinguishes implemented behavior, recorded snapshots and acceptance still owed.
 
@@ -76,6 +76,17 @@ plan must pass the start/replan gate before recording more work. Takeover and
 ordinary reclaim preserve the original deadline, remaining active allowance and
 usage lineage. Expired terms need an explicit authorized recovery decision.
 
+Submission stops accounted running time, so merge-queue and review waiting is not
+charged to the active budget. When a `ready_to_merge` task waits behind the
+serialized merge queue or a required task lock and its deadline is within
+`[liveness] ready_to_merge_grace_min`, the engine records one audited
+`queue_grace` deadline extension; it names the blocker, leaves the owner's one
+manual extension available, and remains bounded. A coordinator or human can widen
+an active contract additively with `contract scope add`; the task, epoch, queue
+position and review state survive, and submit still checks every changed file
+against the combined scope. `why` reports the same blockers the engine enforces,
+and `inbox --wait` streams machine-readable messages without the human footer.
+
 Checkpointed yield/cancel completion hands work back atomically. Pause retains
 ownership until authorized resume. Control acknowledgements, message delivery
 acknowledgements, process exit and task completion are separate facts.
@@ -129,6 +140,32 @@ explicit terminate policy permits escalation after grace. Stored PIDs remain
 observations. Uncertain execution retains artifacts and requires inspection,
 with human cessation attestation labeled separately from observed termination.
 See [process supervision](process-supervision.md).
+
+## Attention and deputy coordination
+
+A deterministic scout runs during the engine sweep. It converts observable
+states — critical unacknowledged messages, unanswered decisions, stuck or
+orphaned tasks, failed or aging verification, expiring contracts, aging
+incidents, stale executions and inconsistent review reservations — into
+deduplicated `attention_items`. Each item carries its source evidence, severity,
+deadline, owner, lease epoch and one history. Repeated scans update one item;
+an item survives the death of any actor, and an unowned P0/P1 past its deadline
+or queue SLA gets one visible reminder to the coordinator or human. A signal is
+never treated as proof of misconduct, and the scout does not adjudicate.
+
+A coordinator or human may grant at most one active deputy lease with explicit
+capabilities, exact subject scope, policy digest and coordinator term. Every
+privileged deputy action rechecks the live lease in the same immediate
+transaction; revocation, role change, departure, policy edit or a new
+coordinator term fences it. The deputy cannot pass the coordinator check, merge,
+cancel work, start an unauthorized process, approve architecture, acknowledge
+another inbox, resolve its own finding or review its own incident proposal.
+Scoped `incident.propose` and `interrupt.request` remain available when granted.
+Activation requires an eligible signal set and a free slot; a productive agent
+is never interrupted, no sixth slot is created, and minimum active time plus
+cooldown limit switching. When all slots are busy, scouting and escalation
+continue without joining anyone. See the [deputy benchmark](deputy-benchmark.md)
+for measured mechanics and its limits.
 
 ## Optional browser preview
 

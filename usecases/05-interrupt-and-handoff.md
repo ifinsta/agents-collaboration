@@ -9,7 +9,7 @@ and the [bus contract](../skills/agents-collaboration/BUS.md).
 Every fresh claim gets bounded terms. To negotiate custom terms **before claiming**:
 
 ```bash
-hivewire contract offer H-api ann --active-time-min 60 --deadline-min 90
+hivewire contract offer H-api ann --active-time-min 60 --deadline-min 90 --as human
 hivewire contract accept H-api --as ann
 ```
 

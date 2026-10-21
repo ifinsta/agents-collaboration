@@ -39,7 +39,7 @@ class Contracts(ContractCase):
 
     def offer(self, *options):
         self.join("ann")
-        self.sw("contract", "offer", "T1", "ann", *options)
+        self.sw("contract", "offer", "T1", "ann", "--as", "human", *options)
 
     def activate(self, start=True):
         self.offer()
@@ -78,7 +78,7 @@ class Contracts(ContractCase):
         self.sw("status")
         self.sql("UPDATE meta SET value='999' WHERE key='schema_version'")
         self.sql("DROP TABLE checkpoints")
-        self.assertIn("newer swarm", self.sw("status", ok=False))
+        self.assertIn("newer hivewire", self.sw("status", ok=False))
         with self.database() as db:
             self.assertEqual(db.execute("SELECT value FROM meta WHERE key='schema_version'").fetchone()[0], "999")
             self.assertFalse(db.execute("SELECT 1 FROM sqlite_master WHERE name='checkpoints'").fetchone())
@@ -100,6 +100,8 @@ class Contracts(ContractCase):
             "35",
             "--reason",
             "Allow five more minutes to verify the fixture.",
+            "--as",
+            "human",
         )
         self.assertEqual(self.contract()["decision_at"], decision)
         self.assertIn(
@@ -132,7 +134,7 @@ class Contracts(ContractCase):
         old_epoch = self.contract()["epoch"]
         self.sql("UPDATE task_contracts SET decision_at='2020-01-01T00:00:00+00:00'")
         self.sw("status")
-        self.sw("contract", "offer", "T1", "ann")
+        self.sw("contract", "offer", "T1", "ann", "--as", "human")
         self.assertGreater(self.contract()["epoch"], old_epoch)
         self.sql("UPDATE task_contracts SET grace_until='2020-01-01T00:00:00+00:00' WHERE state='expired'")
         self.sw("status")
@@ -175,7 +177,7 @@ class Contracts(ContractCase):
         self.git("commit", "-qm", "attempt a scope exception", cwd=wt)
         self.sw("step", "2", "--as", "ann", "--evidence", "Committed the file for verification")
         self.assertIn(
-            "outside contracted scope",
+            "outside the approved scope",
             self.sw(
                 "submit",
                 "--as",
@@ -262,6 +264,8 @@ class Contracts(ContractCase):
             "5",
             "--reason",
             "The API decision is now settled; resume the bounded implementation.",
+            "--as",
+            "human",
         )
         self.sw("start", "--as", "ann")
         self.sql("UPDATE task_contracts SET active_seconds=999999")
@@ -277,6 +281,8 @@ class Contracts(ContractCase):
                 "5",
                 "--reason",
                 "Requesting another extension after the first has been consumed.",
+                "--as",
+                "human",
                 ok=False,
             ),
         )

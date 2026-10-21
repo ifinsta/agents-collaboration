@@ -53,7 +53,7 @@ class Budgets(HardeningCase):
 
     def activate(self, *limits, start=False):
         self.join("ann")
-        self.sw("contract", "offer", "T1", "ann", *limits)
+        self.sw("contract", "offer", "T1", "ann", "--as", "human", *limits)
         self.sw("contract", "accept", "T1", "--as", "ann")
         self.sw("claim", "T1", "--as", "ann")
         if start:
@@ -108,8 +108,8 @@ class Budgets(HardeningCase):
             ("--token-limit", "0"),
         ):
             with self.subTest(flag=flag):
-                self.sw("contract", "offer", "T1", "ann", flag, value, ok=False)
-        self.sw("contract", "offer", "T1", "ann", "--cost-limit", "0.1000009")
+                self.sw("contract", "offer", "T1", "ann", flag, value, "--as", "human", ok=False)
+        self.sw("contract", "offer", "T1", "ann", "--cost-limit", "0.1000009", "--as", "human")
         with self.board() as sw:
             self.assertEqual(core.contract_budget(core.current_contract(sw, "T1"))["cost_micros"], 100000)
 
@@ -172,6 +172,8 @@ class Budgets(HardeningCase):
             "5",
             "--reason",
             "Time does not authorize additional token consumption.",
+            "--as",
+            "human",
             ok=False,
         )
         self.sw("record", "T1", "--commit", "HEAD", ok=False)
@@ -185,6 +187,8 @@ class Budgets(HardeningCase):
             "200",
             "--reason",
             "Human approves a bounded recovery allowance after actual overrun.",
+            "--as",
+            "human",
         )
         usage = self.ledger()["usage"]
         self.assertEqual(usage["remaining"]["tokens"], 80)
@@ -389,9 +393,9 @@ class Budgets(HardeningCase):
             self.assertGreater(closed["active_seconds"], 0)
         self.assertIn(
             "existing usage currency",
-            self.sw("contract", "offer", "T1", "ann", "--token-limit", "100", "--currency", "EUR", ok=False),
+            self.sw("contract", "offer", "T1", "ann", "--token-limit", "100", "--currency", "EUR", "--as", "human", ok=False),
         )
-        self.sw("contract", "offer", "T1", "ann", "--token-limit", "100")
+        self.sw("contract", "offer", "T1", "ann", "--token-limit", "100", "--as", "human")
         usage = self.ledger()["usage"]
         self.assertEqual(usage["budget"]["origin"], origin)
         self.assertEqual(usage["policy_debit"]["tokens"], 20)

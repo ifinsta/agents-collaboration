@@ -42,7 +42,7 @@ class ClaimCrashes(HardeningCase):
         self.git("add", ".gitignore")
         self.config('[worktree]\ncopy = [".local-settings"]')
         (self.root / ".local-settings").write_text("preserve local settings", encoding="utf-8")
-        self.sw("contract", "offer", "T5", "ann", "--token-limit", "100")
+        self.sw("contract", "offer", "T5", "ann", "--token-limit", "100", "--as", "human")
         self.sw("contract", "accept", "T5", "--as", "ann")
         self.target = self.git("rev-parse", "main").strip()
         with self.board() as board:
@@ -145,7 +145,7 @@ class ClaimCrashes(HardeningCase):
             task = self.task("T5")
         if task["assignee"]:
             self.sw("release", "--task", "T5", "Preserve the crashed assignment's artifacts for a bounded successor.")
-        self.sw("contract", "offer", "T5", "bob", "--token-limit", "100")
+        self.sw("contract", "offer", "T5", "bob", "--token-limit", "100", "--as", "human")
         self.sw("contract", "accept", "T5", "--as", "bob")
         self.sw("claim", "T5", "--as", "bob")
         self.assertEqual(self.task("T5")["assignee"], "bob")

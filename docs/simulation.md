@@ -7,6 +7,10 @@ Agent reasoning, code edits and human decisions are scripted; silence and the la
 No provider requests are made, and this session establishes no productivity or cost advantage.
 Paths, times and commit hashes are normalised.
 
+This transcript was recorded before fail-closed sender identity: mutating contract
+and incident commands now also require `--as` (or `SWARM_AS`), and `send` names
+the recorded sender in its confirmation. The simulated decisions remain human.
+
 This transcript retains the earlier console prompt. Current assignment startup
 uses `hivewire workspace` automatically, opening the managed session terminal and
 browser dashboard; see [managed sessions](managed-sessions.md).

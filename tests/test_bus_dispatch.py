@@ -171,7 +171,7 @@ class Wakeups(bus_tests.BusCase):
         self.assertIsNone(db.execute("SELECT name FROM sqlite_master WHERE name='bus_listeners'").fetchone())
         db.close()
         with self.board() as sw:
-            self.assertEqual(sw.meta("schema_version"), "12")
+            self.assertEqual(sw.meta("schema_version"), "13")
             self.assertEqual(sw.db.execute("SELECT COUNT(*) FROM bus_listeners").fetchone()[0], 0)
 
 

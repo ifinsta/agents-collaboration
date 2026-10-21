@@ -16,6 +16,13 @@ core = fixtures.swarm_module
 
 class OversightCase(communication.CommunicationCase):
     def sw(self, *args, **kwargs):
+        if (
+            len(args) >= 3
+            and args[0] == "incident"
+            and args[1] in ("open", "review", "resolve", "refresh")
+            and "--as" not in args
+        ):
+            args = (*args, "--as", "human")
         if len(args) >= 3 and args[0] == "incident" and args[1] in ("resolve", "refresh") and "--revision" not in args:
             current = self.row("incidents", "id=?", (int(args[2]),))
             args = (*args, "--revision", str(current["revision"]))
@@ -519,7 +526,7 @@ class ReviewRecovery(OversightCase):
             os.chdir(old_cwd)
 
     def test_ec223_schema_three_upgrade_is_atomic_and_preserves_committed_messages(self):
-        self.sw("send", "human", "Preserve the schema-three operator message")
+        self.sw("send", "human", "Preserve the schema-three operator message", "--as", "human")
         with self.database() as db:
             for table in (
                 "incident_reviews",

@@ -36,7 +36,7 @@ __version__ = "0.4.4"
 REPO = "ifinsta/hivewire"
 HERE = Path(__file__).resolve().parent
 LAUNCHER = HERE / "hivewire.py"  # the entry point: the path agents are told to run
-SCHEMA_VERSION = 12
+SCHEMA_VERSION = 13
 PROTOCOL_VERSION = 2
 EVENT_VERSION = 1
 NAME_RE = re.compile(r"^[a-z][a-z0-9-]{1,31}$")
@@ -95,6 +95,7 @@ DEFAULTS: dict = {
         "checkpoint_min": 5,
         "grace_min": 2,
     },
+    "liveness": {"ready_to_merge_grace_min": 240},
     "budgets": {"token_limit": None, "cost_limit": None, "currency": "USD", "tool_time_min": None},
     "messages": {"max_body_bytes": 65536, "ttl_min": 10080, "critical_ttl_min": 1440, "retention_days": 30},
     "bus": {"enabled": True, "fallback_sec": 15, "lease_sec": 60, "batch_size": 10, "hook_timeout_sec": 5,
@@ -130,6 +131,19 @@ DEFAULTS: dict = {
     },
     "worktree": {"copy": []},  # git-ignored files (.env, local settings) copied into each new worktree
     "console": {"max_panes": 6},
+    "deputy": {
+        "enabled": True,
+        "critical_sla_min": 5,
+        "queue_sla_min": 30,
+        "stale_min": 10,
+        "activation_min_urgent": 2,
+        "activation_min_blockers": 3,
+        "lease_min": 30,
+        "claim_lease_sec": 300,
+        "min_active_min": 5,
+        "cooldown_min": 10,
+        "max_scan_items": 200,
+    },
     "adapters": {
         "claude": {
             "version": ["claude", "--version"],
@@ -1157,6 +1171,27 @@ CREATE TABLE IF NOT EXISTS allocations (
   id TEXT PRIMARY KEY, task TEXT, owner TEXT, epoch INTEGER, state TEXT,
   started_at TEXT, ended_at TEXT, detail TEXT);
 CREATE INDEX IF NOT EXISTS allocations_by_task ON allocations(task,state);
+CREATE TABLE IF NOT EXISTS attention_items (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, kind TEXT NOT NULL, severity TEXT NOT NULL,
+  subject_ref TEXT NOT NULL, evidence_ref TEXT, detected_at TEXT NOT NULL, due_at TEXT,
+  status TEXT NOT NULL, owner TEXT, lease_epoch INTEGER NOT NULL DEFAULT 0, lease_until TEXT,
+  dedupe_key TEXT NOT NULL UNIQUE, disposition TEXT, resolved_at TEXT, summary TEXT NOT NULL DEFAULT '',
+  source_severity TEXT, details TEXT NOT NULL DEFAULT '{}', last_seen_at TEXT, last_scan_at TEXT,
+  claimed_at TEXT, reported_at TEXT, finding TEXT, report_evidence TEXT, recommendation TEXT,
+  decision_owner TEXT, resolution TEXT, revision INTEGER NOT NULL DEFAULT 1);
+CREATE INDEX IF NOT EXISTS attention_queue ON attention_items(status,severity,due_at,id);
+CREATE INDEX IF NOT EXISTS attention_owner ON attention_items(owner,status,lease_until);
+CREATE TABLE IF NOT EXISTS attention_history (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, attention INTEGER NOT NULL, at TEXT NOT NULL,
+  actor TEXT, old_status TEXT, new_status TEXT, note TEXT, evidence TEXT);
+CREATE INDEX IF NOT EXISTS attention_history_by_item ON attention_history(attention,id);
+CREATE TABLE IF NOT EXISTS deputy_delegations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, issuer TEXT NOT NULL, deputy TEXT NOT NULL,
+  capabilities TEXT NOT NULL, subject_scope TEXT NOT NULL, policy_digest TEXT,
+  coordinator_term TEXT, granted_at TEXT NOT NULL, expires_at TEXT NOT NULL,
+  revoked_at TEXT, state TEXT NOT NULL, reason TEXT, minimum_active_until TEXT);
+CREATE UNIQUE INDEX IF NOT EXISTS one_active_deputy ON deputy_delegations(state) WHERE state='active';
+CREATE INDEX IF NOT EXISTS deputy_leases ON deputy_delegations(deputy,state);
 """
 
 
@@ -1622,6 +1657,7 @@ class Swarm:
             live = self.live_agents()
             if live:
                 self.set_meta("coordinator", live[0]["name"])
+                self.set_meta("coordinator_since", iso())
                 self.event("coordinator", live[0]["name"], None, "promoted: no live coordinator")
                 self.message("swarm", live[0]["name"], "You are now the coordinator. Read SKILL.md, 'The coordinator'.")
         for q in self.db.execute(
@@ -1633,6 +1669,10 @@ class Swarm:
                 self.notify_coordinator(
                     f"Q{q['id']} on {q['task']} has waited {s['question_escalate_min']} min: {q['text']}", q["task"]
                 )
+
+        import swarm_deputy
+
+        swarm_deputy.sweep(self)
 
     def notify_coordinator(self, body: str, task: str | None = None) -> None:
         coord = self.coordinator()
@@ -2407,8 +2447,8 @@ def incident_review(sw: Swarm, r):
     ).fetchone()
 
 
-def select_reviewer(sw: Swarm, t, subject: str, requested: str | None) -> str:
-    excluded = {subject, t["assignee"]}
+def select_reviewer(sw: Swarm, t, subject: str, requested: str | None, exclude: set[str] | None = None) -> str:
+    excluded = {subject, t["assignee"], *(exclude or set())}
     if requested == HUMAN:
         return HUMAN
     free = [
@@ -2491,7 +2531,7 @@ def open_incident(
     subject = subject or t["assignee"] or sw.coordinator()
     if not subject or subject == HUMAN or not sw.agent(subject):
         raise SwarmError("Name a joined agent as --subject; a coordinator can be reviewed too.")
-    reviewer = select_reviewer(sw, t, subject, reviewer)
+    reviewer = select_reviewer(sw, t, subject, reviewer, exclude={who})
     deadline = future_time(None, sw.config["review"]["deadline_min"])
     snapshot = freeze_review(sw, t, commit)
     cur = sw.db.execute(
@@ -2601,7 +2641,7 @@ def reviewer_command_guard(sw: Swarm, a) -> None:
         )
 
 
-def cmd_incident(sw: Swarm, a) -> None:
+def _cmd_incident(sw: Swarm, a) -> None:
     if a.incident_action == "list":
         for r in sw.db.execute("SELECT * FROM incidents ORDER BY id DESC LIMIT 100"):
             print(f"I{r['id']} {r['state']} task {r['task']} subject {r['subject']}: {r['signal']}")
@@ -2622,10 +2662,15 @@ def cmd_incident(sw: Swarm, a) -> None:
             )
         )
         return
-    with sw.tx():
-        who = actor(sw, a.as_)
+    with sw.tx("cmd_incident"):
+        who = identified_actor(sw, a.as_)
         if a.incident_action == "open":
-            sw.require_coordinator(who)
+            if sw.is_coordinator(who):
+                sw.require_coordinator(who)
+            else:
+                import swarm_deputy
+
+                swarm_deputy.require_delegation(sw, who, "incident.propose", f"task:{a.task}")
             recover_merges(sw)
             incident_id = open_incident(
                 sw, sw.task(a.task), who, a.signal, a.subject, a.reviewer, commit=a.commit, key=a.key
@@ -2726,7 +2771,7 @@ def cmd_incident(sw: Swarm, a) -> None:
                         "UPDATE agents SET reviewing=NULL WHERE name=? AND reviewing=?",
                         (review["reviewer"], incident_id),
                     )
-                reviewer = select_reviewer(sw, t, r["subject"], a.reviewer)
+                reviewer = select_reviewer(sw, t, r["subject"], a.reviewer, exclude={who})
                 snapshot = freeze_review(sw, t, a.commit)
                 sw.db.execute(
                     "UPDATE incidents SET state='open',revision=revision+1,refreshes=refreshes+1,deadline_at=?,escalated=0,outcome=NULL,resolution=NULL,resolved_by=NULL,resolved_at=NULL WHERE id=?",
@@ -2737,6 +2782,17 @@ def cmd_incident(sw: Swarm, a) -> None:
         failpoint("before_incident_commit")
     failpoint("after_incident_commit")
     print(f"I{incident_id} {a.incident_action} recorded; inspect `hivewire incident brief {incident_id}`")
+
+
+def cmd_incident(sw: Swarm, a) -> None:
+    import swarm_deputy as deputy
+
+    try:
+        _cmd_incident(sw, a)
+    except deputy.DelegationViolation as exc:
+        with sw.tx():
+            deputy.record_violation(sw, exc.delegation, str(exc))
+        raise deputy.DeputyError(str(exc))
 
 
 def sweep_oversight(sw: Swarm) -> None:
@@ -3491,6 +3547,95 @@ def current_contract(sw: Swarm, task_id: str):
     return sw.db.execute("SELECT * FROM task_contracts WHERE task=? ORDER BY id DESC LIMIT 1", (task_id,)).fetchone()
 
 
+def contract_scope_additions(c) -> list[str]:
+    if not c:
+        return []
+    value = json.loads(c["terms"]).get("scope_additions", [])
+    return [p for p in value if isinstance(p, str)] if isinstance(value, list) else []
+
+
+def task_scope(sw: Swarm, t) -> list[str]:
+    """The approved scope: the worker's plan plus coordinator-approved additive extensions."""
+    plan = json.loads(t["plan"] or "{}")
+    declared = split_list(plan.get("answers", {}).get("scope", ""))
+    return list(dict.fromkeys([*declared, *contract_scope_additions(current_contract(sw, t["id"]))]))
+
+
+def normalize_scope_path(raw: str) -> str:
+    value = raw.strip().replace("\\", "/")
+    while value.startswith("./"):
+        value = value[2:]
+    if not value or value.startswith("/") or re.match(r"^[A-Za-z]:", value):
+        raise SwarmError(f"--path {raw!r} must be a relative path inside the repository.")
+    if any(part in ("", ".", "..") for part in value.split("/")):
+        raise SwarmError(f"--path {raw!r} must not contain empty, '.' or '..' components.")
+    return value
+
+
+def liveness_blocker(sw: Swarm, t, *, state: str | None = None) -> dict | None:
+    """The queue or lock that keeps a ready task from merging, if one is visible."""
+    if (state or t["state"]) not in ("ready_to_merge", "merge_blocked"):
+        return None
+    lock = sw.meta("merge_lock")
+    if lock:
+        info = json.loads(lock)
+        if info.get("task") != t["id"]:
+            return {
+                "kind": "merge_queue",
+                "detail": f"merge queue held by {info.get('agent')} for {info.get('task')} since {info.get('at')}",
+                "owner": info.get("agent"),
+                "blocking_task": info.get("task"),
+                "since": info.get("at"),
+            }
+    required = json.loads(t["locks"])
+    if required:
+        held = sw.db.execute(
+            f"SELECT * FROM locks WHERE name IN ({','.join('?' * len(required))})", required
+        ).fetchall()
+        for row in held:
+            if row["task"] != t["id"]:
+                return {
+                    "kind": "lock",
+                    "detail": f"{row['name']} held by {row['agent']} for {row['task']} since {row['acquired_at']}",
+                    "owner": row["agent"],
+                    "blocking_task": row["task"],
+                    "since": row["acquired_at"],
+                }
+    return None
+
+
+def auto_queue_grace(sw: Swarm, t, *, state: str | None = None, contract=None) -> bool:
+    """One audited deadline extension while a ready task waits behind the queue or a lock. It is stored in
+    the terms (not extension_count), so the owner's one manual extension remains available."""
+    state = state or t["state"]
+    if state not in ("ready_to_merge", "merge_blocked"):
+        return False
+    c = contract or current_contract(sw, t["id"])
+    if not c or c["state"] != "active":
+        return False
+    terms = json.loads(c["terms"])
+    if terms.get("queue_grace"):
+        return False
+    blocker = liveness_blocker(sw, t, state=state)
+    if not blocker:
+        return False
+    minutes = sw.config["liveness"]["ready_to_merge_grace_min"]
+    if minutes <= 0 or utcnow() < parse(terms["deadline_at"]) - timedelta(minutes=minutes):
+        return False
+    terms["deadline_at"] = iso(utcnow() + timedelta(minutes=minutes))
+    terms["queue_grace"] = {**blocker, "at": iso(), "minutes": minutes}
+    sw.db.execute("UPDATE task_contracts SET terms=? WHERE id=?", (json.dumps(terms), c["id"]))
+    sw.event("contract_queue_grace", "engine", t["id"], f"{blocker['detail']}; deadline extended once by {minutes:g} min")
+    sw.message(
+        "swarm",
+        c["owner"],
+        f"Contract for {t['id']} waits behind {blocker['detail']}. Deadline extended once by {minutes:g} minutes "
+        "for queue/lock time; the work itself still needs a manual extension if it runs out.",
+        task=t["id"],
+    )
+    return True
+
+
 def seconds_since(at: str | None) -> float:
     return max(0.0, (utcnow() - parse(at)).total_seconds()) if at else 0.0
 
@@ -4131,6 +4276,8 @@ def sweep_contracts(sw: Swarm) -> None:
         if t["state"] == "done":
             close_contract(sw, c)
             continue
+        if t["state"] in ("ready_to_merge", "merge_blocked") and auto_queue_grace(sw, t, contract=c):
+            c = current_contract(sw, t["id"])
         reason = contract_expiry(c) or usage_limit_reason(sw, c)
         # Accepted offers still obey both the decision window and the absolute deadline until claimed.
         if c["state"] == "accepted" and (
@@ -4190,7 +4337,7 @@ def sweep_contracts(sw: Swarm) -> None:
 
 def cmd_contract(sw: Swarm, a) -> None:
     with sw.tx():
-        who = actor(sw, a.as_)
+        who = actor(sw, a.as_) if a.contract_action == "show" else identified_actor(sw, a.as_)
         t = sw.task(a.task)
         c = current_contract(sw, a.task)
         if a.contract_action == "show":
@@ -4199,6 +4346,48 @@ def cmd_contract(sw: Swarm, a) -> None:
                     {**dict(c), "usage": usage_summary(sw, c)} if c else {"task": a.task, "contract": None}, indent=2
                 )
             )
+            return
+        if a.contract_action == "scope":
+            if a.contract_scope_action != "add":
+                raise SwarmError("Only `contract scope add` is supported.")
+            sw.require_coordinator(who)
+            if not c:
+                raise SwarmError(f"No contract for {a.task}; offer the work with the intended scope first.")
+            if c["state"] != "active":
+                raise SwarmError(
+                    f"Contract {c['id']} is {c['state']}; scope extensions apply only while the assignment is active."
+                )
+            reason = a.reason.strip()
+            if len(reason) < MIN_ANSWER:
+                raise SwarmError("Record why each added path belongs to the task with a concrete --reason.")
+            additions = contract_scope_additions(c)
+            plan = json.loads(t["plan"] or "{}")
+            current = list(dict.fromkeys([*split_list(plan.get("answers", {}).get("scope", "")), *additions]))
+            new_paths = []
+            for raw in a.path:
+                path = normalize_scope_path(raw)
+                if path in current or any(path == old or in_scope(path, [old]) for old in current):
+                    continue
+                if path not in new_paths:
+                    new_paths.append(path)
+            if not new_paths:
+                print(f"{a.task} already allows: {', '.join(a.path)}; nothing changed")
+                return
+            terms = json.loads(c["terms"])
+            terms["scope_additions"] = [*additions, *new_paths]
+            terms["scope_history"] = [
+                *terms.get("scope_history", []),
+                {"paths": new_paths, "reason": reason, "by": who, "at": iso()},
+            ]
+            sw.db.execute("UPDATE task_contracts SET terms=? WHERE id=?", (json.dumps(terms), c["id"]))
+            sw.event("contract_scope_extended", who, a.task, ", ".join(new_paths))
+            sw.message(
+                "swarm",
+                c["owner"],
+                f"Approved scope extension for {a.task}: {', '.join(new_paths)}. Reason: {reason}",
+                task=a.task,
+            )
+            print(f"{a.task} scope extended by {', '.join(new_paths)}; owner {c['owner']} notified")
             return
         if a.contract_action == "offer":
             sw.require_coordinator(who)
@@ -4547,14 +4736,21 @@ def cmd_handoff(sw: Swarm, a) -> None:
     print(f"handed off {t['id']} from checkpoint {a.checkpoint}; branch/worktree retained, fresh claim required")
 
 
-def cmd_interrupt(sw: Swarm, a) -> None:
+def _cmd_interrupt(sw: Swarm, a) -> None:
     if a.interrupt_action == "show":
         print(json.dumps(dict(interrupt_row(sw, a.interrupt)), indent=2))
         return
-    with sw.tx():
+    with sw.tx("cmd_interrupt"):
         who = actor(sw, a.as_)
         if a.interrupt_action == "request":
-            sw.require_coordinator(who)
+            if sw.is_coordinator(who):
+                sw.require_coordinator(who)
+            else:
+                import swarm_deputy
+
+                swarm_deputy.require_delegation(sw, who, "interrupt.request", f"agent:{a.target}")
+                if a.mode == "cancel":
+                    raise SwarmError("A deputy may request attention or a safety pause, not cancellation.")
             recover_merges(sw)
             if a.mode == "cancel" and who != HUMAN and sw.config["interrupts"]["allow_coordinator_cancel"] is not True:
                 raise SwarmError("Cancel requires a human or explicit [interrupts] allow_coordinator_cancel policy.")
@@ -4713,6 +4909,17 @@ def cmd_interrupt(sw: Swarm, a) -> None:
     print(f"interrupt {interrupt_id} {a.interrupt_action} recorded; inspect `hivewire interrupt show {interrupt_id}`")
 
 
+def cmd_interrupt(sw: Swarm, a) -> None:
+    import swarm_deputy as deputy
+
+    try:
+        _cmd_interrupt(sw, a)
+    except deputy.DelegationViolation as exc:
+        with sw.tx():
+            deputy.record_violation(sw, exc.delegation, str(exc))
+        raise deputy.DeputyError(str(exc))
+
+
 def cmd_explain(sw: Swarm, a) -> None:
     t = sw.task(a.task)
     print(f"{t['id']} [{t['state']}], owner {t['assignee'] or 'none'}, epoch {t['epoch']}: {t['title']}")
@@ -4735,6 +4942,10 @@ def cmd_explain(sw: Swarm, a) -> None:
         print(
             f"  checkpoint: {c['checkpoint_at'] or 'none'}{' (DUE)' if c['checkpoint_due'] else ''}; extensions {c['extension_count']}/1"
         )
+        for entry in terms.get("scope_history", [])[-3:]:
+            print(
+                f"  scope + {', '.join(entry['paths'])} by {entry['by']} at {entry['at']}: {entry['reason']}"
+            )
         if c["state"] == "expired":
             print(
                 f"  grace until: {c['grace_until']}; next: checkpoint --epoch {t['epoch']}, then release or request one justified extension"
@@ -4757,6 +4968,80 @@ def cmd_explain(sw: Swarm, a) -> None:
             f"  interrupt {r['id']}: {r['mode']} {r['state']}, epoch {r['epoch']}, deadline {r['deadline_at']}; `hivewire interrupt show {r['id']}`"
         )
     print(f"  next: {next_action(sw, t)}")
+
+
+def task_blockers(sw: Swarm, t) -> list[dict]:
+    """The blockers this engine enforces, in the order they stop progress."""
+    out = []
+    if sw.paused():
+        out.append({"kind": "paused", "detail": f"the hivewire is paused by {sw.meta('paused')}"})
+    done = {r["id"] for r in sw.db.execute("SELECT id FROM tasks WHERE state='done'")}
+    missing = [n for n in json.loads(t["needs"]) if n not in done]
+    if missing:
+        out.append({"kind": "dependency", "detail": f"unmet dependencies: {', '.join(missing)}"})
+    if t["state"] in ("open", "proposed") and not t["assignee"]:
+        if t["reserved_for"]:
+            out.append({"kind": "reservation", "detail": f"reserved for {t['reserved_for']} by a pending offer"})
+        for name in json.loads(t["locks"]):
+            held = sw.db.execute("SELECT * FROM locks WHERE name=?", (name,)).fetchone()
+            if held and held["task"] != t["id"]:
+                out.append(
+                    {
+                        "kind": "lock",
+                        "detail": f"{name} held by {held['agent']} for {held['task']} since {held['acquired_at']}",
+                    }
+                )
+        if t["state"] == "proposed":
+            out.append({"kind": "approval", "detail": "the task is proposed; the coordinator must approve it"})
+        return out
+    if t["state"] == "done":
+        return out
+    c = current_contract(sw, t["id"])
+    if not c:
+        out.append({"kind": "contract", "detail": "no contract; claim it or ask the coordinator for an offer"})
+    else:
+        reason = contract_expiry(c) or usage_limit_reason(sw, c)
+        if reason:
+            out.append({"kind": "contract", "detail": reason})
+        elif c["state"] in ("offered", "countered", "accepted"):
+            out.append({"kind": "contract", "detail": f"contract {c['id']} is {c['state']}, not active"})
+        elif c["checkpoint_due"]:
+            out.append({"kind": "checkpoint", "detail": "a checkpoint is due before new work"})
+    blocker = liveness_blocker(sw, t)
+    if blocker:
+        out.append(blocker)
+    else:
+        lock = sw.meta("merge_lock")
+        if lock and json.loads(lock).get("task") == t["id"]:
+            info = json.loads(lock)
+            out.append({"kind": "merging", "detail": f"merging as {info.get('agent')} since {info.get('at')}"})
+    if t["failure"] and t["state"] in ("merge_blocked", "gates_failed", "expired"):
+        out.append({"kind": t["state"], "detail": t["failure"].splitlines()[0]})
+    return out
+
+
+def cmd_why(sw: Swarm, a) -> None:
+    t = sw.task(a.task)
+    blockers = task_blockers(sw, t)
+    result = {
+        "version": 1,
+        "task": t["id"],
+        "state": t["state"],
+        "owner": t["assignee"],
+        "epoch": t["epoch"],
+        "blockers": blockers,
+        "next_action": next_action(sw, t),
+    }
+    if a.json:
+        print(json.dumps(result, ensure_ascii=False))
+        return
+    print(f"{t['id']} [{t['state']}], owner {t['assignee'] or 'none'}, epoch {t['epoch']}: {t['title']}")
+    for blocker in blockers:
+        owner = f" (owner {blocker['owner']})" if blocker.get("owner") else ""
+        print(f"  blocked: [{blocker['kind']}]{owner} {blocker['detail']}")
+    if not blockers:
+        print("  no blocker recorded by the engine")
+    print(f"  next: {result['next_action']}")
 
 
 # --------------------------------------------------------------------------- backlog
@@ -4952,6 +5237,7 @@ def cmd_join(sw: Swarm, a) -> None:
             )
         if sw.config["swarm"]["coordinator"] == "auto" and not sw.coordinator():
             sw.set_meta("coordinator", name)
+            sw.set_meta("coordinator_since", iso())
             sw.event("coordinator", name, None, "first live agent")
         peers = [r["name"] for r in sw.live_agents() if r["name"] != name]
     me = sw.agent(name)
@@ -4994,6 +5280,7 @@ def cmd_leave(sw: Swarm, a) -> None:
         sw.update_agent(me["name"], state="left", left_at=iso(), task=None, pid=None)
         if sw.meta("coordinator") == me["name"]:
             sw.set_meta("coordinator", None)
+            sw.set_meta("coordinator_since", None)
         sw.event("agent_left", me["name"])
     print("left the swarm")
 
@@ -5947,7 +6234,7 @@ def cmd_plan(sw: Swarm, a) -> None:
         c = current_contract(sw, t["id"])
         if c:
             terms = json.loads(c["terms"])
-            bound = split_list(terms["scope"])
+            bound = list(dict.fromkeys([*split_list(terms["scope"]), *contract_scope_additions(c)]))
             if bound and any(s not in bound and not in_scope(prefix_of(s), bound) for s in scope):
                 raise SwarmError("Plan widens contracted scope. Checkpoint/release and request a revised offer.")
             if not bound:
@@ -6256,11 +6543,12 @@ def cmd_submit(sw: Swarm, a) -> None:
     files, deletions = changed_files(path, base)
     if not files:
         raise SwarmError("Your branch changes nothing relative to the target.")
-    scope = split_list(json.loads(t["plan"])["answers"]["scope"])
+    scope = task_scope(sw, t)
     outside = [f for f in files if not in_scope(f, scope)]
     if outside and current_contract(sw, t["id"]):
         raise SwarmError(
-            "Files are outside contracted scope. Checkpoint/release and request a revised offer; --out-of-scope-reason cannot widen a contract."
+            "Files are outside the approved scope. Ask the coordinator for `hivewire contract scope add "
+            f"{t['id']} --path ... --reason ...`, or checkpoint/release and request a revised offer."
         )
     if outside and not a.out_of_scope_reason:
         raise SwarmError(
@@ -6298,6 +6586,7 @@ def cmd_submit(sw: Swarm, a) -> None:
                 "UPDATE task_contracts SET active_seconds=?,active_since=NULL WHERE id=?",
                 (contract_elapsed(c), c["id"]),
             )
+            auto_queue_grace(sw, t, state="ready_to_merge", contract=c)
         sw.event(
             "submitted",
             a.as_,
@@ -6750,7 +7039,7 @@ def verify_worktree_commit(path: Path, head: str) -> None:
 
 def check_integration_files(sw: Swarm, t, path: Path, base: str, submit: dict) -> None:
     files, deletions = changed_files(path, base)
-    scope = split_list(json.loads(t["plan"])["answers"]["scope"])
+    scope = task_scope(sw, t)
     if any(not in_scope(f, scope) for f in files) and (
         current_contract(sw, t["id"]) or not submit.get("out_of_scope_reason")
     ):
@@ -7181,8 +7470,10 @@ def cmd_unlock(sw: Swarm, a) -> None:
 
 
 def cmd_send(sw: Swarm, a) -> None:
+    if not a.as_:
+        raise SwarmError("Say who you are: --as NAME (or set SWARM_AS). A missing sender is never recorded as human.")
+    sender = a.as_
     with sw.tx():
-        sender = a.as_ or HUMAN
         if sender != HUMAN:
             sw.require_agent(sender)
         if a.to not in ("*", HUMAN) and not sw.agent(a.to):
@@ -7211,7 +7502,58 @@ def cmd_send(sw: Swarm, a) -> None:
     if getattr(a, "json", False):
         print(json.dumps({"message": message_envelope(sw.db.execute("SELECT * FROM messages WHERE id=?", (msg_id,)).fetchone())}))
         return
-    print(f"sent #{msg_id}")
+    print(f"sent #{msg_id} as {sender} -> {a.to}")
+
+
+def inbox_rows(sw: Swarm, who: str, a, after: int) -> list[sqlite3.Row]:
+    if a.id is not None:
+        return sw.db.execute(
+            "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
+            "WHERE r.agent=? AND m.id=?",
+            (who, a.id),
+        ).fetchall()
+    return sw.db.execute(
+        "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
+        "WHERE r.agent=? AND m.id>? AND (? OR (r.acked_at IS NULL AND m.ack_state NOT IN ('acked','expired','resolved') "
+        "AND (r.delivered_at IS NULL OR m.requires_ack=1 OR m.priority='critical') "
+        "AND NOT EXISTS (SELECT 1 FROM message_claims c WHERE c.msg=m.id AND c.agent=r.agent))) ORDER BY m.id LIMIT ?",
+        (who, after, a.all, a.limit),
+    ).fetchall()
+
+
+def inbox_deliver(sw: Swarm, who: str, rows: list[sqlite3.Row]) -> None:
+    for m in rows:
+        sw.db.execute(
+            "UPDATE message_recipients SET delivered_at=COALESCE(delivered_at,?) WHERE msg=? AND agent=?",
+            (iso(), m["id"], who),
+        )
+        if m["recipient"] == "*":
+            sw.db.execute("INSERT OR IGNORE INTO reads(msg,agent) VALUES(?,?)", (m["id"], who))
+        elif m["read_at"] is None:
+            sw.db.execute("UPDATE messages SET read_at=? WHERE id=?", (iso(), m["id"]))
+
+
+def inbox_wait(sw: Swarm, a, who: str) -> None:
+    """Follow stream: one JSON message envelope per line, exit 0 on timeout."""
+    if a.id is not None:
+        raise SwarmError("--wait streams new messages; use --after rather than --id.")
+    if not 0.1 <= a.timeout <= 3600:
+        raise SwarmError("--timeout must be between 0.1 and 3600 seconds.")
+    deadline = time.monotonic() + a.timeout
+    cursor = a.after
+    while True:
+        with sw.tx():
+            if who != HUMAN:
+                sw.require_agent(who)
+            rows = inbox_rows(sw, who, a, cursor)
+            inbox_deliver(sw, who, rows)
+        for m in rows:
+            print(json.dumps(message_envelope(m, m), ensure_ascii=False), flush=True)
+            cursor = m["id"]
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            return
+        time.sleep(min(0.5, remaining))
 
 
 def cmd_inbox(sw: Swarm, a) -> None:
@@ -7221,31 +7563,18 @@ def cmd_inbox(sw: Swarm, a) -> None:
             sw.require_agent(who)
         if a.limit < 1 or a.limit > 1000 or a.after < 0:
             raise SwarmError("Inbox --limit is 1..1000 and --after is a nonnegative message id.")
-        if a.id is not None:
-            rows = sw.db.execute(
-                "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
-                "WHERE r.agent=? AND m.id=?",
-                (who, a.id),
-            ).fetchall()
+        if a.wait:
+            pass
+        elif a.id is not None:
+            rows = inbox_rows(sw, who, a, a.after)
             if not rows:
                 raise SwarmError(f"Message {a.id} was not addressed to {who}.")
+            inbox_deliver(sw, who, rows)
         else:
-            rows = sw.db.execute(
-                "SELECT m.*,r.acked_at FROM messages m JOIN message_recipients r ON r.msg=m.id "
-                "WHERE r.agent=? AND m.id>? AND (? OR (r.acked_at IS NULL AND m.ack_state NOT IN ('acked','expired','resolved') "
-                "AND (r.delivered_at IS NULL OR m.requires_ack=1 OR m.priority='critical') "
-                "AND NOT EXISTS (SELECT 1 FROM message_claims c WHERE c.msg=m.id AND c.agent=r.agent))) ORDER BY m.id LIMIT ?",
-                (who, a.after, a.all, a.limit),
-            ).fetchall()
-        for m in rows:
-            sw.db.execute(
-                "UPDATE message_recipients SET delivered_at=COALESCE(delivered_at,?) WHERE msg=? AND agent=?",
-                (iso(), m["id"], who),
-            )
-            if m["recipient"] == "*":
-                sw.db.execute("INSERT OR IGNORE INTO reads(msg,agent) VALUES(?,?)", (m["id"], who))
-            elif m["read_at"] is None:
-                sw.db.execute("UPDATE messages SET read_at=? WHERE id=?", (iso(), m["id"]))
+            rows = inbox_rows(sw, who, a, a.after)
+            inbox_deliver(sw, who, rows)
+    if a.wait:
+        return inbox_wait(sw, a, who)
     failpoint("after_inbox_commit")
     if a.json:
         print(
@@ -9826,6 +10155,121 @@ def cmd_steward(sw: Swarm, a) -> None:
         time.sleep(a.interval)
 
 
+def attention_line(item: dict) -> str:
+    due = f" due {item['due_at']}" if item.get("due_at") else ""
+    owner = f" owner {item['owner']}" if item.get("owner") else ""
+    return f"A{item['id']} {item['severity']} {item['status']} {item['kind']} {item['subject_ref']}{owner}{due}: {item['summary']}"
+
+
+def _emit_deputy(result: dict, a, action: str) -> None:
+    if a.json:
+        print(json.dumps(result, ensure_ascii=False, default=str))
+        return
+    if action == "status":
+        campaign = result.get("deputy")
+        print(f"coordinator: {result['coordinator'] or 'none'}  term {str(result['coordinator_term'])[:12]}")
+        print(
+            "deputy: " + ("none" if not campaign else
+            f"{campaign['deputy']} lease {campaign['id']} until {campaign['expires_at']} caps {', '.join(campaign['capabilities'])}")
+        )
+        if result.get("nominee"):
+            print(f"nominee: {result['nominee']}")
+        print("queue: " + " ".join(f"{sev} {result['queue'][sev]}" for sev in ("P0", "P1", "P2", "P3")))
+        candidate = result["candidate"]
+        print(f"candidate: {'eligible' if candidate['eligible'] else 'not eligible'}" + (f" — {'; '.join(candidate['reasons'])}" if candidate["reasons"] else ""))
+        print(f"idle agents: {', '.join(result['available']) or 'none'}; occupied: {', '.join(result['occupied']) or 'none'}")
+        return
+    if action == "scan":
+        print(f"scanned {result['scanned_at']}: {result['created_count']} new, {result['existing_count']} already queued")
+        for item in result["created"]:
+            print(f"  A{item['id']} {item['severity']} {item['kind']} {item['subject_ref']}: {item['summary']}")
+        print(result["notice"])
+        return
+    if action == "list":
+        print(f"{len(result['items'])} attention item(s); " + " ".join(f"{k} {v}" for k, v in result["queue"].items()))
+        for item in result["items"]:
+            print(attention_line(item))
+        return
+    if action == "show":
+        print(attention_line(result["item"]))
+        for row in result["history"]:
+            print(f"  {row['at']} {row['actor'] or 'system'}: {row['old_status'] or '-'} -> {row['new_status']}: {row['note']}")
+        return
+    item = result.get("item")
+    if item:
+        print(attention_line(item))
+    if action == "activate":
+        print(f"deputy {result['activated']} activated under lease {result['delegation']}")
+    elif action == "release":
+        print(f"deputy {result['released_agent']} released lease {result['released']}")
+
+
+def cmd_deputy(sw: Swarm, a) -> None:
+    import swarm_deputy as deputy
+
+    # Reconcile in its own transaction so a failing action cannot roll back a fencing revoke.
+    with sw.tx():
+        deputy.reconcile(sw)
+    with sw.tx():
+        who = actor(sw, a.as_)
+        if a.deputy_action == "status":
+            result = deputy.status(sw)
+        elif a.deputy_action == "nominate":
+            result = deputy.nominate(sw, a.agent, who)
+        elif a.deputy_action == "activate":
+            result = deputy.activate(
+                sw, a.agent, who, a.scope, a.capabilities or "", a.minutes, a.reason, a.force
+            )
+        elif a.deputy_action == "release":
+            result = deputy.release(sw, who, a.reason, a.force)
+        else:
+            result = deputy.scan(sw)
+    _emit_deputy(result, a, a.deputy_action)
+
+
+def cmd_attention(sw: Swarm, a) -> None:
+    import swarm_deputy as deputy
+
+    with sw.tx():
+        deputy.reconcile(sw)
+    violation = None
+    try:
+        with sw.tx():
+            who = actor(sw, a.as_)
+            if a.attention_action == "list":
+                items = deputy.list_items(
+                    sw,
+                    severity=a.severity,
+                    status_filter=a.status,
+                    kind=a.kind,
+                    owner=a.owner,
+                    limit=a.limit,
+                    all_items=a.all,
+                )
+                result = {"items": items, "queue": deputy.queue_counts(sw)}
+            elif a.attention_action == "show":
+                result = deputy.show(sw, a.item)
+            elif a.attention_action == "claim":
+                result = deputy.claim(sw, a.item, who, a.lease_sec)
+            elif a.attention_action == "investigate":
+                result = deputy.investigate(sw, a.item, who, a.note)
+            elif a.attention_action == "report":
+                result = deputy.report(sw, a.item, who, a.finding, a.evidence, a.recommend, a.decision_owner)
+            elif a.attention_action == "escalate":
+                result = deputy.escalate(sw, a.item, who, a.to, a.reason)
+            elif a.attention_action == "reopen":
+                result = deputy.reopen(sw, a.item, who, a.reason)
+            else:
+                result = deputy.resolve(sw, a.item, who, a.disposition, a.reason)
+    except deputy.DelegationViolation as exc:
+        violation = exc
+    if violation is not None:
+        with sw.tx():
+            deputy.record_violation(sw, violation.delegation, str(violation))
+        raise deputy.DeputyError(str(violation))
+    _emit_deputy(result, a, a.attention_action)
+
+
 def cmd_dashboard(sw: Swarm, a) -> None:
     """The live board for a console pane, redrawn to fit the pane."""
     if a.web:
@@ -10209,6 +10653,14 @@ def actor(sw: Swarm, who: str | None) -> str:
     if who != HUMAN:
         sw.require_agent(who)
     return who
+
+
+def identified_actor(sw: Swarm, who: str | None) -> str:
+    if not who:
+        raise SwarmError(
+            "Say who you are: --as NAME (or set SWARM_AS). A missing identity is never recorded as human."
+        )
+    return actor(sw, who)
 
 
 def print_goal_questions(answers: dict) -> None:
@@ -11318,6 +11770,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--all", action="store_true")
     sp.add_argument("--after", type=int, default=0, help="replay messages after this durable id")
     sp.add_argument("--limit", type=int, default=100)
+    sp.add_argument("--wait", action="store_true", help="follow: one JSON message per stdout line until --timeout")
+    sp.add_argument("--timeout", type=float, default=30.0, help="seconds to wait with --wait (0.1..3600)")
     mp = add("messages", cmd_messages, "inspect and resolve critical dead letters")
     msub = mp.add_subparsers(dest="messages_action", required=True)
     m = msub.add_parser("dead-letter")
@@ -11337,6 +11791,8 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("context", cmd_context, "previous and next: what your task builds on, and what waits on it")
     sp.add_argument("--task", default="")
     sp = add("explain", cmd_explain, "assignment, contract, checkpoint and safe next action")
+    sp.add_argument("task")
+    sp = add("why", cmd_why, "the exact blocker and next action for one task")
     sp.add_argument("task")
     sp = add("checkpoint", cmd_checkpoint, "save a fenced progress and recovery snapshot without changing files")
     sp.add_argument("--note", required=True)
@@ -11483,6 +11939,16 @@ def build_parser() -> argparse.ArgumentParser:
             c.add_argument("--token-limit", type=int, default=None)
             c.add_argument("--cost-limit", default=None)
             c.add_argument("--tool-time-min", type=float, default=None)
+    cscope = csub.add_parser("scope", help="coordinator: add audited paths to an active contract")
+    cscope.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    cscope.add_argument("--epoch", type=int, default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    cscope_sub = cscope.add_subparsers(dest="contract_scope_action", required=True)
+    cscope_add = cscope_sub.add_parser("add")
+    cscope_add.add_argument("task")
+    cscope_add.add_argument("--path", action="append", required=True, help="relative path or glob; repeatable")
+    cscope_add.add_argument("--reason", required=True)
+    cscope_add.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    cscope_add.add_argument("--epoch", type=int, default=argparse.SUPPRESS, help=argparse.SUPPRESS)
     up = add("usage", cmd_usage, "inspect reservations, reported consumption and observed command time")
     usub = up.add_subparsers(dest="usage_action", required=True)
     for action in ("show", "inspect", "reserve", "report", "reconcile"):
@@ -11661,6 +12127,56 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--read-only", action="store_true", help="with --web: the page only shows; it cannot act as you")
     sp.add_argument("--no-open", action="store_true", help="with --web: print the link, do not open a browser")
     sp.add_argument("--observe", action="store_true", help="with --web: do not sweep; another monitor does")
+    dp = add("deputy", cmd_deputy, "bounded deputy status, nomination, activation, release and deterministic scan")
+    dsub = dp.add_subparsers(dest="deputy_action", required=True)
+    for action in ("status", "nominate", "activate", "release", "scan"):
+        d = dsub.add_parser(action)
+        d.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+        if action == "nominate":
+            d.add_argument("agent")
+        if action == "activate":
+            d.add_argument("agent")
+            d.add_argument("--scope", required=True, help="comma-separated exact subjects, e.g. task:T1,incident:2 or *")
+            d.add_argument("--capabilities", default="", help="comma-separated; default attention.claim,report,escalate")
+            d.add_argument("--minutes", type=float, default=None, help="lease length, 1..1440 (default: [deputy] lease_min)")
+            d.add_argument("--reason", default="")
+            d.add_argument("--force", action="store_true", help="human only: override the activation cooldown")
+        if action == "release":
+            d.add_argument("--reason", required=True)
+            d.add_argument("--force", action="store_true", help="coordinator/human: override the minimum active time")
+        if action == "scan":
+            d.add_argument("--once", action="store_true", help="kept for scripts: the scout always runs one pass")
+    ap = add("attention", cmd_attention, "durable operational attention queue")
+    asub = ap.add_subparsers(dest="attention_action", required=True)
+    for action in ("list", "show", "claim", "investigate", "report", "escalate", "resolve", "reopen"):
+        at = asub.add_parser(action)
+        at.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+        if action == "list":
+            at.add_argument("--severity", choices=["P0", "P1", "P2", "P3"], default=None)
+            at.add_argument("--status", choices=["new", "claimed", "investigating", "proposed_action", "escalated", "reopened", "resolved", "false_alarm", "expired"], default=None)
+            at.add_argument("--kind", choices=["event", "message", "question", "contract", "task", "verification", "execution", "incident", "merge", "agent", "interrupt"], default=None)
+            at.add_argument("--owner", default=None)
+            at.add_argument("--limit", type=int, default=100)
+            at.add_argument("--all", action="store_true", help="include terminal dispositions")
+        else:
+            at.add_argument("item", type=int)
+        if action == "claim":
+            at.add_argument("--lease-sec", type=int, default=None)
+        if action == "investigate":
+            at.add_argument("--note", default="", help="what is being inspected and where the evidence is")
+        if action == "report":
+            at.add_argument("--finding", required=True)
+            at.add_argument("--evidence", action="append", required=True, help="event, message, receipt or file reference")
+            at.add_argument("--recommend", required=True)
+            at.add_argument("--decision-owner", default="coordinator")
+        if action == "escalate":
+            at.add_argument("--to", default="coordinator")
+            at.add_argument("--reason", required=True)
+        if action == "resolve":
+            at.add_argument("--disposition", choices=["resolved", "false_alarm", "expired"], required=True)
+            at.add_argument("--reason", required=True)
+        if action == "reopen":
+            at.add_argument("--reason", required=True)
     sp = add("steward", cmd_steward, "review every inbox: remind late recipients, escalate, never acknowledge for others")
     sp.add_argument("--once", action="store_true", help="one review, then exit")
     sp.add_argument("--interval", type=int, default=60, help="seconds between reviews")
@@ -11863,7 +12379,17 @@ def main(argv: list[str] | None = None) -> int:
     # Normalize the global switch before argparse reaches nested command parsers. `--` still quotes literals.
     boundary = raw.index("--") if "--" in raw else len(raw)
     json_mode = "--json" in raw[:boundary]
+    streaming_inbox = "inbox" in raw[:boundary] and "--wait" in raw[:boundary]
     raw = [v for i, v in enumerate(raw) if not (i < boundary and v == "--json")]
+    if streaming_inbox:
+        # A follow stream must emit each line as it arrives; the one-document JSON envelope would buffer it.
+        try:
+            validate_cli_input(raw)
+            args = build_parser().parse_args(raw)
+            return execute_command(args)[0]
+        except (SwarmError, OSError, sqlite3.Error, ValueError) as exc:
+            print(f"hivewire: {exc}", file=sys.stderr)
+            return 2
     if json_mode:
         import io
         from contextlib import redirect_stderr, redirect_stdout

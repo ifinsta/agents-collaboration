@@ -28,11 +28,14 @@ python .agents/skills/agents-collaboration/hivewire.py <subcommand> --as <your-n
 Below, `hivewire` stands for that command. `join`, `claim` and `whoami` print the
 exact absolute command to use. Use that one from inside worktrees, which may not
 contain `.agents/` yet. You can also set `SWARM_AS=<your-name>` instead of
-passing `--as` each time. Run `hivewire.py` (a small launcher); state-changing code
+passing `--as` each time. Every mutating message or authority command (`send`,
+contract decisions, incident decisions) refuses a missing identity instead of
+recording it as `human`; `--as human` is an explicit operator assertion. Run
+`hivewire.py` (a small launcher); state-changing code
 is in `swarm_core.py`. The optional `swarm_web.py` module serves the browser
 dashboard. Its views read through read-only SQLite connections; its actions run as the human unless `--read-only`, and its server sweeps unless `--observe`.
 
-The unreleased source uses CLI protocol 2, schema 12, and bus/message/event
+The unreleased source uses CLI protocol 2, schema 13, and bus/message/event
 versions 1. Read typed JSON under `result`.
 
 State lives in the repository's git directory (`.git/swarm/`). Every worktree of
@@ -210,6 +213,13 @@ alternative"` once or report `blocked --reason "..."`. The coordinator uses
 `contract decide --reason "..."` to settle a counter; the original decision
 deadline remains. A second counter is refused. Messages never approve terms.
 
+A path discovered mid-task does not force a release. The coordinator or human
+can widen an active contract additively with
+`contract scope add <task> --path P [--path P ...] --reason "..."`. The addition
+is recorded in the terms and event log, preserves the task, epoch, queue position
+and review state, and notifies the owner. Submit still checks every changed file
+against plan scope plus additions; a non-coordinator cannot grant it.
+
 ### Usage allowances (unreleased)
 
 Human offers may include `--token-limit`, `--cost-limit`, `--currency` and
@@ -255,6 +265,15 @@ The monitor is optional. Without it, expiry is enforced on the next command;
 there is no automatic termination of unrelated processes. Spawned briefs and
 environments include the task epoch; pass `--epoch` or `SWARM_EPOCH` when resuming
 an assignment so a stale client cannot record work after reassignment.
+
+Submission stops accounted running time, so merge-queue, review and lock waits do
+not consume the active budget. If a `ready_to_merge` task is behind a busy merge
+queue or a held task lock when its deadline comes within
+`[liveness] ready_to_merge_grace_min` (default 240 minutes), the engine grants
+one automatic, audited extension recorded as `queue_grace` in the terms. It does
+not use the owner's one manual extension. The grace is bounded: after it, expiry
+still applies. `hivewire why <task>` names the current blocker, its owner and the
+next action; `explain` shows the same contract history.
 
 Claim allocation records its planned path before Git setup completes. A path in
 status does not prove its directory is ready. Wait for claim to finish; an
@@ -378,6 +397,10 @@ The same key with different content is refused. Optional `--task`, `--epoch`,
 Replying keeps the parent's thread. A reply never acknowledges transport delivery.
 
 `inbox --json` includes IDs, epoch, body reference and acknowledgement state.
+`inbox --wait [--after ID] [--timeout N]` follows the inbox: it writes one
+versioned JSON envelope per stdout line, never appends the human footer, and
+exits 0 when the timeout elapses. Watchers should use it instead of comparing
+prose; "no messages" is not an error.
 All new non-ack messages remain pending until receipt-based `bus ack`; reading
 and replying never acknowledge them. Normal ack envelopes need no further ack.
 Historical read-once rows remain inspectable without fabricated receipts.
@@ -584,7 +607,7 @@ when the coordinator goes silent. A project may also set `coordinator = "human"`
 The coordinator:
 
 - plans rounds: `hivewire status --all` shows what is open, waiting and why;
-- checks who is ready: `hivewire agents`, and `hivewire send <agent> "free?" --kind question`;
+- checks who is ready: `hivewire agents`, and `hivewire send <agent> "free?" --kind question --as <your-name>`;
   `agents` hides offline agents that hold nothing (`--all` shows them); `agents --prune [--older-than MIN] [--dry-run]`
   archives the long-gone ones, keeping their rows and history;
 - checks which CLIs exist on this machine: `hivewire probe` (installed, version,
@@ -629,6 +652,31 @@ When a message to you stays unacknowledged, it sends you one reminder from
 each with its bus receipt; nobody else can acknowledge them for you. Its
 reminders expire on their own and need no reply. If you are offline, it tells
 the coordinator instead.
+
+The **operations scout** (`hivewire deputy scan --once`) is also a system
+participant and uses no agent slot. Every sweep runs one deterministic pass over
+critical messages, questions, contracts, checkpoints, blocked or unmerged tasks,
+failed verification, execution `unknown`, incidents, review reservations, silent
+agents and interrupts. It writes deduplicated, durable `attention` items with
+severity, evidence, an owner lease and history. A signal is an observation, never
+a finding of misconduct: unread messages, missing heartbeats and incidents invite
+inspection, not blame.
+
+`hivewire deputy status` shows the queue, the live lease, idle agents and the
+activation heuristic. A coordinator or human may grant one bounded lease with
+`deputy activate AGENT --scope message:*,task:T2 --capabilities
+attention.claim,attention.report,attention.escalate --minutes 30`; a deputy may
+claim, investigate, report and escalate only inside that scope and capability
+list. With `incident.propose` it may open a task-scoped incident (it is excluded
+as reviewer); with `interrupt.request` it may request an attention check or a
+safety pause for a named agent. It cannot cancel work, merge, approve
+architecture, waive human questions, resolve its own findings, acknowledge
+another inbox, or pass the generic coordinator check. Scope violations and
+policy/term changes revoke the lease.
+`deputy release` returns the agent after the minimum active time; cooldown keeps
+repeated threshold crossings from switching constantly. When every pool slot is
+occupied, scouting continues and the workspace sends one capacity notice instead
+of creating a sixth worker.
 
 ## 9. Rules that hold everywhere
 
@@ -723,6 +771,12 @@ memory recommends it.
 | `assign`, `answer`, `waive`, `approve`, `pause`, `resume`, `spawn`, `probe`, `sync` | coordinator / human | run the pool |
 | `monitor [--observe]`, `doctor [--fix]`, `env` | anyone | operate |
 | `steward [--once]` | coordinator / human | review every inbox: remind, escalate, never acknowledge for others |
+| `deputy status`, `deputy scan --once` | anyone | queue, live lease, candidate heuristic and one deterministic scout pass |
+| `deputy nominate/activate [--scope ...] [--minutes ...]` | coordinator / human | grant one bounded, scoped triage lease to an idle agent |
+| `deputy release --reason ...` | deputy; coordinator / human (`--force`) | hand back attention state after the minimum shift |
+| `attention list/show` | anyone | durable signals with severity, SLA, owner, evidence and history |
+| `attention claim/investigate/report/escalate` | delegate inside its scope; coordinator / human | bounded triage with evidence and a decision owner |
+| `attention resolve/reopen` | coordinator / human | disposition; a deputy never adjudicates its own finding |
 | `workspace [--no-open] [--reopen] [--dry-run]`, `console [--agents a,b] [--decline]`, `launch <cli>`, `launcher`, `dashboard [--web]` | coordinator / human | see and drive the pool |
 | `record <task> --commit <sha>` | coordinator / human | mark work that landed outside the board |
 | `verify <task> [--key K]`, `goal verify <id> [--key K]` | coordinator / human | observed checks against a pinned commit, with a retained receipt/checkout |
@@ -733,13 +787,14 @@ memory recommends it.
 | `goal new/answer/ask/outcome/task/review/commit/show/list/close` | anyone; commit and close: coordinator / human | turn a piece of work into tasks |
 | `context [--task]` | anyone | previous and next for a task |
 | `goal architecture <id> [--template|--set|--approve]` | proposer; approval: coordinator / human | source-backed architecture brief and revision-bound approval |
-| `contract offer/show/accept/counter/blocked/decide/extend` | coordinator / offered owner as appropriate | bounded assignment terms and decisions |
+| `contract offer/show/accept/counter/blocked/decide/extend/scope add` | coordinator / offered owner as appropriate | bounded assignment terms, decisions and audited additive scope |
 | `checkpoint --epoch N --note ... --next ...`, `explain <task>` | holder; explain: anyone | durable recovery snapshot and next action |
-| `interrupt request/show/ack/complete/resume` | coordinator/human: control; target: ack/complete | checkpointed targeted attention, pause, yield and authorized cancellation |
+| `why <task> [--json]` | anyone | the enforced blocker, its owner and the next action |
+| `interrupt request/show/ack/complete/resume` | coordinator/human: control; target: ack/complete; delegate with `interrupt.request`: attention/pause for a scoped target | checkpointed targeted attention, pause, yield and authorized cancellation |
 | `handoff --checkpoint C --note ... [--task T]` | holder; recovery: coordinator/human | atomic release with a fresh snapshot and retained work |
-| `inbox --json [--all --after ID]`, `bus receive/ack --json` | addressed recipient | versioned replay and idempotent acknowledgement |
+| `inbox --json [--all --after ID] [--wait --timeout N]`, `bus receive/ack --json` | addressed recipient | versioned replay, streaming follow and idempotent acknowledgement |
 | `messages dead-letter/resolve` | read: anyone; resolve: coordinator/human | critical-message recovery without forged acknowledgement |
-| `incident open/list/brief/review/resolve/refresh` | operator: open/decide; independent reviewer: report | frozen independent evidence and bounded decisions |
+| `incident open/list/brief/review/resolve/refresh` | operator: open/decide; delegate with `incident.propose`: open a scoped incident; independent reviewer: report | frozen independent evidence and bounded decisions; the opener is never the reviewer |
 | `memory propose/verify/search/show/mark/retire` | author, independent verifier, operator as appropriate | scoped lessons with immutable provenance/history |
 | `memory candidates/observe/measure` | reports; observations require landed task evidence | learning signals and self-reported utility |
 | `memory export/import --cross-repo` | coordinator/human with explicit opt-in | untrusted portable candidates, never imported authority |

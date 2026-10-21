@@ -75,7 +75,8 @@ requests a policy-controlled stop; incomplete streams retain unknown supervision
 See [process supervision](process-supervision.md) for limits and provenance.
 
 Schema 10 records owned Git allocations before process creation; schema 11 adds
-leased bus receipts; schema 12 adds local advisory wake hints. CLI protocol 2 is
+leased bus receipts; schema 12 adds local advisory wake hints; schema 13 adds the
+attention queue and deputy delegation records. CLI protocol 2 is
 a separate interface version, not a database migration.
 
 ## Architecture before assignment
@@ -104,7 +105,7 @@ Every fresh task claim accepts the configurable default contract shown in the
 claim output. Use an explicit offer when terms need negotiation before claiming:
 
 ```text
-hivewire contract offer T1 ann --active-time-min 30 --deadline-min 45
+hivewire contract offer T1 ann --active-time-min 30 --deadline-min 45 --as human
 hivewire contract show T1
 hivewire contract accept T1 --as ann
 hivewire claim T1 --as ann
@@ -127,18 +128,31 @@ debate_min = 5
 review_reserve_min = 5
 checkpoint_min = 5
 grace_min = 2
+
+[liveness]
+ready_to_merge_grace_min = 240
 ```
 
 Active time means elapsed time between `start` and `block`/`submit`, accumulated
 across resumes. It is **not measured tool time or token/cost usage**. Blocked
 time is recorded separately; blocking does not move the absolute deadline.
-`start` resumes after blocking. The review reserve stops new implementation
-while still allowing submission, integration and recovery. Checkpoints are due
-at the configured interval; a due checkpoint blocks new planning/start/step
-permissions until recorded. These are initial heuristics, not benchmark results.
+`start` resumes after blocking. Submission stops accounted time, so merge-queue,
+review and lock waiting is not charged to the active budget. A `ready_to_merge`
+task behind the merge queue or a required lock receives one automatic, audited
+`queue_grace` deadline extension when its deadline is within
+`ready_to_merge_grace_min`; it does not consume the owner's one manual extension,
+and expiry still applies after the grace. The review reserve stops new
+implementation while still allowing submission, integration and recovery.
+Checkpoints are due at the configured interval; a due checkpoint blocks new
+planning/start/step permissions until recorded. These are initial heuristics, not
+benchmark results.
 
 Task scope is bound by the offer's scope hint, or frozen from the first plan
-when no hint exists. Later plans cannot broaden it. The old `task_budget_min` setting is refused with migration guidance; use
+when no hint exists. Later plans cannot broaden it, but a coordinator or human
+can add paths to an active contract with
+`hivewire contract scope add T1 --path PATH --reason "..."`; the addition is
+audited, preserves the task and queue position, and submit still checks the
+combined scope. The old `task_budget_min` setting is refused with migration guidance; use
 contract active-time/deadline limits. Every fresh claim receives a contract.
 Already-held uncontracted work must checkpoint/release before reclaiming.
 
@@ -292,11 +306,11 @@ uncommitted edits. Handoff waits until an in-flight merge releases its queue lea
 ## Independent incident review
 
 ```text
-hivewire incident open T1 --signal "The fixture may not cover the returned value" --reviewer cat --key fixture-review-1
+hivewire incident open T1 --signal "The fixture may not cover the returned value" --reviewer cat --key fixture-review-1 --as human
 hivewire incident brief 1
 hivewire incident review 1 --as cat --snapshot <digest> --verdict not_confirmed --evidence diff:<hash> --remediation "Keep the fixture and require the configured acceptance gate"
-hivewire incident resolve 1 --revision 1 --outcome cleared --reason "Independent evidence did not confirm the suspected defect"
-hivewire incident refresh 1 --revision 1 --reviewer cat --reason "The code or policy changed; inspect the new committed evidence"
+hivewire incident resolve 1 --revision 1 --outcome cleared --reason "Independent evidence did not confirm the suspected defect" --as human
+hivewire incident refresh 1 --revision 1 --reviewer cat --reason "The code or policy changed; inspect the new committed evidence" --as human
 ```
 
 The coordinator/human opens an incident with a concrete signal; a coordinator

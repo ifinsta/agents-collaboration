@@ -21,7 +21,7 @@ class Takeover(ProcessCase):
         self.join("ann")
         self.join("bob")
         if contracted:
-            self.sw("contract", "offer", "T5", "ann")
+            self.sw("contract", "offer", "T5", "ann", "--as", "human")
             self.sw("contract", "accept", "T5", "--as", "ann")
         self.worker = subprocess.Popen([sys.executable, "-c", "import time; time.sleep(300)"], stdout=subprocess.DEVNULL)
         self.addCleanup(self.stop_worker)

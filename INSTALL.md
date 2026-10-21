@@ -66,7 +66,7 @@ PY .agents/skills/agents-collaboration/hivewire.py --json protocol
 PY .agents/skills/agents-collaboration/hivewire.py environment
 ```
 
-The reviewed current source uses CLI protocol **2**, database schema **12** and
+The reviewed current source uses CLI protocol **2**, database schema **13** and
 bus/message/event versions **1**. Inspect the installed protocol and skill before using protocol-dependent automation. Read `environment`
 and the installed `SKILL.md`, then follow its join and goal workflow. Configure
 real executable project gates before integrating tasks, and approved executable
