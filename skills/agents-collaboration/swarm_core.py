@@ -805,12 +805,18 @@ def namespace_id() -> str:
         now = ctypes.c_ulonglong()
         kernel.GetSystemTimeAsFileTime(ctypes.byref(now))  # the kernel's clock: 100 ns units, never a mocked one
         boot_ms = now.value // 10_000 - kernel.GetTickCount64()
-        parts.append(f"boot-{round(boot_ms / 60_000)}")  # last boot, to the minute
+        # Minute rounding absorbs clock drift, but an NTP step can flip it. That fails safe: a lease frees
+        # only when its process is proven gone, never because a namespace string happened to match.
+        parts.append(f"boot-{round(boot_ms / 60_000)}")
     else:
         try:
             parts.append(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip())
         except OSError:
             parts.append("no-boot-id")
+        try:  # containers can share hostname and kernel but not PIDs; a pid from another namespace proves nothing
+            parts.append(os.readlink("/proc/self/ns/pid"))
+        except OSError:
+            pass
     if os.environ.get("WSL_DISTRO_NAME"):
         parts.append(os.environ["WSL_DISTRO_NAME"])
     return "/".join(parts)
@@ -848,16 +854,36 @@ def process_start(pid: int) -> str | None:
         return None
 
 
-def process_identity(pid: int) -> dict:
-    return {"pid": pid, "start": process_start(pid), "ns": namespace_id()}
+def process_identity(pid: int, group: int | None = None) -> dict:
+    ident = {"pid": pid, "start": process_start(pid), "ns": namespace_id()}
+    if group:
+        ident["group"] = group
+    return ident
+
+
+def group_gone(group: int) -> bool:
+    """POSIX only: a group outlives its leader while any member remains. Probe it; never signal it."""
+    try:
+        os.killpg(group, 0)
+    except ProcessLookupError:
+        return True
+    except OSError:
+        return False
+    return False
 
 
 def proven_gone(ident: dict | None) -> bool:
-    """Only proof counts: same host and boot, and no such process or a different one under that pid."""
+    """Only proof counts: same host, boot and PID namespace, and no such process or group under that identity."""
     if not ident or not ident.get("pid") or ident.get("ns") != namespace_id():
         return False
     now = process_start(ident["pid"])
-    return now == GONE or bool(now and ident.get("start") and ident["start"] != GONE and now != ident["start"])
+    gone = now == GONE or bool(now and ident.get("start") and ident["start"] != GONE and now != ident["start"])
+    if not gone:
+        return False
+    group = ident.get("group")
+    if group and os.name != "nt":
+        return group_gone(group)  # the leader exited, but a gate's descendants may still hold the group
+    return True
 
 
 def lease_proven_dead(info: dict) -> bool:
@@ -3005,6 +3031,9 @@ def _cmd_incident(sw: Swarm, a) -> None:
                     (a.outcome, bounded_text(sw, a.reason) + authority, who, iso(), incident_id),
                 )
                 sw.event("incident_resolved", who, r["task"], f"I{incident_id}: {a.outcome}; {a.reason}{authority}")
+                import swarm_deadhand as deadhand
+
+                deadhand.clear_waiting(sw, "incident.resolve", str(incident_id))
             elif a.incident_action == "refresh":
                 sw.require_coordinator(who)
                 if len(a.reason.strip()) < MIN_ANSWER:
@@ -4061,12 +4090,18 @@ def sweep_usage(sw: Swarm) -> None:
         "AND COALESCE(reserved_tokens,0)=0 AND COALESCE(reserved_micros,0)=0"
     ).fetchall():
         raw = sw.meta(f"usage_supervisor:{row['id']}")
-        if raw and proven_gone(json.loads(raw)):
+        groups = sw.meta(f"usage_group:{row['id']}")
+        if (
+            raw
+            and proven_gone(json.loads(raw))
+            and (not groups or all(proven_gone(g) for g in json.loads(groups)))
+        ):
             sw.db.execute(
                 "UPDATE usage_runs SET state='charged',ended_at=?,detail=? WHERE id=?",
-                (iso(), "engine-verified: supervisor gone; the full tool-time reservation is charged", row["id"]),
+                (iso(), "engine-verified: supervisor gone and owned group gone; the full tool-time reservation is charged", row["id"]),
             )
             sw.set_meta(f"usage_supervisor:{row['id']}", None)
+            sw.set_meta(f"usage_group:{row['id']}", None)
             sw.event("usage_reconciled", "engine", row["task"], f"{row['id']}: engine-verified, supervisor gone")
     for row in sw.db.execute("SELECT * FROM usage_runs WHERE state IN ('reserved','running')").fetchall():
         lost = row["kind"] == "tool" and (
@@ -4320,6 +4355,9 @@ def cmd_usage(sw: Swarm, a) -> None:
                 (iso(), redact_text(label + a.reason), row["id"]),
             )
             sw.event("usage_reconciled", who, row["task"], row["id"])
+            import swarm_deadhand as deadhand
+
+            deadhand.clear_waiting(sw, "usage.reconcile", a.run)
             sweep_contracts(sw)
         print(json.dumps({"run": usage_data(usage_row(sw, a.run))}))
         return
@@ -4795,8 +4833,11 @@ def cmd_contract(sw: Swarm, a) -> None:
                 )
             if c["extension_count"] or len(a.reason.strip()) < MIN_ANSWER or not 0 < a.minutes <= 10080:
                 raise SwarmError("One justified extension is allowed: --minutes 1..10080 --reason <evidence>.")
+            import swarm_deadhand as deadhand
+
             terms = json.loads(c["terms"])
             ticket = getattr(a, "deadhand", None)
+            authority = ""
             if terms["risk_level"] == "high" and who != HUMAN:
                 if not ticket:
                     raise HumanOnly(
@@ -4805,9 +4846,9 @@ def cmd_contract(sw: Swarm, a) -> None:
                         a.task,
                         f"hivewire contract extend {a.task} --minutes ... --reason ...",
                     )
-                import swarm_deadhand as deadhand
-
-                deadhand.consume(sw, who, ticket, "contract.extend.high_risk", a.task, {"minutes": a.minutes, "reason": a.reason})
+                authority = "; " + deadhand.consume(
+                    sw, who, ticket, "contract.extend.high_risk", a.task, {"minutes": a.minutes, "reason": a.reason}
+                )
             budget_changes = any(
                 getattr(a, key, None) is not None for key in ("token_limit", "cost_limit", "tool_time_min")
             )
@@ -4862,11 +4903,12 @@ def cmd_contract(sw: Swarm, a) -> None:
             sw.message(
                 who,
                 c["owner"],
-                f"Contract extended once by {a.minutes} min: {a.reason}. `hivewire start` resumes accounted time.",
+                f"Contract extended once by {a.minutes} min: {a.reason}{authority}. `hivewire start` resumes accounted time.",
                 kind="decision",
                 task=a.task,
             )
-            sw.event("contract_extended", who, a.task, a.reason)
+            sw.event("contract_extended", who, a.task, a.reason + authority)
+            deadhand.clear_waiting(sw, "contract.extend.high_risk", a.task)
     print(f"contract {a.contract_action} recorded for {a.task}; `hivewire explain {a.task}` shows the next step")
 
 
@@ -4957,7 +4999,7 @@ def cmd_checkpoint(sw: Swarm, a) -> None:
 
 
 def checked_checkpoint(sw: Swarm, t, checkpoint_id: int, after: int = 0):
-    if holds_queue(sw, t["id"]):
+    if queue_held(sw, t["id"]):
         raise SwarmError(
             "The merge attempt is still returning. Wait for its queue lease to clear, then capture/validate the checkpoint."
         )
@@ -5511,6 +5553,11 @@ def cmd_join(sw: Swarm, a) -> None:
             if row and row["slot"] not in used
             else next(i for i in range(1, sw.config["swarm"]["max_agents"] + 1) if i not in used)
         )
+        import swarm_deadhand as deadhand
+
+        token, proven_resume = deadhand.join_token(
+            sw, name, bool(row), deadhand.presented_token(getattr(a, "token_stdin", False))
+        )
         if row:
             sw.update_agent(
                 name,
@@ -5539,7 +5586,7 @@ def cmd_join(sw: Swarm, a) -> None:
             sw.set_meta(f"offline_task:{name}", None)
             sw.event("agent_rejoined", name, row["task"], a.kind or row["kind"] or "")
             if row["state"] == "offline":
-                coordinator_return(sw, name)
+                coordinator_return(sw, name, proven_resume)
         else:
             sw.db.execute(
                 "INSERT INTO agents(name,kind,model,caps,slot,state,joined_at,heartbeat_at,pid,env,first_msg) "
@@ -5553,9 +5600,6 @@ def cmd_join(sw: Swarm, a) -> None:
             sw.set_meta("coordinator", name)
             sw.set_meta("coordinator_since", iso())
             sw.event("coordinator", name, None, "first live agent")
-        import swarm_deadhand as deadhand
-
-        token, _ = deadhand.join_token(sw, name, bool(row), deadhand.presented_token(getattr(a, "token_stdin", False)))
         peers = [r["name"] for r in sw.live_agents() if r["name"] != name]
     me = sw.agent(name)
     print(f"joined as {name} (slot {me['slot']}, role {'coordinator' if sw.is_coordinator(name) else 'worker'})")
@@ -5649,16 +5693,33 @@ def incident_subject(sw: Swarm, name: str) -> bool:
     return bool(sw.db.execute("SELECT 1 FROM incidents WHERE subject=? AND state<>'resolved' LIMIT 1", (name,)).fetchone())
 
 
-def coordinator_return(sw: Swarm, name: str) -> None:
-    """Decided once, at the returner's resume, and never flipped later by a sweep in someone's workflow."""
+def coordinator_return(sw: Swarm, name: str, proven: bool = True) -> None:
+    """Decided once, at the returner's resume, and never flipped later by a sweep in someone's workflow.
+    Only a resume proven with the name's current join token can take the role back."""
     raw = sw.meta("coordinator_away")
     if not raw or json.loads(raw)["name"] != name:
         return
     away = json.loads(raw)
-    sw.set_meta("coordinator_away", None)
     current = sw.coordinator()
     if sw.config["swarm"]["coordinator"] != "auto" or not current or current == name:
+        sw.set_meta("coordinator_away", None)
         return
+    if not proven:
+        sw.event(
+            "coordinator_return_refused",
+            name,
+            None,
+            f"{current} keeps the role: the resume presented no valid join token",
+        )
+        sw.message(
+            "swarm",
+            name,
+            "You resumed without the join token you were given, so the coordinator role stays with "
+            f"{current}. A human can restore eligibility with `hivewire deadhand verify-agent {name}`, or "
+            f"{current} can hand it over explicitly.",
+        )
+        return
+    sw.set_meta("coordinator_away", None)
     blockers = []
     if minutes_since(away["at"]) > sw.config["swarm"]["coordinator_return_min"]:
         blockers.append(f"more than {sw.config['swarm']['coordinator_return_min']:g} min passed")
@@ -6446,6 +6507,9 @@ def cmd_allocation(sw: Swarm, a) -> None:
                 sw.db.execute("UPDATE allocations SET state='reconciled',ended_at=?,detail=? WHERE id=?",
                               (iso(), label + redact_text(a.reason), row["id"]))
                 sw.event("allocation_reconciled", who, a.task, f"{row['id']}: {redact_text(a.reason)}")
+                import swarm_deadhand as deadhand
+
+                deadhand.clear_waiting(sw, "allocation.reconcile", a.task)
         rows = [dict(r) for r in sw.db.execute("SELECT * FROM allocations WHERE task=? ORDER BY rowid", (a.task,))]
     print(json.dumps({"allocations": rows}, indent=2))
 
@@ -7078,16 +7142,24 @@ def keepalive(sw: Swarm, who: str, task_id: str) -> None:
 
 
 def holds_queue(sw: Swarm, task_id: str) -> bool:
-    """Ownership keys on the attempt: a later attempt for the same task is not this one."""
+    """This process holds the queue for the task, keyed on its own attempt; a later attempt is not this one."""
     lock = sw.meta("merge_lock")
-    if not lock:
+    mine = getattr(sw, "merge_attempt", None)
+    if not lock or not mine:
         return False
     info = json.loads(lock)
-    mine = getattr(sw, "merge_attempt", None)
-    return info.get("task") == task_id and (mine is None or info.get("attempt") == mine)
+    return info.get("task") == task_id and info.get("attempt") == mine
 
 
-def run_owned(argv: list[str], path: Path, env: dict, timeout_s: float, alive=None, every_s: float = 30, *, start=None):
+def queue_held(sw: Swarm, task_id: str) -> bool:
+    """Whether any attempt holds the queue for the task (used by holders who are not the merging process)."""
+    lock = sw.meta("merge_lock")
+    return bool(lock and json.loads(lock).get("task") == task_id)
+
+
+def run_owned(
+    argv: list[str], path: Path, env: dict, timeout_s: float, alive=None, every_s: float = 30, *, start=None, on_start=None
+):
     """Bounded captured command. Timeouts/refusals clean up only the group this call created."""
     import tempfile
 
@@ -7096,10 +7168,12 @@ def run_owned(argv: list[str], path: Path, env: dict, timeout_s: float, alive=No
     # A file avoids pipe deadlocks when descendants inherit stdout and bounds in-memory output.
     with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
         child = start(output, errors) if start else OwnedProcess(argv, path, env, output, errors=errors)
-        if OWNED_CHILD_HOOK and getattr(child, "pid", None):
-            OWNED_CHILD_HOOK(child.pid)
         deadline, keep_at, finished, timed_out = time.monotonic() + timeout_s, time.monotonic() + every_s, False, False
         try:
+            if on_start and getattr(child, "pid", None):
+                on_start(child.pid)
+            if OWNED_CHILD_HOOK and getattr(child, "pid", None):
+                OWNED_CHILD_HOOK(child.pid)
             while child.active():
                 now = time.monotonic()
                 if os.fstat(output.fileno()).st_size + os.fstat(errors.fileno()).st_size > 1024 * 1024:
@@ -7243,8 +7317,20 @@ def metered_run(
         if alive:
             alive()
 
+    def record_group(pid):
+        group = pid if os.name != "nt" else None
+
+        def write():
+            sw.set_meta(f"usage_group:{row['id']}", json.dumps([process_identity(pid, group)]))
+
+        if sw.db.in_transaction:
+            write()
+        else:
+            with sw.tx():
+                write()
+
     try:
-        result = run_owned(argv, path, env, seconds, pulse, min(every_s, 5, max(0.01, seconds / 3)))
+        result = run_owned(argv, path, env, seconds, pulse, min(every_s, 5, max(0.01, seconds / 3)), on_start=record_group)
         return result
     except BaseException as exc:
         fault = exc
@@ -7276,6 +7362,8 @@ def metered_run(
                     ),
                 )
                 sw.event("tool_observed", who, row["task"], row["id"])
+                if quiescent:  # a group that may still have members stays recorded for the sweep to prove gone
+                    sw.set_meta(f"usage_group:{row['id']}", None)
                 sweep_contracts(sw)
                 failpoint("before_tool_measurement_commit")
             failpoint("after_tool_measurement_commit")
@@ -7473,7 +7561,8 @@ def record_lease_group(sw: Swarm, attempt: str, pid: int) -> None:
         raw = sw.meta("merge_lock")
         info = json.loads(raw) if raw else None
         if info and info.get("attempt") == attempt:
-            info["groups"] = (info.get("groups", []) + [process_identity(pid)])[-20:]
+            group = pid if os.name != "nt" else None  # an owned POSIX group is led by its anchor pid
+            info["groups"] = (info.get("groups", []) + [process_identity(pid, group)])[-20:]
             sw.set_meta("merge_lock", json.dumps(info))
 
     if sw.db.in_transaction:
@@ -8717,7 +8806,11 @@ def cmd_verification(sw: Swarm, a) -> None:
                 (iso(), redact_text(label + a.reason), row["id"]),
             )
             sw.event("verification_reconciled", who, row["subject"] if row["kind"] == "task" else None, row["id"])
-        print("Verification abandoned by human attestation; no passed result was inferred and artifacts remain")
+            import swarm_deadhand as deadhand
+
+            deadhand.clear_waiting(sw, "verification.reconcile", a.receipt)
+        attribution = "dead-hand authority" if ticket else "human attestation"
+        print(f"Verification abandoned by {attribution}; no passed result was inferred and artifacts remain")
     else:
         who = a.as_ or HUMAN
         if who != HUMAN:
@@ -9847,6 +9940,9 @@ def cmd_execution(sw: Swarm, a) -> None:
                 (label + redact_text(a.reason), iso(), row["id"]),
             )
             sw.event("execution_reconciled", who, row["task"], f"{row['id']}: {kind}; {a.reason}")
+            import swarm_deadhand as deadhand
+
+            deadhand.clear_waiting(sw, "execution.reconcile", row["id"])
     print("recorded; inspect execution status for actual exit/termination proof")
 
 

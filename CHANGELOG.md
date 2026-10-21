@@ -9,7 +9,13 @@
   tokens, `human pending`, `deadhand veto/disarm/verify-agent`, and record every
   human-only refusal so it can be listed and waited on. The join token and the
   merge attempt marker are stripped from verification checks, checkout hooks and
-  every inherited child environment.
+  every inherited child environment. Harden the same authority after review: process
+  identity now includes the Linux PID namespace, a killed merge's whole POSIX group
+  and an owned tool's group must be gone before the lease or run is settled, a
+  reconcile ticket is rechecked at consume on the supervisor's host, boot and PID
+  namespace, the waiting key follows the subject revision and is cleared by the
+  human's own decision, a coordinator return needs a proven join token, and an
+  expired arm or a veto no longer leaves a ticket blocking or standing.
 
 - Free the merge queue as soon as the merging process is proven gone on this host
   (pid, start time, boot), instead of after 45 minutes; access denied is not gone.

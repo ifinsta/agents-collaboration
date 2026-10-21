@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 import argparse
+import ctypes
 import json
 import os
 import sys
+import unittest
 from contextlib import contextmanager
 from datetime import timedelta
 from unittest import mock
@@ -128,7 +130,12 @@ class DeadHand(OversightCase):
 
     def test_ec386_a_veto_a_disarm_and_a_config_edit_each_stop_a_ticket(self):
         self.signed()
+        with self.board() as sw:
+            self.assertIsNotNone(sw.db.execute("SELECT delegation FROM deadhand_tickets WHERE id=1").fetchone()[0])
         self.sw("deadhand", "veto", "D1", "--reason", "I am back and will decide this myself")
+        with self.board() as sw:
+            revoked = sw.db.execute("SELECT revoked_at FROM deadhand_delegations WHERE ticket=1").fetchone()[0]
+        self.assertIsNotNone(revoked, "a veto revokes the deputy's delegation, not only the ticket")
         out = self.as_("ann", "incident", "resolve", "1", "--outcome", "cleared", "--reason", REASON, "--deadhand", "D1", ok=False)
         self.assertIn("vetoed", out)
         self.arm()
@@ -161,6 +168,107 @@ class DeadHand(OversightCase):
         self.assertNotIn("join token:", out)
         with self.board() as sw:
             self.assertTrue(deadhand.proven(sw, "ann"))
+
+    @unittest.skipUnless(os.name == "nt", "the MSYS pty handle exists only on Windows")
+    def test_ec388_an_msys_pty_handle_is_a_person_at_a_terminal(self):
+        def fill(handle, kind, buf, size):
+            name = "\\msys-1234-pty0-from-master".encode("utf-16-le")
+            ctypes.memmove(buf, len(name).to_bytes(4, "little"), 4)
+            ctypes.memmove(ctypes.byref(buf, 4), name, len(name))
+            return 1
+
+        fake = mock.Mock()
+        fake.GetFileInformationByHandleEx.side_effect = fill
+        with mock.patch.dict(os.environ, {"MSYSTEM": "MINGW64"}), \
+                mock.patch.object(deadhand.sys, "stdin") as stdin, \
+                mock.patch("msvcrt.get_osfhandle", return_value=0), \
+                mock.patch.object(ctypes.windll, "kernel32", fake):
+            stdin.fileno.return_value = 0
+            self.assertTrue(deadhand.msys_pty())
+
+    def test_ec391_the_humans_own_decision_clears_the_waiting_key(self):
+        self.waiting_incident()
+        with self.board() as sw:
+            self.assertIsNotNone(sw.meta("human_waiting:incident.resolve:1"))
+        self.sw("incident", "resolve", "1", "--outcome", "cleared", "--reason", REASON)
+        with self.board() as sw:
+            self.assertIsNone(sw.meta("human_waiting:incident.resolve:1"))
+            self.assertTrue(sw.db.execute("SELECT 1 FROM events WHERE kind='human_decision_taken'").fetchone())
+
+    def test_ec391_a_verification_reconcile_excludes_the_owner_and_actor(self):
+        self.waiting_incident()
+        with self.board() as sw, sw.tx():
+            sw.db.execute(
+                "INSERT INTO verification_runs(id,kind,subject,actor,state,started_at) "
+                "VALUES('v1','task','T1','dan','unknown',?)",
+                (core.iso(),),
+            )
+            self.assertEqual(deadhand.subject_parties(sw, "verification.reconcile", "v1"), {"bob", "dan"})
+
+    def test_ec391_a_replacement_allocation_is_a_new_subject_revision(self):
+        self.waiting_incident()
+        with self.board() as sw, sw.tx():
+            sw.db.execute(
+                "INSERT INTO allocations(id,task,owner,epoch,state,started_at) VALUES('a1','T1','bob',1,'pending',?)",
+                (core.iso(),),
+            )
+            first = deadhand.subject_revision(sw, "allocation.reconcile", "T1")
+            sw.db.execute(
+                "INSERT INTO allocations(id,task,owner,epoch,state,started_at) VALUES('a2','T1','bob',1,'pending',?)",
+                (core.iso(),),
+            )
+            second = deadhand.subject_revision(sw, "allocation.reconcile", "T1")
+        self.assertNotEqual(first, second, "the same state on a new allocation is still a new subject")
+
+    def test_ec391_an_expired_arm_cannot_keep_blocking_a_coordinator_return(self):
+        self.signed()
+        with self.board() as sw, sw.tx():
+            sw.db.execute("UPDATE deadhand_arms SET until=?", (core.iso(core.utcnow() - timedelta(minutes=1)),))
+        with self.board() as sw:
+            self.assertEqual(sw.db.execute("SELECT state FROM deadhand_tickets WHERE id=1").fetchone()[0], "approved")
+            self.assertIsNone(deadhand.blocks_coordinator_return(sw, "ann"))
+
+    def test_ec391_the_engine_never_selects_a_conflicted_deputy(self):
+        self.waiting_incident()
+        self.age_waiting()
+        self.arm(deputies="bob,cat,dan")  # owner, reviewer and requester
+        self.assertIn("waits for an eligible deputy", self.request())
+        t = self.ticket()
+        self.assertEqual(t["state"], "waiting")
+        self.assertIsNone(t["deputy"])
+
+    def test_ec391_a_conflicted_coordinator_cannot_approve(self):
+        self.setup_incident(reviewer="ann")  # the coordinator reviewed this incident, so it is a party
+        self.report(reviewer="ann")
+        self.join("dan")
+        self.join("eve")
+        self.give_tokens()
+        with self.board() as sw, sw.tx():
+            sw.db.execute("UPDATE incidents SET state='needs_human' WHERE id=1")
+        out = self.as_("ann", "incident", "resolve", "1", "--outcome", "cleared", "--reason", REASON, ok=False)
+        self.assertIn("ask the human", out)
+        self.age_waiting()
+        self.arm()
+        self.request()
+        deputy = self.ticket()["deputy"]
+        self.as_(deputy, "deadhand", "review", "D1", "--verdict", "approve", "--evidence", "Read the frozen brief and diff hash")
+        out = self.as_("ann", "deadhand", "approve", "D1", "--reason", "The deputy's evidence matches the frozen review", ok=False)
+        self.assertIn("party to the subject", out)
+
+    def test_ec391_a_pending_ticket_keeps_the_coordinator_role_with_its_holder(self):
+        self.signed()
+        with self.board() as sw, sw.tx():
+            sw.update_agent("ann", state="offline", offline_at=core.iso())
+        self.sw("status")
+        with self.board() as sw:
+            self.assertNotEqual(sw.meta("coordinator"), "ann")
+        self.sw("join", "--as", "ann", "--kind", "claude", "--resume", env={**os.environ, "SWARM_TOKEN": TOKENS["ann"]})
+        with self.board() as sw:
+            self.assertNotEqual(sw.meta("coordinator"), "ann")
+            refused = sw.db.execute(
+                "SELECT detail FROM events WHERE kind='coordinator_return_refused' ORDER BY id DESC LIMIT 1"
+            ).fetchone()[0]
+        self.assertIn("approved but not yet used", refused)
 
     def test_ec388_arming_needs_a_person_at_a_terminal(self):
         until = core.iso(core.utcnow() + timedelta(hours=2))

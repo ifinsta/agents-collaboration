@@ -100,17 +100,27 @@ def guarded_config_hash(sw) -> str:
     return core.request_hash({"deadhand": sw.config.get("deadhand", {}), "generated": sw.config["merge"]["generated_paths"]})
 
 
+def arm_live(sw, row) -> bool:
+    """Validity without mutation, so a rollback in one transaction cannot revive an expired arm's tickets."""
+    return bool(
+        row
+        and not row["disarmed_at"]
+        and core.utcnow() < core.parse(row["until"])
+        and row["config_hash"] == guarded_config_hash(sw)
+    )
+
+
 def active_arm(sw):
     row = sw.db.execute("SELECT * FROM deadhand_arms WHERE disarmed_at IS NULL ORDER BY id DESC LIMIT 1").fetchone()
     if not row:
         return None
+    if arm_live(sw, row):
+        return row
     if core.utcnow() >= core.parse(row["until"]):
         disarm(sw, row, "the armed window ended")
-        return None
-    if row["config_hash"] != guarded_config_hash(sw):
+    else:
         disarm(sw, row, "[deadhand] or [merge] generated_paths changed in config.toml")
-        return None
-    return row
+    return None
 
 
 def disarm(sw, row, reason: str) -> None:
@@ -209,14 +219,29 @@ def cmd_verify_agent(sw, a) -> None:
 # ----------------------------------------------------------------------------------------- waiting decisions
 def note_waiting(sw, action: str, subject: str, command: str, who: str | None) -> None:
     key = f"human_waiting:{action}:{subject}"
-    if not sw.meta(key):
-        sw.set_meta(key, json.dumps({"action": action, "subject": subject, "command": command, "by": who, "since": core.iso()}))
+    item = {
+        "action": action,
+        "subject": subject,
+        "command": command,
+        "by": who,
+        "since": core.iso(),
+        "rev": subject_revision(sw, action, subject),
+    }
+    current = waiting(sw, action, subject)
+    if not current or current.get("rev") != item["rev"]:  # a changed subject starts a fresh wait
+        sw.set_meta(key, json.dumps(item))
         sw.event("human_decision_waiting", who or "engine", None, f"{action} {subject}: {command}")
 
 
 def waiting(sw, action: str, subject: str) -> dict | None:
     raw = sw.meta(f"human_waiting:{action}:{subject}")
     return json.loads(raw) if raw else None
+
+
+def clear_waiting(sw, action: str, subject: str, who: str = core.HUMAN) -> None:
+    if sw.meta(f"human_waiting:{action}:{subject}"):
+        sw.set_meta(f"human_waiting:{action}:{subject}", None)
+        sw.event("human_decision_taken", who, None, f"{action} {subject}")
 
 
 def cmd_human_pending(sw, a) -> None:
@@ -248,11 +273,27 @@ def subject_revision(sw, action: str, subject: str) -> str:
         r = core.usage_row(sw, subject)
         return f"{r['state']}:{r['source_hash'] or ''}"
     if action == "verification.reconcile":
-        r = sw.db.execute("SELECT state FROM verification_runs WHERE id=?", (subject,)).fetchone()
+        r = sw.db.execute(
+            "SELECT state,kind,subject,commit_sha,started_at,supervisor_pid FROM verification_runs WHERE id=?", (subject,)
+        ).fetchone()
+        if r:
+            return core.request_hash(
+                {k: r[k] for k in ("state", "kind", "subject", "commit_sha", "started_at", "supervisor_pid")}
+            )
     elif action == "execution.reconcile":
-        r = sw.db.execute("SELECT state FROM executions WHERE id=?", (subject,)).fetchone()
+        r = sw.db.execute(
+            "SELECT state,task,agent,epoch,child_pid,supervisor_pid,started_at FROM executions WHERE id=?", (subject,)
+        ).fetchone()
+        if r:
+            return core.request_hash(
+                {k: r[k] for k in ("state", "task", "agent", "epoch", "child_pid", "supervisor_pid", "started_at")}
+            )
     elif action == "allocation.reconcile":
-        r = sw.db.execute("SELECT state FROM allocations WHERE task=? ORDER BY rowid DESC LIMIT 1", (subject,)).fetchone()
+        r = sw.db.execute(
+            "SELECT id,state,owner,epoch,started_at FROM allocations WHERE task=? ORDER BY rowid DESC LIMIT 1", (subject,)
+        ).fetchone()
+        if r:  # a replacement allocation with the same state is still a different subject
+            return core.request_hash({k: r[k] for k in ("id", "state", "owner", "epoch", "started_at")})
     elif action == "contract.extend.high_risk":
         c = core.current_contract(sw, subject)
         r = {"state": f"{c['id']}:{c['state']}:{c['extension_count']}"} if c else None
@@ -264,7 +305,8 @@ def subject_revision(sw, action: str, subject: str) -> str:
 
 
 def subject_parties(sw, action: str, subject: str) -> set[str]:
-    """Who may not review or approve: the subject task's owner and author, an incident's subject and reviewer."""
+    """Who may not review or approve: a subject task's owner and author, an incident's subject and
+    reviewer, a verification's actor and an execution's agent."""
     parties, task = set(), None
     if action == "incident.resolve":
         r = sw.db.execute("SELECT * FROM incidents WHERE id=?", (int(subject),)).fetchone()
@@ -275,6 +317,13 @@ def subject_parties(sw, action: str, subject: str) -> set[str]:
         task = core.usage_row(sw, subject)["task"]
     elif action == "contract.extend.high_risk" or action == "allocation.reconcile":
         task = subject
+    elif action == "verification.reconcile":
+        r = sw.db.execute("SELECT kind, subject, actor FROM verification_runs WHERE id=?", (subject,)).fetchone()
+        if r:
+            if r["kind"] == "task":
+                task = r["subject"]
+            if r["actor"]:
+                parties.add(r["actor"])
     elif action == "execution.reconcile":
         r = sw.db.execute("SELECT task, agent FROM executions WHERE id=?", (subject,)).fetchone()
         task, parties = (r["task"], {r["agent"]}) if r else (None, set())
@@ -300,13 +349,13 @@ def check_request(sw, arm, who: str, action: str, subject: str, args: dict) -> N
         raise core.SwarmError("The requester must be an agent other than the coordinator.")
     wait = waiting(sw, action, subject)
     minimum = deadhand_config(sw)["wait_min"]
-    if not wait or core.minutes_since(wait["since"]) < minimum:
+    if not wait or wait.get("rev") != subject_revision(sw, action, subject) or core.minutes_since(wait["since"]) < minimum:
         raise core.SwarmError(
-            f"The decision must have waited on the human for {minimum:g} min first (it starts when an agent is refused). "
-            "`hivewire human pending` lists what is waiting."
+            f"The decision must have waited on the human for {minimum:g} min first (it starts when an agent is refused "
+            "and restarts if the subject changes). `hivewire human pending` lists what is waiting."
         )
     if action in RECONCILES and recorded_namespace(sw, action, subject) != core.namespace_id():
-        raise core.SwarmError("A reconcile is delegable only on the supervisor's own host and boot.")
+        raise core.SwarmError("A reconcile is delegable only on the supervisor's own host, boot and PID namespace.")
     if action == "contract.extend.high_risk":
         if not 0 < float(args.get("minutes", 0)) <= MAX_HIGH_RISK_EXTENSION_MIN:
             raise core.SwarmError(f"A dead-hand high-risk extension is at most {MAX_HIGH_RISK_EXTENSION_MIN} minutes.")
@@ -434,6 +483,7 @@ def cmd_deadhand(sw, a) -> None:
             if t["state"] not in OPEN_TICKETS:
                 raise core.SwarmError(f"D{t['id']} is {t['state']}; only an unconsumed ticket can be vetoed.")
             sw.db.execute("UPDATE deadhand_tickets SET state='vetoed', void_reason=? WHERE id=?", (core.bounded_text(sw, a.reason), t["id"]))
+            sw.db.execute("UPDATE deadhand_delegations SET revoked_at=? WHERE ticket=? AND revoked_at IS NULL", (core.iso(), t["id"]))
             sw.event("deadhand_vetoed", core.HUMAN, None, f"D{t['id']}: {a.reason}")
             print(f"D{t['id']} vetoed")
             return
@@ -522,23 +572,33 @@ def consume(sw, who: str, ticket_id: int, action: str, subject: str, args: dict)
         raise core.SwarmError(f"D{ticket_id} authorises different arguments; request a new ticket.")
     if not token_valid(sw, who, presented_token()) or not proven(sw, who):
         raise core.SwarmError("Present your current join token in SWARM_TOKEN to use a dead-hand ticket.")
+    if action in RECONCILES and recorded_namespace(sw, action, subject) != core.namespace_id():
+        raise core.SwarmError("A reconcile is usable only on the supervisor's own host, boot and PID namespace.")
     still_bound(sw, t)
     sw.db.execute("UPDATE deadhand_tickets SET state='consumed', consumed_at=? WHERE id=?", (core.iso(), ticket_id))
     sw.db.execute("UPDATE deadhand_delegations SET revoked_at=? WHERE ticket=? AND revoked_at IS NULL", (core.iso(), ticket_id))
-    sw.set_meta(f"human_waiting:{action}:{subject}", None)
+    clear_waiting(sw, action, subject, who)
     attribution = f"dead-hand authority D{ticket_id}: reviewed by {t['deputy']}, approved by {who}, armed by the human until {arm['until']}"
     sw.event("deadhand_consumed", who, None, attribution)
     return attribution
 
 
 def blocks_coordinator_return(sw, name: str) -> str | None:
-    if sw.db.execute("SELECT 1 FROM deadhand_tickets WHERE state='approved' LIMIT 1").fetchone():
+    arms = {r["id"]: r for r in sw.db.execute("SELECT * FROM deadhand_arms").fetchall()}
+
+    def live(arm_id) -> bool:
+        return arm_live(sw, arms.get(arm_id))
+
+    if any(live(t["arm"]) for t in sw.db.execute("SELECT arm FROM deadhand_tickets WHERE state='approved'")):
         return "a dead-hand ticket is approved but not yet used"
-    if sw.db.execute(
-        "SELECT 1 FROM deadhand_tickets WHERE state IN ('waiting','requested','reviewed','approved') "
-        "AND (deputy=? OR requester=? OR approver=?) LIMIT 1",
-        (name, name, name),
-    ).fetchone():
+    if any(
+        live(t["arm"])
+        for t in sw.db.execute(
+            "SELECT arm FROM deadhand_tickets WHERE state IN ('waiting','requested','reviewed','approved') "
+            "AND (deputy=? OR requester=? OR approver=?)",
+            (name, name, name),
+        )
+    ):
         return "an open dead-hand ticket names you"
     return None
 

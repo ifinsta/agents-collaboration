@@ -19,7 +19,13 @@ a branch that moves generated paths past its submission, and clearance and resol
 change the review or submission did not cover. (B2) Verification checks inherited `SWARM_TOKEN`; the token and the merge
 attempt marker are now removed from verification checks, verification and allocation checkouts,
 inherited Git commands and spawned tool children. EC-389 and EC-390 cover both. The review's
-should-fix and nit items remain advisory follow-ups; they do not block approval.
+should-fix and nit items were then implemented as advisory follow-ups, and EC-391 covers them:
+the namespace includes the PID namespace, a killed merge's POSIX group must also be gone, a
+tool run's owned group is recorded and must be gone before settlement, reconciles are rechecked
+at consume on the supervisor's host, boot and PID namespace, the waiting key is bound to the
+subject revision and cleared by the human's own action, verification-reconcile parties include
+the task owner and the run's actor, a coordinator return requires a proven join token, and an
+expired arm can no longer block that return.
 
 ## Summary
 
@@ -101,17 +107,23 @@ narrows by exactly those fields. Any field on neither list, including future fie
 
 ### F3. Provably dead merge, dead lease (P3)
 
-- The lease records an attempt id, the merging pid, its process start time, the host and the
-  process namespace [R9]. Queue ownership checks key on the attempt id, not the task [R9].
+- The lease records an attempt id, the merging pid, its process start time, the host, the boot
+  and the process namespace [R9]. Queue ownership checks key on the attempt id, not the task [R9].
 - "Gone" means, checked in the same namespace on the same host: Windows
   `ERROR_INVALID_PARAMETER` on open, or a different start time, or an observed exit; POSIX
   no such pid or a different start time. Access-denied is **not** gone [R9]. The owned gate and
-  hook process group must also be gone. Otherwise the 45-minute timeout still applies.
+  hook process group must also be gone; on POSIX the leader may exit while a descendant still
+  holds the group, in which case the lease stays. Otherwise the 45-minute timeout still applies.
 - Breaking the lease does not release task-held hotspot locks [R9]; those stay with the task.
 - The namespace id is the host name plus the boot id (Linux `/proc/sys/kernel/random/boot_id`,
-  Windows last boot time) plus the WSL distro name when present (pass 2).
-- A tool-time-only usage run whose supervisor is provably gone by the same test is settled with
-  the label `engine-verified: supervisor gone`, charged at the reservation (pass 2).
+  Windows last boot time rounded to the minute) plus the Linux PID namespace
+  (`/proc/self/ns/pid`) when available, plus the WSL distro name when present (pass 2,
+  advisory pass 5). A container or WSL distro with its own PID namespace never matches a pid
+  from the host's.
+- A tool-time-only usage run whose supervisor is provably gone by the same test is settled
+  with the label `engine-verified: supervisor gone`, charged at the reservation (pass 2). The
+  engine also records the tool process's own POSIX group and does not settle while any member
+  remains (advisory pass 5).
 - `merge --detach` runs the merge as an engine-owned background job and returns its attempt id;
   `merge` warns when stdout is not a terminal.
 
@@ -125,9 +137,10 @@ Disarm with `deadhand disarm`. Any change to `[deadhand]` or `[merge] generated_
 code, not only config: `until` at most 72 hours, `wait_min` at least 30 [R3].
 
 **Allowlist [R5].** `incident.resolve`, `usage.reconcile`, `verification.reconcile`,
-`execution.reconcile`, `allocation.reconcile` (the reconciles only on the supervisor's host and
-namespace, labelled `agent attestation`), and `contract.extend.high_risk` once per task for at
-most 60 minutes. Not delegable: `incident.refresh` (it would let a coordinator re-roll reviewers
+`execution.reconcile`, `allocation.reconcile` (the reconciles only on the supervisor's host,
+boot and PID namespace, checked when the ticket is consumed as well as when it is requested,
+labelled `agent attestation`), and `contract.extend.high_risk` once per task for at most 60
+minutes. Not delegable: `incident.refresh` (it would let a coordinator re-roll reviewers
 past the cap), sensitive memory export, budget increases or cap removal, answering a question
 addressed to the human, high-risk architecture approval, cancel interrupts.
 
@@ -165,8 +178,11 @@ given to gates, hooks, verification and spawned children (`env_for`), so code un
 cannot read another agent's token (pass 3). **Migration:** names that predate the upgrade have
 no token; their first join or resume after it mints one and is recorded as unproven, so they are
 not dead-hand eligible until the human re-verifies them with `deadhand verify-agent NAME`,
-which sits behind the arm terminal guard and is listed in `human pending` (pass 4). The human's own resume path
-uses the same terminal guard as `arm` (pass 3).
+which sits behind the arm terminal guard and is listed in `human pending` (pass 4). There is no
+human resume path: the human never holds an agent name, so the arm and `verify-agent` guards are
+the only terminal checks; the previous claim that a human resume used the same guard was wrong
+(advisory pass 5). The coordinator role returns only on a **proven** resume of its holder, so an
+agent that lost its token cannot take the role back (advisory pass 5).
 Tickets record kind and model; `[deadhand] require_distinct_model` (default off) requires the
 deputy and the coordinator to differ in model (optional suggestion adopted).
 
@@ -203,11 +219,12 @@ hook writes this"). Authors need no hotspot lock for those paths.
 
 - F1 accepts only configured, exact generated paths changing after review, or byte-identical
   patches across a rebase; any other change stales the review. Owner and epoch binding stay.
-- F3 acts only on a process proven gone in its own namespace; it never signals a PID.
+- F3 acts only on a process proven gone in its own namespace, including every member of its
+  recorded POSIX group; it never signals a PID to establish death.
 - F4 is off unless the human arms it, time-boxed, allowlisted, needs an engine-selected
   independent deputy and the coordinator, binds exact arguments, is single-use, vetoable, and
   attributed. It does not defend against one process holding two join tokens; that is stated.
-- The terminal guard on `arm`, `verify-agent` and the human resume stops accidents, not
+- The terminal guard on `arm` and `verify-agent` stops accidents, not
   deliberate typing: an agent harness that runs commands in a pseudo-terminal passes `isatty`
   and can read the phrase. That is within the identity caveat (pass 4).
 - After an upgrade or a crash, dead hand will often wait for lack of an eligible deputy. That
@@ -225,7 +242,12 @@ F3: a lease whose process exited is broken; access-denied is not gone; a live me
 F4: refused unarmed, after disarm, after a config edit, outside the allowlist, with a
 coordinator-chosen deputy, conflicted parties, a wrong token, changed arguments, a reused or
 vetoed ticket; succeeds with two independent signatures and the exact attribution. F5: the
-ceiling holds. F6: an author edit to a generated path is refused.
+ceiling holds. F6: an author edit to a generated path is refused. Advisory pass: the PID namespace
+is named and a POSIX group outliving its leader is not gone (EC-382/383, POSIX-only); reconcile
+namespaces are rechecked at consume; the waiting key follows the subject revision and the human's
+decision clears it; verification parties exclude the owner and actor as deputies; an expired arm
+does not block a return; a conflicted coordinator cannot approve; an unproven resume cannot take
+the role (EC-391).
 
 ## Delivery
 

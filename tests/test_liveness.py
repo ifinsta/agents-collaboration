@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from datetime import timedelta
 from pathlib import Path
 
@@ -75,7 +76,11 @@ class RejoinAndTheCoordinatorRole(LivenessCase):
         self.assertEqual(self.row("agents", "name=?", (name,))["state"], "offline")
 
     def rejoin(self, name):
-        return self.sw("--as", name, "join", "--kind", "claude", "--resume")
+        token = getattr(self, "tokens", {}).get(name)
+        return self.sw(
+            "--as", name, "join", "--kind", "claude", "--resume",
+            env={"SWARM_TOKEN": token} if token else None,
+        )
 
     def events(self, kind):
         with self.board() as sw:
@@ -125,7 +130,9 @@ class RejoinAndTheCoordinatorRole(LivenessCase):
         self.assertFalse(self.events("task_state_restored"))
 
     def coordinator_moves(self):
-        self.join("ann")
+        self.tokens = {}
+        out = self.join("ann")
+        self.tokens["ann"] = re.search(r"join token: (hwt_[0-9a-f]{32})", out).group(1)
         self.join("bob")
         self.assertEqual(self.coordinator(), "ann")
         self.go_offline("ann")
@@ -136,6 +143,16 @@ class RejoinAndTheCoordinatorRole(LivenessCase):
         self.rejoin("ann")
         self.assertEqual(self.coordinator(), "ann")
         self.assertTrue(any("returned" in e["detail"] for e in self.events("coordinator")))
+
+    def test_ec381_an_unproven_resume_cannot_take_the_role_back(self):
+        self.coordinator_moves()
+        self.tokens.pop("ann")
+        out = self.rejoin("ann")
+        self.assertEqual(self.coordinator(), "bob")
+        self.assertIn("join token: hwt_", out, "an unproven resume rotates the token")
+        refused = self.events("coordinator_return_refused")
+        self.assertEqual(len(refused), 1)
+        self.assertIn("no valid join token", refused[0]["detail"])
 
     def test_ec381_no_return_while_a_merge_holds_the_queue_and_it_is_decided_once(self):
         self.coordinator_moves()
