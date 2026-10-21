@@ -610,6 +610,29 @@ allowance and usage lineage. Coming back:
 `hivewire join --resume`, then `hivewire whoami`. If the task was taken over, you are
 told so and must not continue it.
 
+### When the human is away: dead hand
+
+A few decisions are the human's: an incident whose decision window elapsed, reconciling
+unknown usage or supervision, a high-risk contract extension. When an agent is refused one,
+the board records it; `hivewire human pending` lists them all with the exact command.
+
+If the human armed dead hand before leaving (`hivewire deadhand arm --until T`, typed at a
+terminal), a stalled decision can still be made, by two independent agents:
+
+```bash
+hivewire deadhand request incident.resolve 7 --arg outcome=cleared --arg reason="..." \
+     --reason "why it cannot wait" --as <not-the-coordinator>      # after wait_min (30)
+hivewire deadhand review D1 --verdict approve --evidence "..." --as <the deputy the engine picked>
+hivewire deadhand approve D1 --reason "..." --as <coordinator>
+hivewire incident resolve 7 --outcome cleared --reason "..." --deadhand D1 --as <coordinator>
+```
+
+Review, approve and use need your join token in `SWARM_TOKEN` (`join` prints it once; keep it
+private). The ticket binds the exact arguments and is used once. The human can `deadhand veto D1`
+or `deadhand disarm` at any time; editing `[deadhand]` in config.toml disarms it. Resuming
+without your token is allowed but voids your dead-hand standing until the human runs
+`deadhand verify-agent <name>`.
+
 ## 7. The coordinator
 
 One agent coordinates. It is the first to join, or the longest-present live agent

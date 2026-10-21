@@ -120,6 +120,7 @@ DEFAULTS: dict = {
         "cleanup": True,
     },
     "hotspots": {},
+    "deadhand": {"wait_min": 30, "require_distinct_model": False},  # off until the human arms it
     "env": {},
     "spawn": {
         "allow_unattended": False,
@@ -220,6 +221,18 @@ def self_command() -> str:
 
 class SwarmError(Exception):
     """A refusal the agent must read and act on."""
+
+
+class HumanOnly(SwarmError):
+    """A refusal that waits on the human. It is recorded, listed in `human pending`, and starts the dead-hand wait."""
+
+    def __init__(self, message: str, action: str, subject, command: str):
+        super().__init__(message)
+        self.action, self.subject, self.command = action, str(subject), command
+
+
+def deadhand_ticket(value: str) -> int:
+    return int(str(value).lstrip("Dd"))
 
 
 # --------------------------------------------------------------------------- helpers
@@ -1265,6 +1278,17 @@ CREATE TABLE IF NOT EXISTS attention_history (
   id INTEGER PRIMARY KEY AUTOINCREMENT, attention INTEGER NOT NULL, at TEXT NOT NULL,
   actor TEXT, old_status TEXT, new_status TEXT, note TEXT, evidence TEXT);
 CREATE INDEX IF NOT EXISTS attention_history_by_item ON attention_history(attention,id);
+CREATE TABLE IF NOT EXISTS deadhand_arms (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, armed_at TEXT, until TEXT, allow TEXT, deputies TEXT,
+  config_hash TEXT, disarmed_at TEXT, disarm_reason TEXT);
+CREATE TABLE IF NOT EXISTS deadhand_tickets (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, action TEXT, subject TEXT, args TEXT, args_hash TEXT, subject_rev TEXT,
+  coordinator_term TEXT, requester TEXT, arm INTEGER, state TEXT, reason TEXT, deputy TEXT, delegation INTEGER,
+  verdict TEXT, evidence TEXT, reviewed_at TEXT, approver TEXT, approval_reason TEXT, approved_at TEXT,
+  consumed_at TEXT, void_reason TEXT, created_at TEXT, expires_at TEXT);
+CREATE TABLE IF NOT EXISTS deadhand_delegations (
+  id INTEGER PRIMARY KEY AUTOINCREMENT, ticket INTEGER, deputy TEXT, capability TEXT, created_at TEXT,
+  expires_at TEXT, revoked_at TEXT);
 CREATE TABLE IF NOT EXISTS deputy_delegations (
   id INTEGER PRIMARY KEY AUTOINCREMENT, issuer TEXT NOT NULL, deputy TEXT NOT NULL,
   capabilities TEXT NOT NULL, subject_scope TEXT NOT NULL, policy_digest TEXT,
@@ -1657,6 +1681,7 @@ class Swarm:
         for key, template in self.config["env"].items():
             env[key] = str(template).format(**values)
         env.pop("SWARM_MERGE_ATTEMPT", None)
+        env.pop("SWARM_TOKEN", None)  # code under review must never read an agent's join token
         env.update(SWARM_AS=agent["name"], SWARM_SLOT=str(values["slot"]), SWARM_TASK=task_id or "")
         if task_id:
             env["SWARM_EPOCH"] = str(self.task(task_id)["epoch"])
@@ -1845,7 +1870,7 @@ def redact_text(text: str) -> str:
         str(text),
     )
     text = re.sub(
-        r"\b(?:sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b",
+        r"\b(?:hwt_[0-9a-f]{32}|sk-[A-Za-z0-9_-]{16,}|gh[pousr]_[A-Za-z0-9]{20,}|github_pat_[A-Za-z0-9_]{20,}|AKIA[A-Z0-9]{16})\b",
         "[REDACTED TOKEN]",
         text,
     )
@@ -2904,8 +2929,14 @@ def _cmd_incident(sw: Swarm, a) -> None:
                 sw.event("incident_reviewed", who, r["task"], f"I{incident_id} revision {r['revision']}: {a.verdict}")
             elif a.incident_action == "resolve":
                 sw.require_coordinator(who)
-                if r["state"] in ("timed_out", "needs_human") and who != HUMAN:
-                    raise SwarmError("The decision window elapsed; ask the human to review the retained report.")
+                ticket = getattr(a, "deadhand", None)
+                if r["state"] in ("timed_out", "needs_human") and who != HUMAN and not ticket:
+                    raise HumanOnly(
+                        "The decision window elapsed; ask the human to review the retained report.",
+                        "incident.resolve",
+                        incident_id,
+                        f"hivewire incident resolve {incident_id} --outcome ... --reason ...",
+                    )
                 if who != HUMAN and who in (r["subject"], review["reviewer"]):
                     raise SwarmError(
                         "An agent cannot resolve an incident it reviewed or that concerns itself; ask the human."
@@ -2933,11 +2964,18 @@ def _cmd_incident(sw: Swarm, a) -> None:
                         )
                 if a.outcome == "upheld" and review["verdict"] != "confirmed":
                     raise SwarmError("Uphold requires a confirmed report; inconclusive evidence should be escalated.")
+                authority = ""
+                if ticket:
+                    import swarm_deadhand as deadhand
+
+                    authority = "; " + deadhand.consume(
+                        sw, who, ticket, "incident.resolve", str(incident_id), {"outcome": a.outcome, "reason": a.reason}
+                    )
                 sw.db.execute(
                     "UPDATE incidents SET state='resolved',outcome=?,resolution=?,resolved_by=?,resolved_at=? WHERE id=?",
-                    (a.outcome, bounded_text(sw, a.reason), who, iso(), incident_id),
+                    (a.outcome, bounded_text(sw, a.reason) + authority, who, iso(), incident_id),
                 )
-                sw.event("incident_resolved", who, r["task"], f"I{incident_id}: {a.outcome}; {a.reason}")
+                sw.event("incident_resolved", who, r["task"], f"I{incident_id}: {a.outcome}; {a.reason}{authority}")
             elif a.incident_action == "refresh":
                 sw.require_coordinator(who)
                 if len(a.reason.strip()) < MIN_ANSWER:
@@ -4230,12 +4268,19 @@ def cmd_usage(sw: Swarm, a) -> None:
         print(json.dumps({"run": usage_data(row)}))
         return
     if a.usage_action == "reconcile":
-        if who != HUMAN or not a.confirm_stopped or not a.charge_reserved or len(a.reason.strip()) < MIN_ANSWER:
-            raise SwarmError(
-                "A human must confirm cessation and explicitly --charge-reserved with a concrete reason; this is a conservative debit, not measured consumption."
-            )
+        refusal = "A human must confirm cessation and explicitly --charge-reserved with a concrete reason; this is a conservative debit, not measured consumption."
+        ticket = getattr(a, "deadhand", None)
+        if who != HUMAN and not ticket:
+            raise HumanOnly(refusal, "usage.reconcile", a.run, f"hivewire usage reconcile {a.run} --confirm-stopped --charge-reserved --reason ...")
+        if not a.confirm_stopped or not a.charge_reserved or len(a.reason.strip()) < MIN_ANSWER:
+            raise SwarmError(refusal)
         with sw.tx():
             row = usage_row(sw, a.run)
+            label = "Human cessation attestation; full reservation charged: "
+            if ticket and row["state"] != "charged":
+                import swarm_deadhand as deadhand
+
+                label = deadhand.consume(sw, who, ticket, "usage.reconcile", a.run, {"reason": a.reason}) + "; agent attestation; full reservation charged: "
             if row["state"] == "charged":
                 print(json.dumps({"run": usage_data(row)}))
                 return
@@ -4243,9 +4288,9 @@ def cmd_usage(sw: Swarm, a) -> None:
                 raise SwarmError("This run is already settled; inspect its retained source and accounting.")
             sw.db.execute(
                 "UPDATE usage_runs SET state='charged',ended_at=?,detail=? WHERE id=?",
-                (iso(), redact_text("Human cessation attestation; full reservation charged: " + a.reason), row["id"]),
+                (iso(), redact_text(label + a.reason), row["id"]),
             )
-            sw.event("usage_reconciled", HUMAN, row["task"], row["id"])
+            sw.event("usage_reconciled", who, row["task"], row["id"])
             sweep_contracts(sw)
         print(json.dumps({"run": usage_data(usage_row(sw, a.run))}))
         return
@@ -4722,8 +4767,18 @@ def cmd_contract(sw: Swarm, a) -> None:
             if c["extension_count"] or len(a.reason.strip()) < MIN_ANSWER or not 0 < a.minutes <= 10080:
                 raise SwarmError("One justified extension is allowed: --minutes 1..10080 --reason <evidence>.")
             terms = json.loads(c["terms"])
+            ticket = getattr(a, "deadhand", None)
             if terms["risk_level"] == "high" and who != HUMAN:
-                raise SwarmError("A high-risk extension requires a human decision.")
+                if not ticket:
+                    raise HumanOnly(
+                        "A high-risk extension requires a human decision.",
+                        "contract.extend.high_risk",
+                        a.task,
+                        f"hivewire contract extend {a.task} --minutes ... --reason ...",
+                    )
+                import swarm_deadhand as deadhand
+
+                deadhand.consume(sw, who, ticket, "contract.extend.high_risk", a.task, {"minutes": a.minutes, "reason": a.reason})
             budget_changes = any(
                 getattr(a, key, None) is not None for key in ("token_limit", "cost_limit", "tool_time_min")
             )
@@ -5469,11 +5524,16 @@ def cmd_join(sw: Swarm, a) -> None:
             sw.set_meta("coordinator", name)
             sw.set_meta("coordinator_since", iso())
             sw.event("coordinator", name, None, "first live agent")
+        import swarm_deadhand as deadhand
+
+        token, _ = deadhand.join_token(sw, name, bool(row), deadhand.presented_token(getattr(a, "token_stdin", False)))
         peers = [r["name"] for r in sw.live_agents() if r["name"] != name]
     me = sw.agent(name)
     print(f"joined as {name} (slot {me['slot']}, role {'coordinator' if sw.is_coordinator(name) else 'worker'})")
     print(f"environment: {env['os_release']}, shell {env['shell']}; caps {', '.join(caps)}")
     print(f"command: {self_command()} <subcommand> --as {name}   (works from any directory)")
+    if token:
+        print(f"join token: {token}  (shown once; keep it private; set SWARM_TOKEN to it to prove a resume)")
     print(
         f"READ BEFORE YOUR FIRST COMMAND: `hivewire environment --as {name}` "
         f"({len(environment_rules(env))} rules for this machine)"
@@ -5579,6 +5639,11 @@ def coordinator_return(sw: Swarm, name: str) -> None:
         blockers.append("you are the subject of an open incident")
     if sw.agent(name)["reviewing"]:
         blockers.append("you are reviewing an incident")
+    import swarm_deadhand as deadhand
+
+    ticket = deadhand.blocks_coordinator_return(sw, name)
+    if ticket:
+        blockers.append(ticket)
     if blockers:
         sw.event("coordinator_return_refused", name, None, f"{current} keeps the role: " + "; ".join(blockers))
         sw.message(
@@ -6336,13 +6401,22 @@ def cmd_allocation(sw: Swarm, a) -> None:
     with sw.tx():
         sw.task(a.task)
         if a.allocation_action == "reconcile":
-            if (a.as_ or HUMAN) != HUMAN or not a.confirm_stopped or len(a.reason.strip()) < 10:
-                raise SwarmError("Only a human can attest cessation: use --confirm-stopped and a concrete --reason after independently confirming all allocation processes stopped.")
+            refusal = "Only a human can attest cessation: use --confirm-stopped and a concrete --reason after independently confirming all allocation processes stopped."
+            who, ticket = a.as_ or HUMAN, getattr(a, "deadhand", None)
+            if who != HUMAN and not ticket:
+                raise HumanOnly(refusal, "allocation.reconcile", a.task, f"hivewire allocation reconcile {a.task} --confirm-stopped --reason ...")
+            if not a.confirm_stopped or len(a.reason.strip()) < 10:
+                raise SwarmError(refusal)
             row = pending_allocation(sw, a.task)
             if row:
+                label = "Human attestation, not engine cessation proof: "
+                if ticket:
+                    import swarm_deadhand as deadhand
+
+                    label = deadhand.consume(sw, who, ticket, "allocation.reconcile", a.task, {"reason": a.reason}) + "; agent attestation, not engine cessation proof: "
                 sw.db.execute("UPDATE allocations SET state='reconciled',ended_at=?,detail=? WHERE id=?",
-                              (iso(), "Human attestation, not engine cessation proof: " + redact_text(a.reason), row["id"]))
-                sw.event("allocation_reconciled", HUMAN, a.task, f"{row['id']}: {redact_text(a.reason)}")
+                              (iso(), label + redact_text(a.reason), row["id"]))
+                sw.event("allocation_reconciled", who, a.task, f"{row['id']}: {redact_text(a.reason)}")
         rows = [dict(r) for r in sw.db.execute("SELECT * FROM allocations WHERE task=? ORDER BY rowid", (a.task,))]
     print(json.dumps({"allocations": rows}, indent=2))
 
@@ -6382,6 +6456,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
             "INSERT INTO allocations(id,task,owner,epoch,state,started_at) VALUES(?,?,?,?,?,?)",
             (allocation_id, ident, who, epoch, "running", iso()),
         )
+        sw.set_meta(f"supervisor_ns:allocation.reconcile:{ident}", namespace_id())
         sw.event("allocation_started", who, ident, allocation_id)
 
     def start(output, errors):
@@ -8382,6 +8457,7 @@ def run_verification(sw: Swarm, kind: str, subject: str, sha: str, who: str, ret
                 str(tree),
             ),
         )
+        sw.set_meta(f"supervisor_ns:verification.reconcile:{receipt}", namespace_id())
         sw.event("verification_started", who, subject if kind == "task" else None, receipt)
     failpoint("after_verification_intent")
     started, results = time.monotonic(), []
@@ -8584,12 +8660,19 @@ def cmd_verification(sw: Swarm, a) -> None:
         print(json.dumps({"verification": verification_data(verification_row(sw, a.receipt))}, ensure_ascii=False))
     elif a.verification_action == "reconcile":
         who = a.as_ or HUMAN
-        if who != HUMAN or not a.confirm_stopped or len(a.reason.strip()) < MIN_ANSWER:
-            raise SwarmError(
-                "A human must inspect cessation, then pass --confirm-stopped and a concrete --reason; this records attestation, not a passed check."
-            )
+        refusal = "A human must inspect cessation, then pass --confirm-stopped and a concrete --reason; this records attestation, not a passed check."
+        ticket = getattr(a, "deadhand", None)
+        if who != HUMAN and not ticket:
+            raise HumanOnly(refusal, "verification.reconcile", a.receipt, f"hivewire verification reconcile {a.receipt} --confirm-stopped --reason ...")
+        if not a.confirm_stopped or len(a.reason.strip()) < MIN_ANSWER:
+            raise SwarmError(refusal)
         with sw.tx():
             row = verification_row(sw, a.receipt)
+            label = "Human attestation of cessation: "
+            if ticket and row["state"] == "unknown":
+                import swarm_deadhand as deadhand
+
+                label = deadhand.consume(sw, who, ticket, "verification.reconcile", a.receipt, {"reason": a.reason}) + "; agent attestation of cessation: "
             if row["state"] == "abandoned":
                 print("Verification already reconciled as abandoned; original evidence retained.")
                 return
@@ -8599,7 +8682,7 @@ def cmd_verification(sw: Swarm, a) -> None:
                 )
             sw.db.execute(
                 "UPDATE verification_runs SET state='abandoned',ended_at=?,detail=? WHERE id=?",
-                (iso(), redact_text("Human attestation of cessation: " + a.reason), row["id"]),
+                (iso(), redact_text(label + a.reason), row["id"]),
             )
             sw.event("verification_reconciled", who, row["subject"] if row["kind"] == "task" else None, row["id"])
         print("Verification abandoned by human attestation; no passed result was inferred and artifacts remain")
@@ -9181,6 +9264,7 @@ def cmd_spawn(sw: Swarm, a) -> None:
                 ),
             ),
         )
+        sw.set_meta(f"supervisor_ns:execution.reconcile:{execution}", namespace_id())
     failpoint("after_execution_intent")
     supervisor_log = sw.dir / "logs" / f"{execution}.supervisor.log"
     flags = {}
@@ -9714,15 +9798,23 @@ def cmd_execution(sw: Swarm, a) -> None:
         if a.execution_action == "stop":
             request_execution_stop(sw, row, a.reason)
         elif a.execution_action == "reconcile":
-            if who != HUMAN or row["state"] != "unknown" or not a.confirm_stopped:
-                raise SwarmError(
-                    "Only a human may reconcile unknown supervision after independently confirming all owned processes stopped (--confirm-stopped). No PID will be signaled."
-                )
+            refusal = "Only a human may reconcile unknown supervision after independently confirming all owned processes stopped (--confirm-stopped). No PID will be signaled."
+            ticket = getattr(a, "deadhand", None)
+            if who != HUMAN and not ticket:
+                raise HumanOnly(refusal, "execution.reconcile", row["id"], f"hivewire execution reconcile {row['id']} --confirm-stopped --reason ...")
+            if row["state"] != "unknown" or not a.confirm_stopped:
+                raise SwarmError(refusal)
+            label, kind = "Human attestation, not engine termination proof: ", "human attestation"
+            if ticket:
+                import swarm_deadhand as deadhand
+
+                label = deadhand.consume(sw, who, ticket, "execution.reconcile", row["id"], {"reason": a.reason}) + "; agent attestation, not engine termination proof: "
+                kind = "agent attestation under dead hand"
             sw.db.execute(
                 "UPDATE executions SET state='reconciled',detail=?,ended_at=? WHERE id=?",
-                ("Human attestation, not engine termination proof: " + redact_text(a.reason), iso(), row["id"]),
+                (label + redact_text(a.reason), iso(), row["id"]),
             )
-            sw.event("execution_reconciled", who, row["task"], f"{row['id']}: human attestation; {a.reason}")
+            sw.event("execution_reconciled", who, row["task"], f"{row['id']}: {kind}; {a.reason}")
     print("recorded; inspect execution status for actual exit/termination proof")
 
 
@@ -12046,6 +12138,7 @@ def build_parser() -> argparse.ArgumentParser:
             e.add_argument("--dry-run", action="store_true")
         if action == "reconcile":
             e.add_argument("--confirm-stopped", action="store_true")
+            e.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
         if action == "logs":
             e.add_argument("--stream", choices=("worker", "supervisor"), default="worker")
             e.add_argument("--lines", type=int, choices=range(1, 1001), default=100, metavar="1..1000")
@@ -12070,6 +12163,7 @@ def build_parser() -> argparse.ArgumentParser:
         if action == "reconcile":
             a.add_argument("--confirm-stopped", action="store_true")
             a.add_argument("--reason", required=True)
+            a.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
     add("sync", lambda sw, a: sync_backlog(sw, quiet=False), "re-import the backlog")
     sp = add("join", cmd_join, "enter the pool")
     sp.add_argument(
@@ -12078,10 +12172,14 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--model", default="")
     sp.add_argument("--caps", default="", help="comma-separated capabilities, e.g. python,docs,linux-docker")
     sp.add_argument("--resume", action="store_true")
+    sp.add_argument("--token-stdin", action="store_true", help="read your join token from stdin to prove a resume")
     sp.add_argument("--pid", type=int, default=None, help=argparse.SUPPRESS)
     sp = add("leave", cmd_leave, "leave the pool")
     sp.add_argument("--release", default="", help="handoff note, if you still hold a task")
     add("heartbeat", cmd_heartbeat, "say you are alive")
+    import swarm_deadhand
+
+    swarm_deadhand.add_parser(add)
     cp = add("coordinator", cmd_coordinator, "the coordinator role")
     csub = cp.add_subparsers(dest="coordinator_action", required=True)
     c = csub.add_parser("hand-over", help="coordinator or human: give the role to a live agent")
@@ -12282,6 +12380,7 @@ def build_parser() -> argparse.ArgumentParser:
             r.add_argument("--remediation", required=True)
         if action == "resolve":
             r.add_argument("--outcome", choices=["cleared", "upheld", "escalated"], required=True)
+            r.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
     mp = add("memory", cmd_memory, "scoped sourced lessons: context, never policy")
     msub = mp.add_subparsers(dest="memory_action", required=True)
     for action in (
@@ -12370,6 +12469,7 @@ def build_parser() -> argparse.ArgumentParser:
             c.add_argument("--active-time-min", type=float, default=None)
         if action == "extend":
             c.add_argument("--minutes", type=float, required=True)
+            c.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
             c.add_argument("--token-limit", type=int, default=None)
             c.add_argument("--cost-limit", default=None)
             c.add_argument("--tool-time-min", type=float, default=None)
@@ -12406,6 +12506,7 @@ def build_parser() -> argparse.ArgumentParser:
         elif action == "reconcile":
             u.add_argument("--confirm-stopped", action="store_true")
             u.add_argument("--charge-reserved", action="store_true")
+            u.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
             u.add_argument("--reason", required=True)
     tp = add("tool", cmd_tool, "run an owned, metered command within the current assignment")
     tp = tp.add_subparsers(dest="tool_action", required=True).add_parser("run")
@@ -12502,6 +12603,7 @@ def build_parser() -> argparse.ArgumentParser:
         elif action == "reconcile":
             v.add_argument("receipt")
             v.add_argument("--confirm-stopped", action="store_true")
+            v.add_argument("--deadhand", type=deadhand_ticket, default=None, help="an approved dead-hand ticket")
             v.add_argument("--reason", required=True)
         else:
             v.add_argument("task")
@@ -12794,7 +12896,14 @@ def execute_command(args) -> tuple[int, object, int | None, int]:
             sync_backlog(sw)
         original_agent = sw.agent(args.as_) if args.as_ else None
         args.subject_task = original_agent["task"] if original_agent else None
-        args.func(sw, args)
+        try:
+            args.func(sw, args)
+        except HumanOnly as exc:
+            import swarm_deadhand as deadhand
+
+            with sw.tx():
+                deadhand.note_waiting(sw, exc.action, exc.subject, exc.command, args.as_)
+            raise
         n = sw.unread(args.as_) if args.as_ and sw.agent(args.as_) else 0
         if not args.json and n and args.command not in ("inbox", "leave", "join"):
             row = sw.agent(args.as_)

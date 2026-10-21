@@ -52,6 +52,10 @@ push = false                          # push the target after each merge
 fetch = false
 cleanup = true                        # remove the worktree and branch after merge
 
+[deadhand]                            # off until the human runs `hivewire deadhand arm --until T` at a terminal
+wait_min = 30                         # how long a decision waits on the human first (never below 30)
+require_distinct_model = false        # deputy and coordinator must run different models
+
 # Files many tasks touch. Appending is free; rewriting needs `swarm lock <name>`.
 # always = true means any change needs the lock (migrations, for example).
 [hotspots]

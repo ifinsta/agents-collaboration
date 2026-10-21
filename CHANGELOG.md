@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Add dead-hand authority for when the human is away: off unless the human arms
+  it from a terminal (`deadhand arm --until T`, at most 72 hours), it delegates a
+  short allowlist of human-only decisions through an engine-chosen deputy's review
+  and the coordinator's approval, bound to exact arguments and used once. Add join
+  tokens, `human pending`, `deadhand veto/disarm/verify-agent`, and record every
+  human-only refusal so it can be listed and waited on.
+
 - Free the merge queue as soon as the merging process is proven gone on this host
   (pid, start time, boot), instead of after 45 minutes; access denied is not gone.
   Settle a tool-time-only usage run whose supervisor is proven gone as
