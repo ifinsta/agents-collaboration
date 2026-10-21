@@ -336,6 +336,14 @@ def background_flags() -> dict:
     return {"creationflags": 0x08000000} if os.name == "nt" else {}
 
 
+def child_env(**update: str) -> dict:
+    """Repository code and spawned tools must never read the join token or the merge attempt marker."""
+    env = {**os.environ, **update}
+    env.pop("SWARM_TOKEN", None)
+    env.pop("SWARM_MERGE_ATTEMPT", None)
+    return env
+
+
 def run(
     args: list[str],
     cwd: Path | str | None = None,
@@ -345,10 +353,12 @@ def run(
     owned: bool = False,
 ) -> subprocess.CompletedProcess:
     """Run a command. Git lock contention between worktrees is retried."""
+    if env is None:  # git hooks are repository code
+        env = child_env()
     for attempt in range(4):
         try:
             done = (
-                run_owned(args, Path(cwd or Path.cwd()), dict(os.environ) if env is None else env, timeout)
+                run_owned(args, Path(cwd or Path.cwd()), env, timeout)
                 if owned
                 else subprocess.run(
                     args,
@@ -2577,6 +2587,20 @@ def same_work(sw: Swarm, review, snapshot: dict, head: str) -> bool:
     return bool(snapshot.get("patch_id")) and patch_identity(sw, head) == snapshot["patch_id"]
 
 
+def check_unreviewed_generated(sw: Swarm, head: str, reviewed: str, submitted: str | None) -> None:
+    """Generated paths belong to the merge hook. Patch identity leaves them out, so a commit that moves the head
+    past both the review and the submission could otherwise smuggle a change past a cleared incident."""
+    if head == reviewed and (not submitted or submitted == head):
+        return
+    base = git("merge-base", f"refs/heads/{sw.target()}", head, cwd=sw.main_root)
+    touched = changed_names(sw, base, head) & generated_paths(sw)
+    if touched:
+        raise SwarmError(
+            f"The work changes generated path(s) {', '.join(sorted(touched))}; only the merge hook writes them. "
+            "Revert those changes and `hivewire submit` the current work; refresh any incident that reviewed the old head."
+        )
+
+
 def freeze_review(sw: Swarm, t, override: str | None = None) -> dict:
     head = commit_sha(sw, override) if override else task_head(sw, t)
     target = git("rev-parse", f"refs/heads/{sw.target()}", cwd=sw.main_root)
@@ -2786,6 +2810,7 @@ def incident_clearance(
                 f"Incident I{r['id']} blocks integration ({r['state']}, {r['outcome'] or 'unresolved'}). Inspect `hivewire incident brief {r['id']}`, then review/resolve the evidence."
             )
         snapshot = json.loads(review["snapshot"])
+        check_unreviewed_generated(sw, head, review["head_sha"], submitted)
         if (
             review["epoch"] != fresh["epoch"]
             or not hook_ok
@@ -2954,9 +2979,13 @@ def _cmd_incident(sw: Swarm, a) -> None:
                             "Only a not_confirmed report can clear integration. Remediate and refresh confirmed/inconclusive findings."
                         )
                     t = sw.task(r["task"])
+                    head = task_head(sw, t)
+                    check_unreviewed_generated(
+                        sw, head, review["head_sha"], json.loads(t["submit"] or "{}").get("head")
+                    )
                     if (
                         review["epoch"] != t["epoch"]
-                        or not same_work(sw, review, json.loads(review["snapshot"]), task_head(sw, t))
+                        or not same_work(sw, review, json.loads(review["snapshot"]), head)
                         or not policy_matches(sw, t, review)
                     ):
                         raise SwarmError(
@@ -6467,7 +6496,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
                 row = sw.db.execute("SELECT state FROM allocations WHERE id=?", (allocation_id,)).fetchone()
                 if row["state"] != "running":
                     raise SwarmError(f"Allocation was reconciled before startup. Preserve work; inspect `hivewire allocation show {ident}`.")
-                child = OwnedProcess(argv, sw.main_root, dict(os.environ), output, errors=errors)
+                child = OwnedProcess(argv, sw.main_root, child_env(), output, errors=errors)
             return child
         except BaseException as exc:
             if child:
@@ -6484,7 +6513,7 @@ def ensure_worktree(sw: Swarm, task_id: str, branch: str) -> Path:
     argv = ["git", "worktree", "add"]
     argv += [str(path), branch] if branch_exists else ["-b", branch, str(path), sw.target()]
     try:
-        done = run_owned(argv, sw.main_root, dict(os.environ), 120, start=start)
+        done = run_owned(argv, sw.main_root, child_env(), 120, start=start)
     except (OSError, SwarmError, subprocess.TimeoutExpired) as exc:
         with sw.tx():
             state = "quiescent" if getattr(exc, "owned_quiescent", False) else "unknown"
@@ -7580,6 +7609,9 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         with sw.tx():
             check_merge_attempt(sw, who, t)
             review_source = git("rev-parse", "HEAD", cwd=path)
+            submitted = submit.get("head")
+            if submitted:  # the branch may not move a generated path past its submission; the hook owns those
+                check_unreviewed_generated(sw, review_source, submitted, submitted)
             incident_clearance(sw, t, source_head=review_source)
         commits = git("log", "--oneline", f"{target_sha}..HEAD", cwd=path)
         failure = gate_run(sw, path, env, alive=lambda: merge_keepalive(sw, who, t))
@@ -8504,7 +8536,7 @@ def run_verification(sw: Swarm, kind: str, subject: str, sha: str, who: str, ret
         checkout = run_owned(
             ["git", "worktree", "add", "--detach", str(tree), sha],
             sw.main_root,
-            dict(os.environ),
+            child_env(),
             max(0.001, deadline - time.monotonic()),
             alive,
             min(5, sw.config["gates"]["keepalive_sec"]),
@@ -8516,7 +8548,7 @@ def run_verification(sw: Swarm, kind: str, subject: str, sha: str, who: str, ret
         copy_into_worktree(sw, tree)
         agent = sw.agent(who)
         values = {"agent": who, "slot": agent["slot"] if agent else 0, "task": subject if kind == "task" else ""}
-        check_env = {**os.environ, **{k: str(v).format(**values) for k, v in sw.config["env"].items()}}
+        check_env = child_env(**{k: str(v).format(**values) for k, v in sw.config["env"].items()})
         check_env.update(
             SWARM_AS=who,
             SWARM_VERIFICATION_ID=receipt,
@@ -9706,8 +9738,8 @@ def supervise_execution(execution: str) -> int:
                 owned = OwnedProcess(
                     argv,
                     Path(task["worktree"]),
-                    {**os.environ, "SWARM_EXECUTION_ID": execution,
-                     **({"SWARM_BUS_INBOX": str(inbox.path)} if inbox else {})},
+                    child_env(**{"SWARM_EXECUTION_ID": execution,
+                     **({"SWARM_BUS_INBOX": str(inbox.path)} if inbox else {})}),
                     output,
                     kill_on_close=policy["timeout_action"] == "terminate",
                     allow_breakaway=True,

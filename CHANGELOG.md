@@ -7,7 +7,9 @@
   short allowlist of human-only decisions through an engine-chosen deputy's review
   and the coordinator's approval, bound to exact arguments and used once. Add join
   tokens, `human pending`, `deadhand veto/disarm/verify-agent`, and record every
-  human-only refusal so it can be listed and waited on.
+  human-only refusal so it can be listed and waited on. The join token and the
+  merge attempt marker are stripped from verification checks, checkout hooks and
+  every inherited child environment.
 
 - Free the merge queue as soon as the merging process is proven gone on this host
   (pid, start time, boot), instead of after 45 minutes; access denied is not gone.
@@ -28,7 +30,8 @@
   a verbatim patch id. Version the review policy so a clock no longer stales a
   review: exactly six contract clock fields and the evidence text are left out,
   and every other field stays bound. `submit` refuses a branch that edits a
-  generated path.
+  generated path, and clearance refuses an uncovered generated-path change made
+  after the review, even when a rebase keeps the patch id identical.
 
 - Stop recovery tripping the plan cap: steps already done no longer count toward
   `max_steps`, with a ceiling of twice the cap on the whole plan. Give a live owner

@@ -24,7 +24,7 @@ class GeneratedPaths(OversightCase):
         self.git("add", ".agents/swarm/config.toml")
         self.git("commit", "-qm", "configure generated paths")
 
-    def with_version_hook(self, generated=("VERSION",), hook=VERSION_HOOK):
+    def with_version_hook(self, generated=("VERSION",), hook=VERSION_HOOK, strategy=None):
         (self.root / "VERSION").write_text("1\n", encoding="utf-8")
         self.git("add", "VERSION")
         self.git("commit", "-qm", "version file")
@@ -33,7 +33,54 @@ class GeneratedPaths(OversightCase):
             + json.dumps(list(hook))
             + "\ngenerated_paths = "
             + json.dumps(list(generated))
+            + (f'\nstrategy = "{strategy}"' if strategy else "")
         )
+
+    def commit_version(self, wt, value="9"):
+        (wt / "VERSION").write_text(f"{value}\n", encoding="utf-8")
+        self.git("add", "VERSION", cwd=wt)
+        self.git("commit", "-qm", "unreviewed version bump", cwd=wt)
+
+    def test_ec389_a_generated_edit_after_clear_cannot_land_through_rebase(self):
+        self.with_version_hook(hook=[], strategy="rebase")
+        wt = self.setup_incident()
+        self.clear()
+        self.commit_version(wt)
+        target = self.git("rev-parse", "main").strip()
+        out = self.sw("merge", "--as", "bob", ok=False)
+        self.assertIn("generated path", out)
+        self.assertEqual(self.git("rev-parse", "main").strip(), target)
+        self.assertEqual(self.task("T1")["state"], "ready_to_merge")
+
+    def test_ec389_a_generated_edit_after_submit_cannot_land_without_an_incident(self):
+        self.with_version_hook(hook=[], strategy="rebase")
+        wt = self.setup_worker(ready=True)
+        self.commit_version(wt)
+        target = self.git("rev-parse", "main").strip()
+        out = self.sw("merge", "--as", "bob", ok=False)
+        self.assertIn("generated path", out)
+        self.assertEqual(self.git("rev-parse", "main").strip(), target)
+        self.assertEqual(self.task("T1")["state"], "ready_to_merge")
+
+    def test_ec389_incident_resolve_refuses_a_generated_edit_after_submission(self):
+        self.with_version_hook(hook=[], strategy="rebase")
+        wt = self.setup_incident()
+        self.commit_version(wt)
+        self.report()
+        out = self.sw(
+            "incident",
+            "resolve",
+            "1",
+            "--as",
+            "ann",
+            "--outcome",
+            "cleared",
+            "--reason",
+            "The independent evidence does not confirm the suspected defect",
+            ok=False,
+        )
+        self.assertIn("generated path", out)
+        self.assertEqual(self.row("incidents", "id=1")["state"], "reviewed")
 
     def test_ec377_incident_gated_task_merges_through_a_version_hook(self):
         self.with_version_hook()

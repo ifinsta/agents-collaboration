@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import sys
 from contextlib import contextmanager
 from datetime import timedelta
 from unittest import mock
@@ -185,3 +186,34 @@ class DeadHand(OversightCase):
         with self.board() as sw, mock.patch.dict(os.environ, {"SWARM_TOKEN": token}):
             self.assertNotIn("SWARM_TOKEN", sw.env_for(sw.agent("ann"), None))
         self.assertIn("join token: hwt_", self.join("bob"))
+
+    def test_ec390_inherited_children_and_verification_never_see_the_token(self):
+        self.join("ann")
+        token = "hwt_" + "b" * 32
+        marker = "cafebabe00112233"
+        with mock.patch.dict(os.environ, {"SWARM_TOKEN": token, "SWARM_MERGE_ATTEMPT": marker}):
+            done = core.run(
+                [
+                    sys.executable,
+                    "-c",
+                    "import os; print(os.environ.get('SWARM_TOKEN')); print(os.environ.get('SWARM_MERGE_ATTEMPT'))",
+                ]
+            )
+        self.assertNotIn(token, done.stdout)
+        self.assertNotIn(marker, done.stdout)
+        cfg = self.root / ".agents" / "swarm" / "config.toml"
+        text = cfg.read_text(encoding="utf-8")
+        old = next(line for line in text.splitlines() if line.startswith("commands = "))
+        check = (
+            "import os,sys; sys.exit(0 if 'SWARM_TOKEN' not in os.environ and "
+            "'SWARM_MERGE_ATTEMPT' not in os.environ else 1)"
+        )
+        cfg.write_text(text.replace(old, "commands = " + json.dumps([[sys.executable, "-c", check]])), encoding="utf-8")
+        self.git("commit", "-qam", "checks cannot read the join token")
+        self.to_ready("ann", "T1")
+        self.sw("merge", "--as", "ann")
+        out = self.sw(
+            "verify", "T1", "--as", "ann", env={**os.environ, "SWARM_TOKEN": token, "SWARM_MERGE_ATTEMPT": marker}
+        )
+        self.assertIn("verification", out)
+        self.assertIn("passed", out)

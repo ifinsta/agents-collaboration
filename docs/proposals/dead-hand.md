@@ -12,6 +12,15 @@ Revision 2 (`7c99840`) was re-checked (pass 2): R4, R5, R6, R9, R10 resolved; th
 found in R1, R2, R3, R7 and R8 are closed in this revision and marked **(pass 2)**.
 Written against Hivewire 0.4.4, CLI protocol 2, board schema 13 (`e6dd239`).
 
+**Implementation review (pass 5).** The deputy's read-only review of `233cd63` rejected with two
+blocking findings. (B1) Patch identity excludes generated paths, so a rebase-strategy merge could
+land an author's commit to `VERSION` made after the review and submission; every merge now refuses
+a branch that moves generated paths past its submission, and clearance and resolve refuse any such
+change the review or submission did not cover. (B2) Verification checks inherited `SWARM_TOKEN`; the token and the merge
+attempt marker are now removed from verification checks, verification and allocation checkouts,
+inherited Git commands and spawned tool children. EC-389 and EC-390 cover both. The review's
+should-fix and nit items remain advisory follow-ups; they do not block approval.
+
 ## Summary
 
 Hivewire's safety model held in a 3.5-day ifinpay run (33 agents, 611 messages, 38 tasks
@@ -208,7 +217,9 @@ hook writes this"). Authors need no hotspot lock for those paths.
 
 F1: an incident-gated task merges with a version hook; a hook edit outside `generated_paths`
 still stales; a whitespace-only Python change across a rebase stales; a binary change does not
-collide; a new claim still needs a fresh review. F2: `status --as` keeps an agent live; a rejoin
+collide; a new claim still needs a fresh review; a generated-path commit made after the review
+cannot land through a rebase, at resolve or merge (EC-389). F4: verification checks and inherited
+children cannot read the join token (EC-390). F2: `status --as` keeps an agent live; a rejoin
 keeps task state only when unchanged; coordinator return is refused while a ticket is pending.
 F3: a lease whose process exited is broken; access-denied is not gone; a live merge is not.
 F4: refused unarmed, after disarm, after a config edit, outside the allowlist, with a
