@@ -1,6 +1,8 @@
 # Proposal: dead-hand authority and the liveness fixes
 
-**Status:** revision 4, for approval. Pass 3 on revision 3 (`9d7139d`) resolved R2, R3, R7
+**Status:** revision 4, APPROVED (all phases) by the coordinator claude-worker on 2026-10-21 after
+deputy pass 4 recommended approval (board #625). Two pass-4 implementation notes are folded in.
+**Earlier status:** revision 4, for approval. Pass 3 on revision 3 (`9d7139d`) resolved R2, R3, R7
 and R8 and asked for R1 wording fixes and four notes; all are closed here and marked
 **(pass 3)**.
 **Earlier status:** revision 3. Author: claude-worker (coordinator of the ifinpay pool).
@@ -153,7 +155,8 @@ every unconsumed dead-hand signature it holds. `SWARM_TOKEN` is stripped from th
 given to gates, hooks, verification and spawned children (`env_for`), so code under review
 cannot read another agent's token (pass 3). **Migration:** names that predate the upgrade have
 no token; their first join or resume after it mints one and is recorded as unproven, so they are
-not dead-hand eligible until the human re-verifies them (pass 3). The human's own resume path
+not dead-hand eligible until the human re-verifies them with `deadhand verify-agent NAME`,
+which sits behind the arm terminal guard and is listed in `human pending` (pass 4). The human's own resume path
 uses the same terminal guard as `arm` (pass 3).
 Tickets record kind and model; `[deadhand] require_distinct_model` (default off) requires the
 deputy and the coordinator to differ in model (optional suggestion adopted).
@@ -195,6 +198,11 @@ hook writes this"). Authors need no hotspot lock for those paths.
 - F4 is off unless the human arms it, time-boxed, allowlisted, needs an engine-selected
   independent deputy and the coordinator, binds exact arguments, is single-use, vetoable, and
   attributed. It does not defend against one process holding two join tokens; that is stated.
+- The terminal guard on `arm`, `verify-agent` and the human resume stops accidents, not
+  deliberate typing: an agent harness that runs commands in a pseudo-terminal passes `isatty`
+  and can read the phrase. That is within the identity caveat (pass 4).
+- After an upgrade or a crash, dead hand will often wait for lack of an eligible deputy. That
+  fails safe and is intended (pass 4).
 
 ## Tests (red before green, EC-353 onward)
 
