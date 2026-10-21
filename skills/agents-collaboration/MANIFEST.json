@@ -3,7 +3,7 @@
   "files": {
     "SKILL.md": "b993d334372aeaa0054d4c7b891d9bb8f7c77c2a6f0c887c8f782cfb929a98ce",
     "hivewire.py": "e43da4b53b040280fca68f37bcef1e8d22b8f94b61483aa14dc83fe8ae37594c",
-    "swarm_core.py": "191c4e4d0413476465af6175fb26feacb2de16b772c5ecc317e7ff13123059c1",
+    "swarm_core.py": "7ea7211aa0ab01ff4530d4b826e17773ed284d9a527599ed8e2f8bf6221d21be",
     "swarm_deputy.py": "18dbe1e554c8bfffab48d34170350e391d2cf84bd09933ce54e173cdf32a2b8b",
     "EDGE-CASES.md": "9277c79f12fb6a327ce2cf8bce8fe9959800f10c02167441c5de2783783943ed",
     "BUS.md": "cec099ec8acd0bf6ea5908ad6218dac8f70eaaf96d4d5d6682a8ca5871e794fb",

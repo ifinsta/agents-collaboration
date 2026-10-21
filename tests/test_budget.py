@@ -281,6 +281,18 @@ class Budgets(HardeningCase):
         self.sw(*args)
         self.assertEqual(self.ledger()["usage"]["policy_debit"]["tokens"], 20)
 
+    def test_ec383_a_crashed_tool_supervisor_on_this_host_is_settled_by_the_engine(self):
+        self.activate("--tool-time-min", "1", start=True)
+        command = [sys.executable, "-c", "pass"]
+        self.sw(
+            "tool", "run", "--as", "ann", "--command", json.dumps(command), "--timeout-seconds", "10",
+            ok=False, env={"SWARM_FAILPOINT": "after_usage_reservation_commit"},
+        )
+        self.sw("status")
+        row = self.ledger()["runs"][0]
+        self.assertEqual(row["state"], "charged")
+        self.assertIn("engine-verified: supervisor gone", row["detail"])
+
     def test_ec271_lost_tool_intent_stays_unknown_and_prevents_cleanup_or_reoffer(self):
         wt = self.activate("--tool-time-min", "1", start=True)
         command = [sys.executable, "-c", "from pathlib import Path; Path('must-not-start').touch()"]
@@ -296,6 +308,10 @@ class Budgets(HardeningCase):
             ok=False,
             env={"SWARM_FAILPOINT": "after_usage_reservation_commit"},
         )
+        with self.board() as sw, sw.tx():  # a supervisor on another host: its end cannot be proven here (EC-383)
+            run = sw.db.execute("SELECT id FROM usage_runs").fetchone()["id"]
+            ident = json.loads(sw.meta(f"usage_supervisor:{run}"))
+            sw.set_meta(f"usage_supervisor:{run}", json.dumps({**ident, "ns": "another-host/boot"}))
         self.sw("status")
         row = self.ledger()["runs"][0]
         self.assertEqual(row["state"], "unknown")

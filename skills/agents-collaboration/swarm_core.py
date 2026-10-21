@@ -777,9 +777,12 @@ def namespace_id() -> str:
     if os.name == "nt":
         import ctypes
 
-        tick = ctypes.windll.kernel32.GetTickCount64
-        tick.restype = ctypes.c_ulonglong
-        parts.append(f"boot-{round((time.time() - tick() / 1000) / 60)}")  # last boot, to the minute
+        kernel = ctypes.windll.kernel32
+        kernel.GetTickCount64.restype = ctypes.c_ulonglong
+        now = ctypes.c_ulonglong()
+        kernel.GetSystemTimeAsFileTime(ctypes.byref(now))  # the kernel's clock: 100 ns units, never a mocked one
+        boot_ms = now.value // 10_000 - kernel.GetTickCount64()
+        parts.append(f"boot-{round(boot_ms / 60_000)}")  # last boot, to the minute
     else:
         try:
             parts.append(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip())
