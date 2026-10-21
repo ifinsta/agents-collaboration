@@ -47,6 +47,7 @@ commands = [
 strategy = "squash"                   # squash | rebase
 message = "{task}: {title}"           # {task} {title} {agent}
 message_command = []                  # example: ["python", "scripts/next_version.py"]; its last stdout line is the message
+generated_paths = []                  # exact files the hook writes, e.g. ["VERSION", "CHANGELOG.md"]; authors may not edit them
 push = false                          # push the target after each merge
 fetch = false
 cleanup = true                        # remove the worktree and branch after merge

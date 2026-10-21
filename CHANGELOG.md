@@ -2,6 +2,15 @@
 
 ## Unreleased
 
+- Let incident-gated work merge through a version hook: `[merge] generated_paths`
+  names the files the hook writes, final integration leaves them to the hook, and
+  clearance accepts a hook commit that differs from the reviewed work only there.
+  Keep a clearance when identical work is rebased onto a moved target, matched by
+  a verbatim patch id. Version the review policy so a clock no longer stales a
+  review: exactly six contract clock fields and the evidence text are left out,
+  and every other field stays bound. `submit` refuses a branch that edits a
+  generated path.
+
 - Stop recovery tripping the plan cap: steps already done no longer count toward
   `max_steps`, with a ceiling of twice the cap on the whole plan. Give a live owner
   one audited doubling of the deliberation window instead of expiring the contract

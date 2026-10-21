@@ -467,13 +467,17 @@ hivewire merge --as <name>
 - a step is undone;
 - the worktree has uncommitted or untracked files;
 - files fall outside the accepted plan/contract scope; a reason cannot widen it;
-- a hotspot was rewritten without its lock.
+- a hotspot was rewritten without its lock;
+- the branch changes a path in `[merge] generated_paths`: the merge hook writes
+  those (a version file, the changelog), so give the text to `--changelog` instead.
 
 `merge` joins the single merge queue. It then:
 
 1. rebases your branch onto the target branch;
 2. runs the project's gates on the rebased result;
-3. applies the project's merge strategy and message hook;
+3. applies the project's merge strategy and message hook. The hook may write only
+   the declared generated paths; an incident clearance survives that, and survives
+   a rebase of byte-identical work, but any other change stales it;
 4. runs gates on the exact final commit, verifies scope/locks again, and refuses
    any tracked edits made during verification. The retained proof names the
    commit, tree, policy, check attempts/timing and owed checks;

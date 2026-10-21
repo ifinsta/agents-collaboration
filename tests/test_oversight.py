@@ -571,12 +571,15 @@ class ReviewRecovery(OversightCase):
         self.assertEqual(self.row("incidents")["state"], "open")
 
     def test_ec225_rebase_onto_changed_target_needs_current_head_review(self):
-        self.setup_incident()
+        # Identical work replayed onto a moved target keeps its clearance (EC-378); work that changed does not.
+        wt = self.setup_incident()
         self.clear()
         (self.root / "peer.txt").write_text("another independently landed change\n", encoding="utf-8")
         self.git("add", "peer.txt")
         self.git("commit", "-qm", "advance the target")
         target = self.git("rev-parse", "main")
+        (wt / "src" / "file.txt").write_text("x\nchanged after the review\n", encoding="utf-8")
+        self.git("commit", "-qam", "rework after the target moved", cwd=wt)
         self.assertIn("Submission", self.sw("merge", "--as", "bob", ok=False))
         self.assertEqual(self.git("rev-parse", "main"), target)
         self.sw("submit", "--as", "bob", "--evidence", "Current rebased fixture has been independently checked")

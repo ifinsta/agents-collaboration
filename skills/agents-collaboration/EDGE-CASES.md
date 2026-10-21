@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 376 cases. 291 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
+Totals: 379 cases. 294 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
 
 ## A. Joining, identity and liveness
 
@@ -578,6 +578,9 @@ half a second to a second per command, and agents call it for every step.
 | EC-374 | A polling agent is marked offline although it is running `status --as` every few minutes: only commands that called `require_agent` refreshed the heartbeat, while SKILL.md said every command did. The coordinator role then moved and the agent's task fell back to planning. | Any command that names a live agent (`--as` or `SWARM_AS`) refreshes its heartbeat before the sweep, so the result does not depend on who swept first. Writes are throttled to one a minute. An agent already past its timeout or already offline is not revived; that still takes `join --resume`. | Tested |
 | EC-375 | A recovered task already has 15 recorded steps, so its new owner cannot add a single verification step: done steps counted toward the cap. | Steps already done do not count toward `max_steps`; only open steps do. An absolute ceiling of twice `max_steps` on the whole plan stays, so the cap cannot be dodged by marking steps done. | Tested |
 | EC-376 | A live owner still reading the task loses the contract to the five-minute deliberation window, and the work returns to the pool. | When the owner is heard from after deliberation began, the window is doubled once, recorded in the contract terms and as a `deliberation_extended` event, so every reader sees the same window. A silent owner gets no extension, and past the doubled window the contract still expires. | Tested |
+| EC-377 | An incident-gated task can never merge in a repository whose merge hook bumps a version file: clearance compared the reviewed tree with the tree after the hook, and the final scope check counted the hook's own edits as the author's. | `[merge] generated_paths` names the exact files the hook writes. Final integration leaves them out of the scope and hotspot checks, and clearance accepts the hook's commit when it differs from the reviewed work only in those paths. A hook edit anywhere else still stales the review. | Tested |
+| EC-378 | A cleared review goes stale only because the target moved on an unrelated file, so the rebased head is a new commit carrying byte-identical work. | Reviews record a verbatim patch id of base..head (`git patch-id --verbatim` over a full-index binary diff without rename detection). Clearance, and the submission-head check, accept the identical patch replayed onto the new target; epoch, owner and policy stay bound. The review policy is versioned: version 2 leaves out exactly six contract clock fields (`deadline_at`, `active_time_min`, `active_seconds`, `blocked_seconds`, `checkpoint_at`, `extension_count`) and the submission's evidence text, keeps every other field including unknown ones (fail closed), and each review is compared under the version it was frozen with. | Tested |
+| EC-379 | An author bakes the version bump or changelog entry into the branch, and it collides with the merge hook writing the same file. | `submit` refuses a branch that changes a generated path, names the paths and says how to restore them; the changelog text goes in `submit --changelog`. | Tested |
 
 
 ## What would close the open ones

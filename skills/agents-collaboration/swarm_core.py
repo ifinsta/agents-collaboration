@@ -113,6 +113,7 @@ DEFAULTS: dict = {
         "strategy": "squash",  # squash | rebase
         "message": "{task}: {title}",
         "message_command": [],
+        "generated_paths": [],  # exact paths the message hook writes; authors may not edit them
         "push": False,
         "fetch": False,
         "cleanup": True,
@@ -2369,24 +2370,97 @@ def task_head(sw: Swarm, t) -> str:
     )
 
 
-def review_policy(sw: Swarm, t) -> dict:
+REVIEW_POLICY_VERSION = 2
+# Clock fields move while finished work waits and say nothing about what was reviewed. This list is exact:
+# every other term, including ones added later, stays bound to the review (fail closed).
+POLICY_CLOCK_TERMS = frozenset(
+    {"deadline_at", "active_time_min", "active_seconds", "blocked_seconds", "checkpoint_at", "extension_count"}
+)
+
+
+def review_policy(sw: Swarm, t, version: int = REVIEW_POLICY_VERSION) -> dict:
     g = goal_row(sw, t["goal"]) if t["goal"] else None
     c = current_contract(sw, t["id"])
+    terms = json.loads(c["terms"]) if c else None
+    submission = json.loads(t["submit"] or "{}")
+    if version >= 2:
+        terms = None if terms is None else {k: v for k, v in terms.items() if k not in POLICY_CLOCK_TERMS}
+        submission = {k: v for k, v in submission.items() if k != "evidence"}
     return {
-        "version": 1,
+        "version": version,
         "target": sw.target(),
         "gates": sw.config["gates"],
         "merge": sw.config["merge"],
         "hotspots": sw.config["hotspots"],
         "review": sw.config["review"],
         "plan": json.loads(t["plan"] or "{}"),
-        "submission": json.loads(t["submit"] or "{}"),
+        "submission": submission,
         "scope_hint": t["scope_hint"],
         "acceptance": t["done_when"],
         "goal_revision": g["revision"] if g else None,
         "architecture_approval": json.loads(g["architecture_approval"] or "null") if g else None,
-        "contract_terms": json.loads(c["terms"]) if c else None,
+        "contract_terms": terms,
     }
+
+
+def policy_matches(sw: Swarm, t, review) -> bool:
+    """Compare under the policy version the review was frozen with, so an upgrade never silently re-binds it."""
+    version = json.loads(review["snapshot"]).get("policy", {}).get("version", 1)
+    return review["policy_hash"] == request_hash(review_policy(sw, t, version))
+
+
+def generated_paths(sw: Swarm) -> set[str]:
+    """Exact repository paths the merge message hook writes (a version file, a changelog)."""
+    paths = set()
+    for item in sw.config["merge"]["generated_paths"]:
+        path = item.replace("\\", "/").strip() if isinstance(item, str) else ""
+        if not path or path.startswith("/") or ".." in path.split("/") or any(c in path for c in "*?["):
+            raise SwarmError("merge.generated_paths holds exact repository-relative paths. Repair config.toml.")
+        paths.add(path)
+    return paths
+
+
+def changed_names(sw: Swarm, old: str, new: str) -> set[str]:
+    return {n for n in git("diff", "--name-only", "--no-renames", old, new, "--", cwd=sw.main_root).splitlines() if n}
+
+
+def patch_identity(sw: Swarm, head: str) -> str:
+    """What the work changes, independent of where it sits: a byte-exact patch id of base..head. Whitespace is
+    content (`--verbatim`), binaries are compared by full blob ids, and the hook's generated paths are left out."""
+    base = git("merge-base", f"refs/heads/{sw.target()}", head, cwd=sw.main_root)
+    exclude = [f":(exclude,literal){path}" for path in sorted(generated_paths(sw))]
+    diff = subprocess.run(
+        ["git", "diff", "--no-ext-diff", "--no-textconv", "--binary", "--full-index", "--no-renames", base, head, "--"]
+        + ([".", *exclude] if exclude else []),
+        cwd=sw.main_root,
+        capture_output=True,
+        check=False,
+        timeout=120,
+        **background_flags(),
+    )
+    if diff.returncode != 0:
+        raise SwarmError(f"git diff failed: {diff.stderr.decode('utf-8', 'replace').strip()[-800:]}")
+    if not diff.stdout:
+        return ""
+    ident = subprocess.run(
+        ["git", "patch-id", "--verbatim"],
+        cwd=sw.main_root,
+        input=diff.stdout,
+        capture_output=True,
+        check=False,
+        timeout=120,
+        **background_flags(),
+    )
+    if ident.returncode != 0:
+        raise SwarmError(f"git patch-id failed: {ident.stderr.decode('utf-8', 'replace').strip()[-800:]}")
+    return ident.stdout.decode("ascii", "replace").split(" ")[0].strip()
+
+
+def same_work(sw: Swarm, review, snapshot: dict, head: str) -> bool:
+    """The reviewed commit itself, or the identical patch replayed onto a target that moved on."""
+    if review["head_sha"] == head:
+        return True
+    return bool(snapshot.get("patch_id")) and patch_identity(sw, head) == snapshot["patch_id"]
 
 
 def freeze_review(sw: Swarm, t, override: str | None = None) -> dict:
@@ -2412,6 +2486,8 @@ def freeze_review(sw: Swarm, t, override: str | None = None) -> dict:
         "base_sha": base,
         "policy_hash": request_hash(policy),
         "policy": policy,
+        "patch_id": patch_identity(sw, head),
+        "generated_paths": sorted(generated_paths(sw)),
         "checks": {"submission": json.loads(t["submit"] or "{}"), "steps": json.loads(t["steps"] or "[]")},
         "events": list(reversed(events)),
         "diff_hash": request_hash({"diff": diff}),
@@ -2567,14 +2643,27 @@ def incident_clearance(
     if not rows:
         return []
     fresh = sw.task(t["id"])
-    policy = request_hash(review_policy(sw, fresh))
+    policy = request_hash(review_policy(sw, fresh))  # recorded in the proof; each review compares its own version
     head = source_head or task_head(sw, fresh)
     submission = json.loads(fresh["submit"] or "{}")
-    if require_submission and submission and submission.get("head") != head:
+    submitted = submission.get("head")
+    if (
+        require_submission
+        and submission
+        and submitted != head
+        and not (submitted and patch_identity(sw, submitted) == patch_identity(sw, head))
+    ):
         raise SwarmError(
             "Submission does not describe the reviewed head. `hivewire submit` current evidence, then refresh the incident."
         )
     tree = git("rev-parse", f"{integrated_head or head}^{{tree}}", cwd=sw.main_root)
+    hook_ok = True
+    if integrated_head and integrated_head != head:
+        # The message hook may write the declared generated paths, and only those; the work must not touch them.
+        generated = generated_paths(sw)
+        hook_ok = changed_names(sw, head, integrated_head) <= generated and not (
+            changed_names(sw, git("merge-base", f"refs/heads/{sw.target()}", head, cwd=sw.main_root), head) & generated
+        )
     proof = []
     for r in rows:
         review = incident_review(sw, r)
@@ -2582,12 +2671,13 @@ def incident_clearance(
             raise SwarmError(
                 f"Incident I{r['id']} blocks integration ({r['state']}, {r['outcome'] or 'unresolved'}). Inspect `hivewire incident brief {r['id']}`, then review/resolve the evidence."
             )
+        snapshot = json.loads(review["snapshot"])
         if (
             review["epoch"] != fresh["epoch"]
-            or review["head_sha"] != head
-            or review["tree_sha"] != tree
-            or review["policy_hash"] != policy
-            or json.loads(review["snapshot"])["owner"] != fresh["assignee"]
+            or not hook_ok
+            or not same_work(sw, review, snapshot, head)
+            or not policy_matches(sw, fresh, review)
+            or snapshot["owner"] != fresh["assignee"]
         ):
             raise SwarmError(
                 f"Incident I{r['id']} clearance is stale. Submit the current work, then `hivewire incident refresh {r['id']} --reason ...` and obtain a fresh review."
@@ -2746,8 +2836,8 @@ def _cmd_incident(sw: Swarm, a) -> None:
                     t = sw.task(r["task"])
                     if (
                         review["epoch"] != t["epoch"]
-                        or review["head_sha"] != task_head(sw, t)
-                        or review["policy_hash"] != request_hash(review_policy(sw, t))
+                        or not same_work(sw, review, json.loads(review["snapshot"]), task_head(sw, t))
+                        or not policy_matches(sw, t, review)
                     ):
                         raise SwarmError(
                             "The reviewed work/policy changed. Submit current evidence and refresh the incident."
@@ -6578,6 +6668,14 @@ def cmd_submit(sw: Swarm, a) -> None:
     files, deletions = changed_files(path, base)
     if not files:
         raise SwarmError("Your branch changes nothing relative to the target.")
+    baked = sorted(set(files) & generated_paths(sw))
+    if baked:
+        raise SwarmError(
+            "Only the merge hook writes these, so the branch must not change them:\n  "
+            + "\n  ".join(baked)
+            + f"\nRestore them from {sw.target()} (`git checkout {sw.target()} -- <path>`), commit, and submit again. "
+            "Put the changelog text in `submit --changelog` instead."
+        )
     scope = task_scope(sw, t)
     outside = [f for f in files if not in_scope(f, scope)]
     if outside and current_contract(sw, t["id"]):
@@ -7074,6 +7172,8 @@ def verify_worktree_commit(path: Path, head: str) -> None:
 
 def check_integration_files(sw: Swarm, t, path: Path, base: str, submit: dict) -> None:
     files, deletions = changed_files(path, base)
+    generated = generated_paths(sw)  # written by the message hook; incident clearance bounds what it may touch
+    files = [f for f in files if f not in generated]
     scope = task_scope(sw, t)
     if any(not in_scope(f, scope) for f in files) and (
         current_contract(sw, t["id"]) or not submit.get("out_of_scope_reason")
