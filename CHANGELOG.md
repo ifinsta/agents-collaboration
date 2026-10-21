@@ -3,7 +3,8 @@
 ## Unreleased
 
 - Fix every merge exit that does not land: the engine records a marker before the hook
-  runs and drops its own squash and hook writes afterwards, so a retry, a failed gate, a
+  runs and, when its work holds a write to a generated path, drops its own squash and hook
+  writes afterwards (edits anywhere else stay retained for inspection), so a retry, a failed gate, a
   failed hook, a dirty main checkout or a crash after the merge intent no longer leaves a
   version bump the author is told to revert. Recovery keeps ownership of a set intent; a
   fast-forward refused after the intent keeps the commit for recovery.

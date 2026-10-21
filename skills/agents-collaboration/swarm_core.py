@@ -7563,19 +7563,12 @@ def cmd_merge(sw: Swarm, a) -> None:
 
 def tracked_diff_hash(path: Path) -> str:
     """A fingerprint of the tracked edits on top of HEAD: what the hook left, so the engine can tell its own
-    edits from anyone else's before it discards anything."""
+    edits from anyone else's before it discards anything. Through run(), so a timeout or a git error is the
+    engine's own SwarmError (never an empty diff that hashes the same as a clean tree)."""
     import hashlib
 
-    diff = subprocess.run(
-        ["git", "diff", "--binary", "--no-ext-diff", "--no-textconv", "HEAD", "--"],
-        cwd=path,
-        capture_output=True,
-        check=False,
-        timeout=120,
-        env=child_env(),
-        **background_flags(),
-    ).stdout
-    return hashlib.sha256(diff).hexdigest()
+    diff = run(["git", "diff", "--binary", "--no-ext-diff", "--no-textconv", "HEAD", "--"], cwd=path, timeout=120)
+    return hashlib.sha256(diff.stdout.encode("utf-8", "surrogateescape")).hexdigest()
 
 
 def discard_integration(sw: Swarm, task_id: str, who: str, attempt: str | None = None) -> None:
@@ -7605,16 +7598,27 @@ def discard_integration(sw: Swarm, task_id: str, who: str, attempt: str | None =
             return
         head = git("rev-parse", "HEAD", cwd=path, check=False)
         dirty = git("status", "--porcelain", "--untracked-files=no", cwd=path, check=False)
+        keep = f"refs/swarm/discarded/{task_id}/{time.time_ns()}"
+        generated = generated_paths(sw)
         if mark["sha"] is None:
             # Before the commit the dirty tree may be the hook's or, if the merge was killed, anyone's. Discard it
             # only when it is byte-for-byte what the hook returned with; otherwise it is left for a person.
             if head != mark["source"] or not dirty or not mark.get("dirty") or tracked_diff_hash(path) != mark["dirty"]:
                 return
-            backup = git("stash", "create", cwd=path, check=False)
-            if backup:  # belt and braces: the edits stay reachable, never silently gone
-                git("update-ref", f"refs/swarm/discarded/{task_id}/{int(time.time())}", backup, cwd=path, check=False)
-        elif head != mark["sha"] or dirty or head == mark["source"]:
-            return
+            touched = {n for n in git("diff", "--name-only", "HEAD", cwd=path, check=False).splitlines() if n}
+            if not touched & generated:
+                return  # the hook wrote nothing it owns: its edits stay retained for inspection, as ever
+            # Keep everything (untracked files included) under a ref first; with no backup, nothing is discarded.
+            saved = rescue_uncommitted(sw, t)
+            if not saved:
+                return
+            git("update-ref", keep, git("rev-parse", saved, cwd=path), cwd=path)
+        else:
+            if head != mark["sha"] or dirty or head == mark["source"]:
+                return
+            if not changed_names(sw, mark["source"], mark["sha"]) & generated:
+                return  # the engine's commit holds no generated-path write: retained for inspection, as ever
+            git("update-ref", keep, mark["sha"], cwd=path)
         git("reset", "--hard", mark["source"], cwd=path)
         sw.event(
             "integration_discarded", who, task_id, f"the engine's work was dropped; the branch is back at {mark['source'][:10]}"
@@ -7822,7 +7826,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                         return (
                             "Assignment changed while the message hook returned; inspect `hivewire explain` for recovery."
                         )
-                return f"The merge message hook failed:\n{out.stderr[-1500:]}\nThe branch is restored to your submitted work; the hook's edits are kept under refs/swarm/discarded/{t['id']}/ for inspection."
+                return f"The merge message hook failed:\n{out.stderr[-1500:]}\nHook edits were retained; inspect the worktree diff before retrying. Edits to generated paths are dropped from the branch and kept under refs/swarm/discarded/{t['id']}/."
             lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
             message = lines[-1] if lines else message
         with sw.tx():

@@ -100,6 +100,29 @@ class IntegrationDiscard(OversightCase):
         with self.board() as sw:
             self.assertIsNone(sw.meta("integration:T1"))
         self.assertTrue(edit.exists())
+        kept = self.git("for-each-ref", "--format=%(refname)", "refs/swarm/discarded/T1/", cwd=wt).split()
+        self.assertEqual(len(kept), 1, "what was dropped is kept under a ref")
+        self.assertIn("2", self.git("show", f"{kept[0]}:VERSION", cwd=wt), "the ref holds the hook's own edit")
+
+    def test_ec394_a_fingerprint_that_does_not_match_discards_nothing(self):
+        wt = self.ready()
+        source = self.git("rev-parse", "HEAD", cwd=wt).strip()
+        edit = wt / "src" / "file.txt"
+        edit.write_text("what the hook left\n", encoding="utf-8")
+        with self.board() as sw, sw.tx():
+            sw.set_meta(
+                "integration:T1",
+                json.dumps({"sha": None, "source": source, "epoch": self.task("T1")["epoch"], "dirty": core.tracked_diff_hash(wt)}),
+            )
+        edit.write_text("what the author wrote after the hook returned\n", encoding="utf-8")
+        with self.board() as sw:
+            core.discard_integration(sw, "T1", "ann")
+        self.assertEqual(edit.read_text(encoding="utf-8"), "what the author wrote after the hook returned\n")
+        self.assertEqual(self.git("for-each-ref", "refs/swarm/discarded/", cwd=wt).strip(), "")
+
+    def test_ec394_a_git_failure_fingerprinting_is_the_engines_error_not_an_empty_hash(self):
+        with self.assertRaises(core.SwarmError):
+            core.tracked_diff_hash(Path(self.tmp.name))
 
     def test_ec394_a_raise_after_the_commit_still_drops_the_engine_commit(self):
         hook = [
