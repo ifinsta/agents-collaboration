@@ -7561,6 +7561,23 @@ def cmd_merge(sw: Swarm, a) -> None:
     print(outcome)
 
 
+def tracked_diff_hash(path: Path) -> str:
+    """A fingerprint of the tracked edits on top of HEAD: what the hook left, so the engine can tell its own
+    edits from anyone else's before it discards anything."""
+    import hashlib
+
+    diff = subprocess.run(
+        ["git", "diff", "--binary", "--no-ext-diff", "--no-textconv", "HEAD", "--"],
+        cwd=path,
+        capture_output=True,
+        check=False,
+        timeout=120,
+        env=child_env(),
+        **background_flags(),
+    ).stdout
+    return hashlib.sha256(diff).hexdigest()
+
+
 def discard_integration(sw: Swarm, task_id: str, who: str, attempt: str | None = None) -> None:
     """The squash commit and the hook's writes are the engine's, not the author's. When a merge ends without
     landing them, take them off the branch, so the author is never asked to revert a change they did not make.
@@ -7588,9 +7605,14 @@ def discard_integration(sw: Swarm, task_id: str, who: str, attempt: str | None =
             return
         head = git("rev-parse", "HEAD", cwd=path, check=False)
         dirty = git("status", "--porcelain", "--untracked-files=no", cwd=path, check=False)
-        if mark["sha"] is None:  # before the commit: tracked edits are the hook's or a gate's, never the author's
-            if head != mark["source"] or not dirty:
+        if mark["sha"] is None:
+            # Before the commit the dirty tree may be the hook's or, if the merge was killed, anyone's. Discard it
+            # only when it is byte-for-byte what the hook returned with; otherwise it is left for a person.
+            if head != mark["source"] or not dirty or not mark.get("dirty") or tracked_diff_hash(path) != mark["dirty"]:
                 return
+            backup = git("stash", "create", cwd=path, check=False)
+            if backup:  # belt and braces: the edits stay reachable, never silently gone
+                git("update-ref", f"refs/swarm/discarded/{task_id}/{int(time.time())}", backup, cwd=path, check=False)
         elif head != mark["sha"] or dirty or head == mark["source"]:
             return
         git("reset", "--hard", mark["source"], cwd=path)
@@ -7780,6 +7802,18 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                 raise SwarmError(
                     "Message hook timed out; its owned group was stopped. Inspect usage and retained work before retrying."
                 ) from exc
+            with sw.tx():
+                sw.set_meta(
+                    f"integration:{t['id']}",
+                    json.dumps(
+                        {
+                            "sha": None,
+                            "source": review_source,
+                            "epoch": t["epoch"],
+                            "dirty": tracked_diff_hash(path),
+                        }
+                    ),
+                )
             if out.returncode != 0:
                 with sw.tx():
                     if not update_merge_attempt(
@@ -7788,7 +7822,7 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
                         return (
                             "Assignment changed while the message hook returned; inspect `hivewire explain` for recovery."
                         )
-                return f"The merge message hook failed:\n{out.stderr[-1500:]}\nHook edits were retained; inspect the worktree diff before retrying."
+                return f"The merge message hook failed:\n{out.stderr[-1500:]}\nThe branch is restored to your submitted work; the hook's edits are kept under refs/swarm/discarded/{t['id']}/ for inspection."
             lines = [ln.strip() for ln in out.stdout.splitlines() if ln.strip()]
             message = lines[-1] if lines else message
         with sw.tx():
@@ -7805,10 +7839,11 @@ def merge_locked(sw: Swarm, who: str, t: sqlite3.Row) -> str:
         elif git("diff", "--cached", "--name-only", cwd=path):
             git("commit", "-m", message, cwd=path)
         new_sha = git("rev-parse", "HEAD", cwd=path)
-        with sw.tx():
+        with sw.tx():  # its own transaction: a refusal in the checks below must not roll the marker back
             sw.set_meta(
                 f"integration:{t['id']}", json.dumps({"sha": new_sha, "source": review_source, "epoch": t["epoch"]})
             )
+        with sw.tx():
             check_merge_attempt(sw, who, t)
             check_integration_files(sw, t, path, target_sha, submit)
             incident_clearance(sw, t, source_head=review_source, integrated_head=new_sha)

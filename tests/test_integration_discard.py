@@ -79,3 +79,36 @@ class IntegrationDiscard(OversightCase):
             core.discard_integration(sw, "T1", "ann", attempt=None)
             self.assertIsNotNone(sw.meta("integration:T1"), "another attempt holds the queue for this task")
         self.assertEqual(Path(wt).exists(), True)
+
+    def test_ec394_an_authors_uncommitted_edit_is_never_reset_away(self):
+        """A merge killed during its hook leaves a pre-hook marker. The author's own edit must survive the next submit."""
+        wt = self.ready()
+        source = self.git("rev-parse", "HEAD", cwd=wt).strip()
+        with self.board() as sw, sw.tx():
+            sw.set_meta("integration:T1", json.dumps({"sha": None, "source": source, "epoch": self.task("T1")["epoch"]}))
+        edit = wt / "src" / "file.txt"
+        edit.write_text("the author's own uncommitted work\n", encoding="utf-8")
+        out = self.sw("--as", "ann", "submit", "--evidence", "Submitting after a killed merge", cwd=wt, ok=False)
+        self.assertIn("uncommitted", out)
+        self.assertEqual(edit.read_text(encoding="utf-8"), "the author's own uncommitted work\n")
+
+    def test_ec394_the_hooks_own_edit_is_dropped_only_when_the_tree_is_exactly_what_it_left(self):
+        wt = self.ready(hook=FAILING_HOOK)
+        edit = wt / "src" / "file.txt"
+        self.assertIn("merge message hook failed", self.sw("merge", "--as", "ann"))
+        self.assertEqual(self.version(wt), "1", "the failed hook's own write was dropped")
+        with self.board() as sw:
+            self.assertIsNone(sw.meta("integration:T1"))
+        self.assertTrue(edit.exists())
+
+    def test_ec394_a_raise_after_the_commit_still_drops_the_engine_commit(self):
+        hook = [
+            sys.executable,
+            "-c",
+            "from pathlib import Path; Path('VERSION').write_text('2\\n'); p = Path('backlog.md'); p.write_text(p.read_text() + 'x\\n')",
+        ]
+        wt = self.ready(hook=hook)
+        out = self.sw("merge", "--as", "ann", ok=False)
+        self.assertIn("outside", out.lower() + self.sw("status"), out)
+        self.assertEqual(self.version(wt), "1", "the raise rolled back the checks, not the engine's commit")
+        self.sw("--as", "ann", "submit", "--evidence", "The merge refused the hook's out-of-scope write", cwd=wt)

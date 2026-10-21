@@ -3,10 +3,10 @@
   "files": {
     "SKILL.md": "fc2cb5bd83d0f6e356d61725555f2e013b0c22ca2f9206fc501d69aa233a30e2",
     "hivewire.py": "e43da4b53b040280fca68f37bcef1e8d22b8f94b61483aa14dc83fe8ae37594c",
-    "swarm_core.py": "8d6c7a837e0f54c8053f6fab26b49cc5a4eedc3e4ddd13297ad9c003afd3ac9e",
+    "swarm_core.py": "803c1e75a6742a83a5a78f4dfaba2a51ad5b72ee52e1ef89fd21892fbb0424f8",
     "swarm_deputy.py": "18dbe1e554c8bfffab48d34170350e391d2cf84bd09933ce54e173cdf32a2b8b",
     "swarm_deadhand.py": "b72adcbd20df4e9f9266190e6aa97ee2e02aad8493e46aea0b5c6e5ada853a6e",
-    "EDGE-CASES.md": "41898491dda374aff41d428b18634dcd35b165c39da7087ea6b8bf01c3e10071",
+    "EDGE-CASES.md": "33512bad1aa1a93a35b08169fe9133b9fd16ddd92bea24d16fb7738a79266ddd",
     "BUS.md": "cec099ec8acd0bf6ea5908ad6218dac8f70eaaf96d4d5d6682a8ca5871e794fb",
     "BUS.schema.json": "df3707c5685ef90d30ff1d532975e014dbbc72ca2074033c2fa062072912ed98",
     "swarm_web.py": "8ae64a78cd0ba0801fc805c0ebe04552fccd922cffdb42182dd89e44040350ad",

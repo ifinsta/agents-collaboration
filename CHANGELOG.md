@@ -7,6 +7,8 @@
   failed hook, a dirty main checkout or a crash after the merge intent no longer leaves a
   version bump the author is told to revert. Recovery keeps ownership of a set intent; a
   fast-forward refused after the intent keeps the commit for recovery.
+  Never reset away an author's uncommitted edit: the hook-phase discard needs the tree to match
+  the hook's own fingerprint, and what it drops is kept under refs/swarm/discarded/.
 
 - Add dead-hand authority for when the human is away: off unless the human arms
   it from a terminal (`deadhand arm --until T`, at most 72 hours), it delegates a
