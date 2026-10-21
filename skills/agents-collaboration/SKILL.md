@@ -600,8 +600,9 @@ against the branch's commits and the worktree's uncommitted files, snapshots tho
 `refs/swarm/rescue/<task>/e<epoch>` without touching the worktree, and flags the progress **UNVERIFIED**
 (in `explain` and at `claim --take-over`) when steps rest on uncommitted edits. Review and commit them before
 trusting those steps. Completed steps and files stay retained. The same start gate
-applies to an original owner returning after being marked offline, even during
-reclaim grace. Observed owner loss or process exit settles accounted running time;
+applies to an original owner returning after being marked offline, unless it
+rejoins within `reclaim_after_min` and nothing moved: the epoch, the worktree HEAD
+and the task's interrupts are as it left them. Then the task keeps its state. Observed owner loss or process exit settles accounted running time;
 resuming starts a running clock while preserving the deadline, remaining
 allowance and usage lineage. Coming back:
 `hivewire join --resume`, then `hivewire whoami`. If the task was taken over, you are
@@ -611,6 +612,11 @@ told so and must not continue it.
 
 One agent coordinates. It is the first to join, or the longest-present live agent
 when the coordinator goes silent. A project may also set `coordinator = "human"`.
+Promotion skips an agent that is reviewing or is the subject of an open incident.
+A coordinator demoted while away gets the role back only at its own `join --resume`,
+once, within `[swarm] coordinator_return_min` (30) and when no merge holds the queue
+and it is neither reviewing nor under incident. Otherwise the role moves only by
+`hivewire coordinator hand-over --to NAME`, run by the coordinator or the human.
 The coordinator:
 
 - plans rounds: `hivewire status --all` shows what is open, waiting and why;

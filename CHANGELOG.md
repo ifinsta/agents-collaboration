@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+- Keep a task's state when its holder rejoins within `reclaim_after_min` and
+  nothing moved (epoch, worktree HEAD, interrupts), instead of sending it back to
+  planning. Let a coordinator demoted while away take the role back once, at
+  `join --resume`, within `[swarm] coordinator_return_min` and only to a quiet
+  board; add `coordinator hand-over --to NAME`. Promotion skips reviewers and
+  incident subjects.
+
 - Let incident-gated work merge through a version hook: `[merge] generated_paths`
   names the files the hook writes, final integration leaves them to the hook, and
   clearance accepts a hook commit that differs from the reviewed work only there.

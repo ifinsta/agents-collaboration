@@ -85,6 +85,7 @@ DEFAULTS: dict = {
         "question_escalate_min": 30,
         "assign_ttl_min": 60,
         "merge_lock_timeout_min": 45,
+        "coordinator_return_min": 30,  # a coordinator back within this, to a quiet board, takes the role back
     },
     "planning": {"checklist": DEFAULT_CHECKLIST, "extra": {}, "max_steps": 15},
     "contracts": {
@@ -1599,6 +1600,7 @@ class Swarm:
                 self.event("agent_offline", a["name"], a["task"], why)
                 task = self.db.execute("SELECT * FROM tasks WHERE id=?", (a["task"],)).fetchone()
                 if task and task["assignee"] == a["name"]:
+                    self.set_meta(f"offline_task:{a['name']}", json.dumps(offline_marker(self, task)))
                     pause_contract_for_loss(self, task)
         recover_merges(self)
         sweep_usage(self)
@@ -1655,8 +1657,11 @@ class Swarm:
                     "its holder is offline" if dead else "lease expired",
                 )
         if self.config["swarm"]["coordinator"] == "auto" and not self.coordinator():
-            live = self.live_agents()
+            live = [a for a in self.live_agents() if not a["reviewing"] and not incident_subject(self, a["name"])]
             if live:
+                prev = self.agent(self.meta("coordinator") or "")
+                if prev and prev["state"] == "offline":  # may come back: see coordinator_return
+                    self.set_meta("coordinator_away", json.dumps({"name": prev["name"], "at": iso()}))
                 self.set_meta("coordinator", live[0]["name"])
                 self.set_meta("coordinator_since", iso())
                 self.event("coordinator", live[0]["name"], None, "promoted: no live coordinator")
@@ -5344,8 +5349,15 @@ def cmd_join(sw: Swarm, a) -> None:
                     sw.update_agent(name, task=None, state="ready")
                     sw.message("swarm", name, f"While you were away {row['task']} was taken over by {t['assignee']}.")
                 elif t["state"] == "orphaned" or row["state"] == "offline" and t["state"] in ACTIVE:
-                    sw.update_task(t["id"], state=resumed_task_state(sw, t))
+                    restored = restorable_state(sw, row, t)
+                    sw.update_task(t["id"], state=restored or resumed_task_state(sw, t))
+                    if restored:
+                        restore_contract_clock(sw, t, json.loads(sw.meta(f"offline_task:{name}"))["clock"])
+                        sw.event("task_state_restored", name, t["id"], f"{restored}: epoch, worktree and interrupts unchanged")
+            sw.set_meta(f"offline_task:{name}", None)
             sw.event("agent_rejoined", name, row["task"], a.kind or row["kind"] or "")
+            if row["state"] == "offline":
+                coordinator_return(sw, name)
         else:
             sw.db.execute(
                 "INSERT INTO agents(name,kind,model,caps,slot,state,joined_at,heartbeat_at,pid,env,first_msg) "
@@ -5403,6 +5415,106 @@ def cmd_leave(sw: Swarm, a) -> None:
             sw.set_meta("coordinator_since", None)
         sw.event("agent_left", me["name"])
     print("left the swarm")
+
+
+def offline_marker(sw: Swarm, task) -> dict:
+    """What a holder left behind when it went quiet; a rejoin that finds the same keeps the task's state."""
+    wt = Path(task["worktree"]) if task["worktree"] else None
+    c = current_contract(sw, task["id"])
+    return {
+        "task": task["id"],
+        "state": task["state"],
+        "epoch": task["epoch"],
+        "head": git("rev-parse", "HEAD", cwd=wt, check=False) if wt and wt.is_dir() else None,
+        "interrupts": [
+            [r["id"], r["state"]]
+            for r in sw.db.execute("SELECT id,state FROM interrupts WHERE task=? ORDER BY id", (task["id"],))
+        ],
+        "clock": bool(c and c["state"] == "active" and c["owner"] == task["assignee"] and c["active_since"]),
+    }
+
+
+def restorable_state(sw: Swarm, row, task) -> str | None:
+    """A rejoin within reclaim_after_min keeps the prior state only when nothing moved while the holder was away."""
+    raw = sw.meta(f"offline_task:{row['name']}")
+    if not raw or row["state"] != "offline" or row["offline_reason"] not in ("silent", "exited"):
+        return None
+    if minutes_since(row["offline_at"]) > sw.config["swarm"]["reclaim_after_min"]:
+        return None
+    mark, now = json.loads(raw), offline_marker(sw, task)
+    if mark["state"] not in ACTIVE or any(mark[k] != now[k] for k in ("task", "epoch", "head", "interrupts")):
+        return None
+    return mark["state"]
+
+
+def restore_contract_clock(sw: Swarm, task, was_running: bool) -> None:
+    c = current_contract(sw, task["id"])
+    if was_running and c and c["state"] == "active" and not c["active_since"]:
+        sw.db.execute(
+            "UPDATE task_contracts SET active_since=?,blocked_seconds=?,blocked_at=NULL,deliberation_at=NULL WHERE id=?",
+            (iso(), c["blocked_seconds"] + seconds_since(c["blocked_at"]), c["id"]),
+        )
+
+
+def incident_subject(sw: Swarm, name: str) -> bool:
+    return bool(sw.db.execute("SELECT 1 FROM incidents WHERE subject=? AND state<>'resolved' LIMIT 1", (name,)).fetchone())
+
+
+def coordinator_return(sw: Swarm, name: str) -> None:
+    """Decided once, at the returner's resume, and never flipped later by a sweep in someone's workflow."""
+    raw = sw.meta("coordinator_away")
+    if not raw or json.loads(raw)["name"] != name:
+        return
+    away = json.loads(raw)
+    sw.set_meta("coordinator_away", None)
+    current = sw.coordinator()
+    if sw.config["swarm"]["coordinator"] != "auto" or not current or current == name:
+        return
+    blockers = []
+    if minutes_since(away["at"]) > sw.config["swarm"]["coordinator_return_min"]:
+        blockers.append(f"more than {sw.config['swarm']['coordinator_return_min']:g} min passed")
+    if sw.meta("merge_lock"):
+        blockers.append("a merge holds the queue")
+    if incident_subject(sw, name):
+        blockers.append("you are the subject of an open incident")
+    if sw.agent(name)["reviewing"]:
+        blockers.append("you are reviewing an incident")
+    if blockers:
+        sw.event("coordinator_return_refused", name, None, f"{current} keeps the role: " + "; ".join(blockers))
+        sw.message(
+            "swarm",
+            name,
+            f"You were coordinator until {away['at']}; {current} keeps the role ({'; '.join(blockers)}). "
+            f"It moves back only by `hivewire coordinator hand-over --to {name}` from {current} or the human.",
+        )
+        return
+    sw.set_meta("coordinator", name)
+    sw.set_meta("coordinator_since", iso())  # a new term: any deputy lease issued under the old one is fenced
+    sw.event("coordinator", name, None, f"returned within {sw.config['swarm']['coordinator_return_min']:g} min; {current} stands down")
+    sw.message("swarm", "*", f"{name} is back and coordinates again; {current} stands down.")
+
+
+def cmd_coordinator(sw: Swarm, a) -> None:
+    who = a.as_ or HUMAN
+    with sw.tx():
+        sw.sweep()
+        if sw.config["swarm"]["coordinator"] != "auto":
+            raise SwarmError("[swarm] coordinator names the human; there is no agent role to hand over.")
+        sw.require_coordinator(who)
+        target = sw.agent(a.to)
+        if not target or target["state"] in ("offline", "left"):
+            raise SwarmError(f"{a.to} is not a live agent; `hivewire agents` lists who is.")
+        current = sw.coordinator()
+        if current == a.to:
+            print(f"{a.to} already coordinates")
+            return
+        sw.set_meta("coordinator", a.to)
+        sw.set_meta("coordinator_since", iso())
+        sw.set_meta("coordinator_away", None)
+        sw.event("coordinator", a.to, None, f"handed over by {who}" + (f" from {current}" if current else ""))
+        sw.message("swarm", "*", f"{a.to} is now the coordinator, handed over by {who}.")
+        sw.message("swarm", a.to, "You are now the coordinator. Read SKILL.md, 'The coordinator'.")
+    print(f"{a.to} is now the coordinator")
 
 
 def cmd_heartbeat(sw: Swarm, a) -> None:
@@ -11790,6 +11902,11 @@ def build_parser() -> argparse.ArgumentParser:
     sp = add("leave", cmd_leave, "leave the pool")
     sp.add_argument("--release", default="", help="handoff note, if you still hold a task")
     add("heartbeat", cmd_heartbeat, "say you are alive")
+    cp = add("coordinator", cmd_coordinator, "the coordinator role")
+    csub = cp.add_subparsers(dest="coordinator_action", required=True)
+    c = csub.add_parser("hand-over", help="coordinator or human: give the role to a live agent")
+    c.add_argument("--as", dest="as_", default=argparse.SUPPRESS, help=argparse.SUPPRESS)
+    c.add_argument("--to", required=True)
     sp = add("agents", cmd_agents, "who is in the pool and how ready they are")
     sp.add_argument("--all", action="store_true", help="include offline agents that hold nothing")
     sp.add_argument("--prune", action="store_true", help="coordinator/human: archive long-gone agents that hold nothing")
