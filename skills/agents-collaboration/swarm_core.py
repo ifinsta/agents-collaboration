@@ -5444,6 +5444,8 @@ def restorable_state(sw: Swarm, row, task) -> str | None:
     mark, now = json.loads(raw), offline_marker(sw, task)
     if mark["state"] not in ACTIVE or any(mark[k] != now[k] for k in ("task", "epoch", "head", "interrupts")):
         return None
+    if mark["state"] in ("ready_to_merge", "merge_blocked") and json.loads(task["submit"] or "{}").get("head") != now["head"]:
+        return None  # a merge that died midway left its squash (and any hook edits) in the worktree: resubmit
     return mark["state"]
 
 

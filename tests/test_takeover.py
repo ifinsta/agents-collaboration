@@ -198,7 +198,7 @@ class Takeover(ProcessCase):
         self.assertIsNone(lost["active_since"])
         self.sql("UPDATE task_contracts SET blocked_at=? WHERE id=?", (core.iso(core.utcnow() - timedelta(seconds=30)), lost["id"]))
         self.sw("join", "--as", "ann", "--kind", "fake", "--resume", "--pid", str(os.getpid()))
-        self.assertEqual(self.task("T5")["state"], "planning")
+        self.assertEqual(self.task("T5")["state"], "in_progress")  # nothing moved while away: the state is kept (EC-380)
         self.assertEqual(self.task("T5")["epoch"], self.saved["epoch"])
         self.assert_work_preserved()
         self.sw("start", "--as", "ann", cwd=self.tree)
@@ -218,9 +218,8 @@ class Takeover(ProcessCase):
         self.assertIsNone(lost["active_since"])
         self.assertIsNotNone(lost["blocked_at"])
         self.sw("join", "--as", "ann", "--kind", "fake", "--resume", "--pid", str(os.getpid()))
-        self.assertEqual(self.task("T5")["state"], "planning")
-        self.assertIn("in progress", self.sw("step", "2", "--as", "ann", "--evidence", "The retained commit still requires a resumed start.", cwd=self.tree, ok=False))
-        self.sw("start", "--as", "ann", cwd=self.tree)
+        # Back within reclaim grace with nothing moved: the state and the running clock are restored (EC-380).
+        self.assertEqual(self.task("T5")["state"], "in_progress")
         self.assertIsNotNone(self.contract()["active_since"])
         self.assert_work_preserved()
 
