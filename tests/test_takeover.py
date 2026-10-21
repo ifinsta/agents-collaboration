@@ -229,7 +229,11 @@ class Takeover(ProcessCase):
         self.loss()
         self.sw("claim", "T5", "--as", "bob", "--take-over")
         self.assertEqual(self.task("T5")["state"], "planning")
+        # A successor heard from during deliberation gets the one audited extension (EC-376): still bounded, at 2x.
         self.sql("UPDATE task_contracts SET deliberation_at=? WHERE id=?", (core.iso(core.utcnow() - timedelta(minutes=6)), self.contract()["id"]))
+        self.sw("status")
+        self.assertEqual(self.task("T5")["state"], "planning")
+        self.sql("UPDATE task_contracts SET deliberation_at=? WHERE id=?", (core.iso(core.utcnow() - timedelta(minutes=11)), self.contract()["id"]))
         self.sw("status")
         self.assertEqual(self.task("T5")["state"], "expired")
         self.assertIn("expired", self.sw("start", "--as", "bob", cwd=self.tree, ok=False))

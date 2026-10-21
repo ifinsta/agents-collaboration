@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 374 cases. 289 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
+Totals: 376 cases. 291 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
 
 ## A. Joining, identity and liveness
 
@@ -576,6 +576,8 @@ half a second to a second per command, and agents call it for every step.
 | EC-372 | "Nothing you can take" leaves an agent guessing at the real blocker. | `why TASK [--json]` composes the state, owner, epoch and every enforced blocker (dependency, reservation, lock, merge queue, contract, checkpoint, merging, recorded failure) plus one concrete next action. It reads the board and bounded Git state only. | Tested |
 | EC-373 | A watcher treats the human footer or the words "no new messages" as mail. | `inbox --wait --timeout N` emits one versioned JSON message envelope per stdout line, writes no footer and exits 0 on timeout; an empty timeout is silence, not an error or a fabricated message. | Tested |
 | EC-374 | A polling agent is marked offline although it is running `status --as` every few minutes: only commands that called `require_agent` refreshed the heartbeat, while SKILL.md said every command did. The coordinator role then moved and the agent's task fell back to planning. | Any command that names a live agent (`--as` or `SWARM_AS`) refreshes its heartbeat before the sweep, so the result does not depend on who swept first. Writes are throttled to one a minute. An agent already past its timeout or already offline is not revived; that still takes `join --resume`. | Tested |
+| EC-375 | A recovered task already has 15 recorded steps, so its new owner cannot add a single verification step: done steps counted toward the cap. | Steps already done do not count toward `max_steps`; only open steps do. An absolute ceiling of twice `max_steps` on the whole plan stays, so the cap cannot be dodged by marking steps done. | Tested |
+| EC-376 | A live owner still reading the task loses the contract to the five-minute deliberation window, and the work returns to the pool. | When the owner is heard from after deliberation began, the window is doubled once, recorded in the contract terms and as a `deliberation_extended` event, so every reader sees the same window. A silent owner gets no extension, and past the doubled window the contract still expires. | Tested |
 
 
 ## What would close the open ones

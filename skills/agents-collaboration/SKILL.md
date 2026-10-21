@@ -200,7 +200,9 @@ historical closed goals retain their original evidence labels.
 
 Every fresh task claim accepts the configured contract: 30 minutes of
 accounted running time, absolute deadline after 45 minutes, five minutes of
-deliberation, five minutes reserved for review, checkpoint every five minutes.
+deliberation (doubled once, audited, if you are heard from while still planning), five minutes
+reserved for review, checkpoint every five minutes. Steps already done do not count toward the
+step cap; a ceiling of twice the cap covers the whole plan.
 Claim output prints the deadline and epoch. Use `hivewire explain <task>` to inspect
 terms and the safe next action. These defaults are configurable, not performance
 claims; time between `start` and `block`/`submit` is counted, not actual tool time.

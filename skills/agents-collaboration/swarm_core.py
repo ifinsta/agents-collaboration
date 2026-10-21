@@ -4161,6 +4161,34 @@ def contract_expiry(c) -> str | None:
     return None
 
 
+def extend_deliberation_once(sw: Swarm, c) -> bool:
+    """Double the deliberation window once, audited, for an owner heard from after deliberation began.
+
+    The window exists to catch an owner who claimed and went silent, not one still reading the task. It is recorded
+    in the contract terms so every reader of `contract_expiry` sees the same window.
+    """
+    if not (c["deliberation_at"] and not c["active_since"] and not c["blocked_at"] and not c["active_seconds"]):
+        return False
+    terms = json.loads(c["terms"])
+    if terms.get("debate_extended") or seconds_since(c["deliberation_at"]) < terms["debate_min"] * 60:
+        return False
+    owner = sw.agent(c["owner"]) if c["owner"] else None
+    if not owner or owner["state"] in ("offline", "left") or not owner["heartbeat_at"]:
+        return False
+    if parse(owner["heartbeat_at"]) <= parse(c["deliberation_at"]) + timedelta(seconds=30):
+        return False
+    terms["debate_min"] = terms["debate_min"] * 2
+    terms["debate_extended"] = True
+    sw.db.execute("UPDATE task_contracts SET terms=? WHERE id=?", (json.dumps(terms), c["id"]))
+    sw.event(
+        "deliberation_extended",
+        c["owner"],
+        c["task"],
+        f"contract {c['id']}: owner heard from during deliberation; window doubled once to {terms['debate_min']} min",
+    )
+    return True
+
+
 def contract_permission(
     sw: Swarm, t, *, claiming: bool = False, working: bool = False, settling: bool = False, reserving: bool = False
 ) -> None:
@@ -4277,6 +4305,8 @@ def sweep_contracts(sw: Swarm) -> None:
             close_contract(sw, c)
             continue
         if t["state"] in ("ready_to_merge", "merge_blocked") and auto_queue_grace(sw, t, contract=c):
+            c = current_contract(sw, t["id"])
+        if c["state"] == "active" and extend_deliberation_once(sw, c):
             c = current_contract(sw, t["id"])
         reason = contract_expiry(c) or usage_limit_reason(sw, c)
         # Accepted offers still obey both the decision window and the absolute deadline until claimed.
@@ -6207,8 +6237,13 @@ def cmd_plan(sw: Swarm, a) -> None:
         if not new_steps and not steps_old:
             raise SwarmError("Give the plan as ordered --step entries (one per step, in the order you will do them).")
         steps = done_steps + (new_steps or [s for s in steps_old if not s["done"]])
-        if len(steps) > sw.config["planning"]["max_steps"]:
-            raise SwarmError(f"At most {sw.config['planning']['max_steps']} steps; split the task instead.")
+        # Steps already done (retained across a recovery) do not count toward the cap, but a ceiling on the whole plan
+        # stays so the cap cannot be dodged by marking steps done.
+        limit = sw.config["planning"]["max_steps"]
+        if len(steps) - len(done_steps) > limit:
+            raise SwarmError(f"At most {limit} open steps; split the task instead.")
+        if len(steps) > 2 * limit:
+            raise SwarmError(f"At most {2 * limit} steps in total, done ones included; split the task instead.")
         for s in new_steps:
             if len(s["text"]) < 10:
                 raise SwarmError(f"Step {s['text']!r} is too vague; say what you will do and to what.")

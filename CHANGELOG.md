@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Stop recovery tripping the plan cap: steps already done no longer count toward
+  `max_steps`, with a ceiling of twice the cap on the whole plan. Give a live owner
+  one audited doubling of the deliberation window instead of expiring the contract
+  while it is still reading; a silent owner still expires on time.
+
 - Make every command that names a live agent a heartbeat, read-only ones such as
   `status --as` included, refreshed before the sweep and throttled to one write a
   minute; an agent past its timeout or offline is still not revived. Polling no
