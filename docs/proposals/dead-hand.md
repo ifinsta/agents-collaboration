@@ -1,6 +1,9 @@
 # Proposal: dead-hand authority and the liveness fixes
 
-**Status:** revision 3, for approval. Author: claude-worker (coordinator of the ifinpay pool).
+**Status:** revision 4, for approval. Pass 3 on revision 3 (`9d7139d`) resolved R2, R3, R7
+and R8 and asked for R1 wording fixes and four notes; all are closed here and marked
+**(pass 3)**.
+**Earlier status:** revision 3. Author: claude-worker (coordinator of the ifinpay pool).
 Revision 1 (`415e51c`) was reviewed by deputy `deputy-review` (lease 1) with verdict
 APPROVE WITH REQUIRED CHANGES; every required change is adopted below and marked **[Rn]**.
 Revision 2 (`7c99840`) was re-checked (pass 2): R4, R5, R6, R9, R10 resolved; the gaps it
@@ -66,7 +69,8 @@ submission except its free-text evidence, contract scope, risk level, budget ter
 only these: contract `deadline_at`, `active_time_min`, `active_seconds`, `blocked_seconds`,
 `checkpoint_at`, `extension_count`, and `submission.evidence` prose. The same list is used by the
 merge-time re-checks after the gates (today's lines 7133, 7172, 7196), which this therefore
-narrows by exactly those fields.
+narrows by exactly those fields. Any field on neither list, including future fields such as
+`debate_min`, is **kept** (fail closed), and a test proves it (pass 3).
 
 ### F2. Liveness of identified agents (P2)
 
@@ -79,7 +83,8 @@ narrows by exactly those fields.
   the returner rejoins within `[swarm] coordinator_return_min` (default 30) and the board is
   quiescent: no approved-but-unconsumed dead-hand ticket, no merge lease held, no ticket naming
   the returner, and the returner is neither an open incident subject nor a reserved reviewer.
-  Otherwise the current coordinator keeps it until an explicit `coordinator hand-over`. The
+  Otherwise the current coordinator keeps it until an explicit `coordinator hand-over`, which
+  only the current coordinator or the human may run (pass 3). The
   change is broadcast, and, like any term change, it revokes the active triage deputy lease
   (swarm_deputy.py 1329). Promotion skips agents that are an incident subject or a reviewer.
 
@@ -140,8 +145,16 @@ reviewer. If none exists, the ticket waits. The requester must not be the coordi
 **Join secret [R1].** `join` returns a random token, stored hashed on the agent row and kept by
 the agent's process; review, approve and consume require it. The token is read from
 `SWARM_TOKEN` or stdin, never from argv, and is redacted from events and messages (pass 2).
-`join --resume` of a name that holds a token requires that token, or the human; otherwise a
-resume could mint a fresh token for someone else's name (pass 2). Rejoin with proof rotates it.
+A **proven resume** presents the current token and keeps the name's standing. A tokenless
+resume is still allowed, because agents lose their token on a crash or context reset and a
+refusal would bring back the liveness problem this proposal fixes (pass 3). It rotates the
+token, is recorded as an **unproven resume**, and voids that name's dead-hand eligibility and
+every unconsumed dead-hand signature it holds. `SWARM_TOKEN` is stripped from the environment
+given to gates, hooks, verification and spawned children (`env_for`), so code under review
+cannot read another agent's token (pass 3). **Migration:** names that predate the upgrade have
+no token; their first join or resume after it mints one and is recorded as unproven, so they are
+not dead-hand eligible until the human re-verifies them (pass 3). The human's own resume path
+uses the same terminal guard as `arm` (pass 3).
 Tickets record kind and model; `[deadhand] require_distinct_model` (default off) requires the
 deputy and the coordinator to differ in model (optional suggestion adopted).
 
@@ -152,11 +165,16 @@ coordinator cannot steer the choice by keeping others busy or spawning a fresh a
 **engine issues the delegation**: when a ticket is requested it creates a dead-hand delegation
 row for the selected eligible deputy (separate from the single triage lease that
 `deputy activate` grants, so the coordinator never issues it), with capability
-`deadhand.review`, scoped to that one ticket and expiring with it.
+`deadhand.review`, scoped to that one ticket and expiring with it. It lives in its own table,
+`deadhand_delegations`, so it never collides with the single-active-lease guard of the triage
+lease (pass 3). A proven resume keeps eligibility; an unproven one loses it (pass 3).
 
 **Arming needs a person [R3, pass 2].** `deadhand arm` refuses unless stdin is a terminal and
 the operator types the confirmation phrase shown (`arm dead hand until <T>`); an agent running
-headless without `--as` therefore cannot arm it by accident.
+headless without `--as` therefore cannot arm it by accident. Under Git Bash's mintty, where
+`isatty()` is false for a real person, the check also accepts the MSYS pseudo-terminal
+(`MSYSTEM` set and stdin named `\Device\NamedPipe\msys-...-pty`), and the docs name `winpty` as
+the fallback; both paths are tested (pass 3).
 
 ### F5. Plans and deliberation (P5)
 
