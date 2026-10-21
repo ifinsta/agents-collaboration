@@ -11,7 +11,7 @@ translated to a pool of coding agents. Each says how it is handled.
 | **Partial** | Reduced, not removed; the remainder is stated |
 | **Open** | Known and not handled; listed so nobody assumes otherwise |
 
-Totals: 381 cases. 296 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
+Totals: 384 cases. 299 Tested, 61 Enforced, 13 Partial, 9 Rule, 2 Open.
 
 ## A. Joining, identity and liveness
 
@@ -583,6 +583,9 @@ half a second to a second per command, and agents call it for every step.
 | EC-379 | An author bakes the version bump or changelog entry into the branch, and it collides with the merge hook writing the same file. | `submit` refuses a branch that changes a generated path, names the paths and says how to restore them; the changelog text goes in `submit --changelog`. | Tested |
 | EC-380 | A holder marked offline after a quiet spell rejoins to find its in-progress or ready task back in planning, and must re-plan work nothing touched. | Going offline records the task's state, epoch, worktree HEAD, its interrupts and whether the contract clock ran. A `join --resume` within `reclaim_after_min` that finds all of them unchanged keeps the state, restarts a clock that was running, and records `task_state_restored`. Anything moved, an operator handoff, or a later return still goes back through the start gate. | Tested |
 | EC-381 | A coordinator demoted while polling comes back to find the role gone for good, or a sweep later flips the role back in the middle of the new coordinator's work. Promotion could also pick a reviewer or an incident subject. | The role returns only at the returner's `join --resume`, once, within `[swarm] coordinator_return_min` (30), and only to a quiet board: no merge holding the queue, the returner not an incident subject or reviewer. Otherwise the current coordinator keeps it until `coordinator hand-over --to NAME`, which only it or the human may run. A return or hand-over starts a new term, which fences the deputy lease. Promotion skips reviewers and incident subjects. | Tested |
+| EC-382 | A foreground merge killed by an agent tool's timeout leaves the queue lease held for 45 minutes while its live agent keeps heartbeating, and every other merge waits. | The lease records an attempt id, the merging process's pid, start time and namespace (host, boot, WSL distro), and each owned gate or hook group it starts. A sweep breaks it as soon as all of them are proven gone on the same host and boot: no such process, an observed exit, or a different start time under the pid. Access denied, an unknown start time or another namespace prove nothing, and the timeout still applies. Queue ownership checks key on the attempt id. | Tested |
+| EC-383 | The killed merge also leaves a tool-time usage run `unknown`, which only a human reconcile could settle. | A tool-time-only run (no token or money reservation) whose supervisor is proven gone by the same test is charged its full reservation, labelled `engine-verified: supervisor gone`. A run reserving tokens or money still needs the human. | Tested |
+| EC-384 | Agent shells kill long foreground commands, and a merge's gates outlast them. | `merge --detach` runs the merge as a detached background process with its own log under the board directory and prints its attempt id; a foreground merge without a terminal says so. | Tested |
 
 
 ## What would close the open ones

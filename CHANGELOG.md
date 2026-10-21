@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+- Free the merge queue as soon as the merging process is proven gone on this host
+  (pid, start time, boot), instead of after 45 minutes; access denied is not gone.
+  Settle a tool-time-only usage run whose supervisor is proven gone as
+  `engine-verified`. Add `merge --detach`, which runs the merge in the background.
+
 - Keep a task's state when its holder rejoins within `reclaim_after_min` and
   nothing moved (epoch, worktree HEAD, interrupts), instead of sending it back to
   planning. Let a coordinator demoted while away take the role back once, at

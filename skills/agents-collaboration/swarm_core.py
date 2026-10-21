@@ -766,6 +766,81 @@ def pid_alive(pid: int | None) -> bool:
     return True
 
 
+GONE = "gone"
+
+
+def namespace_id() -> str:
+    """Where a pid means something: the host, this boot, and the WSL distro when there is one."""
+    import socket
+
+    parts = [socket.gethostname()]
+    if os.name == "nt":
+        import ctypes
+
+        tick = ctypes.windll.kernel32.GetTickCount64
+        tick.restype = ctypes.c_ulonglong
+        parts.append(f"boot-{round((time.time() - tick() / 1000) / 60)}")  # last boot, to the minute
+    else:
+        try:
+            parts.append(Path("/proc/sys/kernel/random/boot_id").read_text(encoding="ascii").strip())
+        except OSError:
+            parts.append("no-boot-id")
+    if os.environ.get("WSL_DISTRO_NAME"):
+        parts.append(os.environ["WSL_DISTRO_NAME"])
+    return "/".join(parts)
+
+
+def process_start(pid: int) -> str | None:
+    """The process's start time, GONE when it provably no longer exists, None when that cannot be told."""
+    if os.name == "nt":
+        import ctypes
+
+        kernel = ctypes.WinDLL("kernel32", use_last_error=True)
+        kernel.OpenProcess.restype = ctypes.c_void_p
+        handle = kernel.OpenProcess(0x1000, False, pid)  # PROCESS_QUERY_LIMITED_INFORMATION
+        if not handle:
+            return GONE if ctypes.get_last_error() == 87 else None  # ERROR_INVALID_PARAMETER; access denied is not gone
+        try:
+            code = ctypes.c_ulong()
+            if kernel.GetExitCodeProcess(ctypes.c_void_p(handle), ctypes.byref(code)) and code.value != 259:
+                return GONE  # an observed exit
+            times = [ctypes.c_ulonglong() for _ in range(4)]
+            if kernel.GetProcessTimes(ctypes.c_void_p(handle), *(ctypes.byref(x) for x in times)):
+                return str(times[0].value)
+            return None
+        finally:
+            kernel.CloseHandle(ctypes.c_void_p(handle))
+    try:
+        os.kill(pid, 0)
+    except ProcessLookupError:
+        return GONE
+    except PermissionError:
+        pass
+    try:
+        return Path(f"/proc/{pid}/stat").read_text(encoding="ascii").rsplit(")", 1)[1].split()[19]
+    except (OSError, IndexError):
+        return None
+
+
+def process_identity(pid: int) -> dict:
+    return {"pid": pid, "start": process_start(pid), "ns": namespace_id()}
+
+
+def proven_gone(ident: dict | None) -> bool:
+    """Only proof counts: same host and boot, and no such process or a different one under that pid."""
+    if not ident or not ident.get("pid") or ident.get("ns") != namespace_id():
+        return False
+    now = process_start(ident["pid"])
+    return now == GONE or bool(now and ident.get("start") and ident["start"] != GONE and now != ident["start"])
+
+
+def lease_proven_dead(info: dict) -> bool:
+    return proven_gone(info.get("proc")) and all(proven_gone(g) for g in info.get("groups", []))
+
+
+OWNED_CHILD_HOOK = None  # set while a merge runs, so its lease names every owned group it starts
+
+
 def prefix_of(pattern: str) -> str:
     pattern = pattern.strip().lstrip("./").replace("\\", "/")
     cut = len(pattern)
@@ -1578,6 +1653,7 @@ class Swarm:
         values = {"slot": agent["slot"] or 0, "agent": agent["name"], "task": task_id or ""}
         for key, template in self.config["env"].items():
             env[key] = str(template).format(**values)
+        env.pop("SWARM_MERGE_ATTEMPT", None)
         env.update(SWARM_AS=agent["name"], SWARM_SLOT=str(values["slot"]), SWARM_TASK=task_id or "")
         if task_id:
             env["SWARM_EPOCH"] = str(self.task(task_id)["epoch"])
@@ -1648,13 +1724,18 @@ class Swarm:
             info = json.loads(holder)
             owner = self.agent(info["agent"])
             dead = owner is None or owner["state"] in ("offline", "left")
-            if dead or minutes_since(info["at"]) > s["merge_lock_timeout_min"]:
+            gone = not dead and lease_proven_dead(info)
+            if dead or gone or minutes_since(info["at"]) > s["merge_lock_timeout_min"]:
                 self.set_meta("merge_lock", None)
                 self.event(
                     "merge_lock_broken",
                     info["agent"],
                     info["task"],
-                    "its holder is offline" if dead else "lease expired",
+                    "its holder is offline"
+                    if dead
+                    else "its merging process is gone (proven on this host)"
+                    if gone
+                    else "lease expired",
                 )
         if self.config["swarm"]["coordinator"] == "auto" and not self.coordinator():
             live = [a for a in self.live_agents() if not a["reviewing"] and not incident_subject(self, a["name"])]
@@ -3905,6 +3986,18 @@ def usage_permission(sw: Swarm, c, *, claiming=False, settling=False) -> None:
 
 
 def sweep_usage(sw: Swarm) -> None:
+    for row in sw.db.execute(
+        "SELECT * FROM usage_runs WHERE kind='tool' AND state IN ('running','unknown') "
+        "AND COALESCE(reserved_tokens,0)=0 AND COALESCE(reserved_micros,0)=0"
+    ).fetchall():
+        raw = sw.meta(f"usage_supervisor:{row['id']}")
+        if raw and proven_gone(json.loads(raw)):
+            sw.db.execute(
+                "UPDATE usage_runs SET state='charged',ended_at=?,detail=? WHERE id=?",
+                (iso(), "engine-verified: supervisor gone; the full tool-time reservation is charged", row["id"]),
+            )
+            sw.set_meta(f"usage_supervisor:{row['id']}", None)
+            sw.event("usage_reconciled", "engine", row["task"], f"{row['id']}: engine-verified, supervisor gone")
     for row in sw.db.execute("SELECT * FROM usage_runs WHERE state IN ('reserved','running')").fetchall():
         lost = row["kind"] == "tool" and (
             not pid_alive(row["supervisor_pid"]) or seconds_since(row["heartbeat_at"]) > 30
@@ -3994,6 +4087,8 @@ def usage_allocate(
             "reserved by " + (who or c["owner"]),
         ),
     )
+    if kind == "tool":
+        sw.set_meta(f"usage_supervisor:{ident}", json.dumps(process_identity(os.getpid())))
     sw.event("usage_reserved", who or c["owner"], c["task"], ident)
     failpoint("before_usage_reservation_commit")
     return usage_row(sw, ident)
@@ -6869,15 +6964,20 @@ def keepalive(sw: Swarm, who: str, task_id: str) -> None:
             (iso(), who),
         )
         lock = sw.meta("merge_lock")
-        if lock and json.loads(lock).get("task") == task_id:
+        if lock and holds_queue(sw, task_id):
             info = json.loads(lock)
             info["at"] = iso()
             sw.set_meta("merge_lock", json.dumps(info))
 
 
 def holds_queue(sw: Swarm, task_id: str) -> bool:
+    """Ownership keys on the attempt: a later attempt for the same task is not this one."""
     lock = sw.meta("merge_lock")
-    return bool(lock) and json.loads(lock).get("task") == task_id
+    if not lock:
+        return False
+    info = json.loads(lock)
+    mine = getattr(sw, "merge_attempt", None)
+    return info.get("task") == task_id and (mine is None or info.get("attempt") == mine)
 
 
 def run_owned(argv: list[str], path: Path, env: dict, timeout_s: float, alive=None, every_s: float = 30, *, start=None):
@@ -6889,6 +6989,8 @@ def run_owned(argv: list[str], path: Path, env: dict, timeout_s: float, alive=No
     # A file avoids pipe deadlocks when descendants inherit stdout and bounds in-memory output.
     with tempfile.TemporaryFile() as output, tempfile.TemporaryFile() as errors:
         child = start(output, errors) if start else OwnedProcess(argv, path, env, output, errors=errors)
+        if OWNED_CHILD_HOOK and getattr(child, "pid", None):
+            OWNED_CHILD_HOOK(child.pid)
         deadline, keep_at, finished, timed_out = time.monotonic() + timeout_s, time.monotonic() + every_s, False, False
         try:
             while child.active():
@@ -7187,6 +7289,8 @@ def worktree_of_branch(sw: Swarm, branch: str) -> Path | None:
 
 
 def cmd_merge(sw: Swarm, a) -> None:
+    if getattr(a, "detach", False):
+        return merge_detached(sw, a)
     who = a.as_
     with sw.tx():
         sw.sweep()
@@ -7223,17 +7327,88 @@ def cmd_merge(sw: Swarm, a) -> None:
                 f"The merge queue is busy: {info['agent']} is merging {info['task']} since {info['at']}. "
                 "Retry in a few minutes (rebase meanwhile if you touch the same files)."
             )
-        sw.set_meta("merge_lock", json.dumps({"agent": who, "task": t["id"], "at": iso()}))
-        sw.event("merge_started", who, t["id"])
+        attempt = merge_attempt_id()
+        lease = {"agent": who, "task": t["id"], "at": iso(), "attempt": attempt, "proc": process_identity(os.getpid())}
+        sw.set_meta("merge_lock", json.dumps({**lease, "groups": []}))
+        sw.merge_attempt = attempt
+        sw.event("merge_started", who, t["id"], f"attempt {attempt}")
+    if not getattr(a, "detached_child", False) and not sys.stdout.isatty():
+        print(
+            "note: this merge runs in the foreground without a terminal. If a tool timeout kills it, the queue "
+            "frees once the process is proven gone; `hivewire merge --detach` avoids the timeout.",
+            file=sys.stderr,
+        )
     os.chdir(sw.main_root)  # never hold the worktree we may remove
+    global OWNED_CHILD_HOOK
+    OWNED_CHILD_HOOK = lambda pid: record_lease_group(sw, attempt, pid)  # noqa: E731
     try:
         outcome = merge_locked(sw, who, t)
     finally:
+        OWNED_CHILD_HOOK = None
         with sw.tx():
             info = sw.meta("merge_lock")
-            if info and json.loads(info)["task"] == t["id"]:
+            if info and json.loads(info).get("attempt") == attempt:
                 sw.set_meta("merge_lock", None)
     print(outcome)
+
+
+def merge_attempt_id() -> str:
+    given = os.environ.pop("SWARM_MERGE_ATTEMPT", "")
+    if re.fullmatch(r"[0-9a-f]{16}", given):
+        return given
+    import secrets
+
+    return secrets.token_hex(8)
+
+
+def record_lease_group(sw: Swarm, attempt: str, pid: int) -> None:
+    def write():
+        raw = sw.meta("merge_lock")
+        info = json.loads(raw) if raw else None
+        if info and info.get("attempt") == attempt:
+            info["groups"] = (info.get("groups", []) + [process_identity(pid)])[-20:]
+            sw.set_meta("merge_lock", json.dumps(info))
+
+    if sw.db.in_transaction:
+        write()
+    else:
+        with sw.tx():
+            write()
+
+
+def merge_detached(sw: Swarm, a) -> None:
+    """Run the merge as an engine-owned background process, so no foreground tool timeout can kill its gates."""
+    who = a.as_
+    with sw.tx():
+        sw.sweep()
+        sw.require_agent(who)
+        t = sw.require_holder(who, settling=True)
+        if t["state"] not in ("ready_to_merge", "merge_blocked"):
+            raise SwarmError(f"{t['id']} is {t['state']}; `hivewire submit` first.")
+        if sw.meta("merge_lock"):
+            raise SwarmError("The merge queue is busy; retry `merge --detach` when it frees.")
+    import secrets
+
+    attempt = secrets.token_hex(8)
+    logs = sw.dir / "merges"
+    logs.mkdir(parents=True, exist_ok=True)
+    log = logs / f"{t['id']}-{attempt}.log"
+    env = {**os.environ, "SWARM_MERGE_ATTEMPT": attempt}
+    argv = [sys.executable, str(LAUNCHER), "merge", "--as", who, "--detached-child"]
+    with log.open("wb") as out:
+        flags = {"start_new_session": True}
+        if os.name == "nt":
+            flags = {"creationflags": 0x00000200 | 0x00000008 | 0x01000000}  # new group, detached, break away
+        try:
+            proc = subprocess.Popen(argv, cwd=sw.main_root, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=out, **flags)
+        except OSError:
+            if os.name != "nt":
+                raise
+            flags["creationflags"] &= ~0x01000000  # the caller's job forbids breakaway
+            proc = subprocess.Popen(argv, cwd=sw.main_root, env=env, stdin=subprocess.DEVNULL, stdout=out, stderr=out, **flags)
+    print(f"merge attempt {attempt} for {t['id']} runs in the background (pid {proc.pid})")
+    print(f"log: {log}")
+    print(f"`hivewire status --as {who}` shows the result; `hivewire merge` again only after it ends.")
 
 
 def check_merge_attempt(sw: Swarm, who: str, t) -> None:
@@ -11970,7 +12145,9 @@ def build_parser() -> argparse.ArgumentParser:
     sp.add_argument("--changelog", default="")
     sp.add_argument("--out-of-scope-reason", default="")
     sp.add_argument("--allow-untracked", action="store_true")
-    add("merge", cmd_merge, "rebase, gate and join your work into the target")
+    sp = add("merge", cmd_merge, "rebase, gate and join your work into the target")
+    sp.add_argument("--detach", action="store_true", help="run the merge in the background and return its attempt id")
+    sp.add_argument("--detached-child", action="store_true", help=argparse.SUPPRESS)
     sp = add("lock", cmd_lock, "hold a hotspot until your task merges")
     sp.add_argument("name")
     sp = add("unlock", cmd_unlock, "release a hotspot")

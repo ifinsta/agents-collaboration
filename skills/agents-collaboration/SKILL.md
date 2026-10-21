@@ -459,7 +459,7 @@ targeted pause. Retried committed requests, completions and handoffs are safe.
 ```bash
 hivewire submit --as <name> --evidence "acceptance check and its result" \
      --owed "checks you could not run here, and why" --changelog "one line for the changelog"
-hivewire merge --as <name>
+hivewire merge --as <name>          # or `merge --detach` when your shell kills long commands
 ```
 
 `submit` refuses if any of these hold:
@@ -498,6 +498,8 @@ Preserve ignored artifacts (including copied local settings) outside the worktre
 before retrying cleanup. Do not discard valuable files merely to make cleanup pass.
 If Git refuses removal, the task's ownership and recovery references stay intact.
 
+If the merging process dies, the queue frees once the engine proves it gone on this
+host (no such process, or another one under its pid); it never guesses from silence.
 If your merge ends partway (a crash, a closed terminal, a lost database write) and
 the target branch already moved, inspect the retained intent and task state.
 Normal command sweeps reconcile a matching valid intent and record its
